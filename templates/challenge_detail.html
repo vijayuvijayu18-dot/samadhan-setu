@@ -1,0 +1,341 @@
+{% extends "base.html" %}
+
+{% block title %}{{ challenge.title }} - SamadhanSetu{% endblock %}
+
+{% block content %}
+<!-- Challenge Title & Breadcrumbs -->
+<div class="bg-primary text-white py-4 mb-4" style="background: linear-gradient(135deg, #0b2545 0%, #134074 100%);">
+    <div class="container">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-2 text-light small opacity-75">
+                <li class="breadcrumb-item"><a href="{{ url_for('landing') }}" class="text-light">Home</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('challenges') }}" class="text-light">Challenges</a></li>
+                <li class="breadcrumb-item active text-warning" aria-current="page">{{ challenge.category }}</li>
+            </ol>
+        </nav>
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-start gap-3">
+            <div class="max-w-850">
+                <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                    <span class="badge-category bg-white text-dark">{{ challenge.category }}</span>
+                    <span class="badge badge-severity-{{ challenge.priority.lower() }} px-2 py-1 rounded">
+                        {{ challenge.priority }} Priority
+                    </span>
+                    <span class="badge bg-secondary-subtle text-secondary border">Status: {{ challenge.status }}</span>
+                    <span class="badge bg-info-subtle text-info border"><i class="fas fa-building me-1"></i> {{ challenge.department }}</span>
+                    <span class="badge bg-warning-subtle text-dark border"><i class="fas fa-user-check me-1"></i> {{ challenge.submitter_type or 'Citizen / Resident' }}</span>
+                    <span class="badge bg-light text-dark border"><i class="fas fa-map-pin text-danger me-1"></i> District: {{ challenge.district or 'Jharkhand' }}</span>
+                    <span class="badge bg-success text-white"><i class="fas fa-graduation-cap me-1"></i> NEP 2020 Aligned</span>
+                </div>
+                <h2 class="fw-bold mb-2 text-white">{{ challenge.title }}</h2>
+                <div class="d-flex flex-wrap align-items-center gap-3 text-light opacity-90 small">
+                    <span><i class="fas fa-landmark text-warning me-1"></i> Nodal Agency: {{ challenge.organization }}</span>
+                    <span><i class="fas fa-map-marker-alt text-danger me-1"></i> {{ challenge.location }}</span>
+                    <span><i class="fas fa-calendar-alt text-light me-1"></i> Recorded: {{ challenge.created_date.strftime('%d %b %Y') }}</span>
+                    <span><i class="fas fa-clock text-warning me-1"></i> Deadline: {{ challenge.deadline.strftime('%d %b %Y') if challenge.deadline else 'Open' }}</span>
+                </div>
+            </div>
+
+            <!-- Admin Action Buttons Group -->
+            <div class="d-flex flex-wrap gap-2 align-items-center">
+                <a href="{{ url_for('edit_challenge', challenge_id=challenge.id) }}" class="btn btn-light shadow-sm fw-bold text-dark">
+                    <i class="fas fa-edit me-1"></i> Edit Challenge
+                </a>
+                <form method="POST" action="{{ url_for('delete_challenge', challenge_id=challenge.id) }}" onsubmit="return confirm('Are you sure you want to permanently delete this challenge from the database?');" class="d-inline">
+                    <button type="submit" class="btn btn-outline-danger text-white border-white">
+                        <i class="fas fa-trash-alt me-1"></i> Delete
+                    </button>
+                </form>
+                <a href="{{ url_for('propose_solution', challenge_id=challenge.id) }}" class="btn btn-accent shadow-sm">
+                    <i class="fas fa-lightbulb me-1"></i> Propose Solution
+                </a>
+                <button type="button" class="btn btn-outline-light btn-copy-share" title="Share Challenge">
+                    <i class="fas fa-share-alt me-1"></i> Share
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container mb-5">
+    <div class="row g-4">
+        <!-- Left: Comprehensive Problem Statement & Solutions -->
+        <div class="col-lg-8">
+            <!-- 1. Problem Statement Card -->
+            <div class="card border shadow-sm mb-4">
+                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold text-dark mb-0"><i class="fas fa-align-left text-primary me-2"></i> Problem Statement & Background</h5>
+                    <span class="badge bg-light text-muted border">Challenge ID: #{{ challenge.id }}</span>
+                </div>
+                <div class="card-body p-4">
+                    <h6 class="fw-bold text-primary">Context & Problem Description</h6>
+                    <p class="text-secondary" style="line-height: 1.7;">
+                        {{ challenge.description }}
+                    </p>
+
+                    <h6 class="fw-bold text-primary mt-4">Why It Matters (Societal & Economic Impact)</h6>
+                    <p class="text-secondary" style="line-height: 1.7;">
+                        This bottleneck directly impacts <strong class="text-dark">{{ challenge.affected_population }}</strong> (approx. {{ "{:,}".format(challenge.people_affected_count) }} people). Addressing this issue will prevent resource wastage, enhance public safety/health, and provide scalable models for similar districts across India.
+                    </p>
+
+                    <div class="row g-3 my-2">
+                        <div class="col-md-6">
+                            <div class="p-3 rounded bg-light border">
+                                <span class="fw-bold text-dark small d-block mb-1"><i class="fas fa-history text-secondary me-1"></i> Existing Interventions</span>
+                                <p class="text-muted small mb-0">{{ challenge.existing_solutions or 'No systematic intervention currently documented.' }}</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="p-3 rounded bg-light border">
+                                <span class="fw-bold text-danger small d-block mb-1"><i class="fas fa-times-circle text-danger me-1"></i> Why Existing Solutions Fail</span>
+                                <p class="text-muted small mb-0">{{ challenge.shortcomings or 'High cost, lack of field automation, and irregular monitoring.' }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h6 class="fw-bold text-primary mt-4">Required Disciplines & Technical Skills</h6>
+                    <div class="mb-3">
+                        {% if challenge.required_skills %}
+                            {% for skill in challenge.required_skills.split(',') %}
+                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 me-1 mb-2">{{ skill.strip() }}</span>
+                            {% endfor %}
+                        {% else %}
+                            <span class="text-muted small">Interdisciplinary collaboration welcome</span>
+                        {% endif %}
+                    </div>
+
+                    <h6 class="fw-bold text-primary mt-4">Expected Measurable Outcome</h6>
+                    <div class="p-3 rounded bg-success bg-opacity-10 border border-success border-opacity-25 text-success-emphasis mb-3">
+                        <i class="fas fa-bullseye text-success me-2"></i>
+                        {{ challenge.expected_outcome }}
+                    </div>
+
+                    {% if challenge.media_url or challenge.document_url %}
+                    <h6 class="fw-bold text-primary mt-4"><i class="fas fa-paperclip me-1"></i> Attached Ground Evidence & Documentation</h6>
+                    <div class="p-3 rounded bg-light border d-flex flex-wrap gap-3">
+                        {% if challenge.media_url %}
+                            <a href="{{ challenge.media_url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-camera me-1"></i> View Ground Photograph / Inspection Media
+                            </a>
+                        {% endif %}
+                        {% if challenge.document_url %}
+                            <a href="{{ challenge.document_url }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                <i class="fas fa-file-pdf me-1"></i> View Field Survey / Lab Report PDF
+                            </a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- 2. Solutions Submitted Section -->
+            <div class="card border shadow-sm">
+                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="fw-bold text-dark mb-0"><i class="fas fa-lightbulb text-warning me-2"></i> Proposed Solutions ({{ solutions|length }})</h5>
+                        <small class="text-muted">University squads and industry teams collaborating on this challenge</small>
+                    </div>
+                    <a href="{{ url_for('propose_solution', challenge_id=challenge.id) }}" class="btn btn-sm btn-primary-gov">
+                        <i class="fas fa-plus-circle me-1"></i> Submit Solution
+                    </a>
+                </div>
+                <div class="card-body p-4">
+                    {% if solutions %}
+                        {% for sol in solutions %}
+                        <div class="p-3 mb-3 rounded border bg-white shadow-sm">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div>
+                                    <span class="badge bg-warning text-dark me-2">{{ sol.status }} Stage</span>
+                                    {% if sol.is_selected %}
+                                        <span class="badge bg-success"><i class="fas fa-check me-1"></i> Selected for Project</span>
+                                    {% endif %}
+                                    <h5 class="fw-bold mt-2 mb-1">
+                                        <a href="{{ url_for('solution_detail', solution_id=sol.id) }}" class="text-decoration-none text-dark hover-primary">
+                                            {{ sol.title }}
+                                        </a>
+                                    </h5>
+                                    <div class="small text-muted mb-2">
+                                        <span><i class="fas fa-user-circle me-1"></i> Lead: {{ sol.author.full_name }} ({{ sol.author.organization }})</span> &bull; 
+                                        <span><i class="fas fa-calendar me-1"></i> {{ sol.created_at.strftime('%d %b %Y') }}</span>
+                                    </div>
+                                </div>
+                                <div class="text-end">
+                                    <form method="POST" action="{{ url_for('endorse_solution', solution_id=sol.id) }}">
+                                        <button type="submit" class="btn btn-outline-danger btn-sm">
+                                            <i class="fas fa-thumbs-up me-1"></i> {{ sol.endorsements_count }}
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+
+                            <p class="text-muted small mb-2">{{ sol.detailed_solution[:160] }}...</p>
+
+                            <div class="p-2 rounded bg-light border small mb-3">
+                                <strong>Tech Stack:</strong> <span class="text-secondary">{{ sol.technology_stack }}</span> &bull; 
+                                <strong>Est. Budget:</strong> <span class="text-primary fw-semibold">{{ sol.estimated_cost }}</span>
+                            </div>
+
+                            <div class="d-flex justify-content-between align-items-center">
+                                <a href="{{ url_for('solution_detail', solution_id=sol.id) }}" class="btn btn-sm btn-outline-primary">
+                                    View Full Proposal & Lifecycle Stepper
+                                </a>
+                                {% if not sol.is_selected %}
+                                    <form method="POST" action="{{ url_for('select_solution_for_project', solution_id=sol.id) }}">
+                                        <button type="submit" class="btn btn-sm btn-success fw-semibold">
+                                            <i class="fas fa-rocket me-1"></i> Select & Launch Project
+                                        </button>
+                                    </form>
+                                {% else %}
+                                    <a href="{{ url_for('projects') }}" class="btn btn-sm btn-info text-white">
+                                        <i class="fas fa-external-link-alt me-1"></i> Open Project Workspace
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-4 text-muted">
+                            <i class="fas fa-lightbulb fa-2x mb-2 text-secondary opacity-50"></i>
+                            <p class="mb-2">No solutions have been submitted for this challenge yet.</p>
+                            <a href="{{ url_for('propose_solution', challenge_id=challenge.id) }}" class="btn btn-primary-gov btn-sm">
+                                Be the First to Propose a Solution
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: AI-Style Features & Rule-Based Matchmaking -->
+        <div class="col-lg-4">
+            <!-- 1. AI Impact Score Box -->
+            <div class="ai-score-badge mb-4">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="badge bg-warning text-dark fw-bold text-uppercase" style="font-size: 0.68rem;">Algorithmic Assessment</span>
+                        <h5 class="fw-bold mb-0 text-white mt-1">Potential Impact Score</h5>
+                        <small class="text-light opacity-75">Generated based on severity & scale</small>
+                    </div>
+                    <div class="ai-score-circle text-warning">
+                        {{ challenge.ai_impact_score }}
+                        <span style="font-size: 0.6rem; color: #cbd5e1;">/ 100</span>
+                    </div>
+                </div>
+
+                <hr class="border-secondary my-3 opacity-50">
+
+                <div class="small">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="text-light opacity-90">Severity Factor:</span>
+                        <span class="fw-bold text-warning">{{ challenge.severity }} (High Weight)</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="text-light opacity-90">Population Reach:</span>
+                        <span class="fw-bold text-white">{{ "{:,}".format(challenge.people_affected_count) }} Beneficiaries</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-light opacity-90">Technical Feasibility:</span>
+                        <span class="fw-bold text-success">High (Multi-disciplinary)</span>
+                    </div>
+                </div>
+                <div class="mt-2 text-center" style="font-size: 0.68rem; color: #94a3b8;">
+                    * Platform-generated algorithmic estimate for prioritization
+                </div>
+            </div>
+
+            <!-- NEP 2020 Institutional Allocation Framework -->
+            <div class="p-3 mb-4 rounded-3 bg-light border">
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    <span class="badge bg-primary text-white"><i class="fas fa-network-wired me-1"></i> NEP 2020 HEI Routing</span>
+                    <span class="badge bg-success-subtle text-success border">Autonomous Allocation</span>
+                </div>
+                <div class="small text-muted">
+                    This validated challenge is routed to Jharkhand Higher Education Institutions based on faculty research specialization, incubation centres, and multidisciplinary student team formation.
+                </div>
+            </div>
+
+            <!-- 2. Smart Rule-Based University Recommendations -->
+            <div class="card border shadow-sm mb-4">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h6 class="fw-bold text-dark mb-0">
+                        <i class="fas fa-university text-info me-2"></i> Recommended Universities
+                    </h6>
+                    <small class="text-muted">Matched by research expertise & tags</small>
+                </div>
+                <div class="card-body p-3">
+                    {% for univ in matches.universities %}
+                    <div class="recommendation-card">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <h6 class="fw-bold text-dark mb-1 small">{{ univ.name }}</h6>
+                            <span class="badge bg-success-subtle text-success border border-success-subtle">{{ univ.match_pct }}% Match</span>
+                        </div>
+                        <div class="text-muted small mb-2"><i class="fas fa-map-marker-alt me-1"></i> {{ univ.location }}</div>
+                        <div class="mb-2">
+                            {% for tag in univ.tags[:3] %}
+                                <span class="skill-tag">{{ tag }}</span>
+                            {% endfor %}
+                        </div>
+                        <a href="{{ url_for('organizations') }}" class="small text-primary text-decoration-none fw-semibold">
+                            View University Research Profile &rarr;
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- 3. Smart Rule-Based Industry Partners -->
+            <div class="card border shadow-sm mb-4">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h6 class="fw-bold text-dark mb-0">
+                        <i class="fas fa-industry text-warning me-2"></i> Recommended Industry Partners
+                    </h6>
+                    <small class="text-muted">Matching CSR & R&D capability</small>
+                </div>
+                <div class="card-body p-3">
+                    {% for ind in matches.industries %}
+                    <div class="recommendation-card" style="border-left-color: var(--accent-saffron);">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <h6 class="fw-bold text-dark mb-1 small">{{ ind.name }}</h6>
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle">{{ ind.match_pct }}% Match</span>
+                        </div>
+                        <div class="text-muted small mb-2"><i class="fas fa-map-marker-alt me-1"></i> {{ ind.location }}</div>
+                        <div class="mb-2">
+                            {% for tag in ind.tags[:3] %}
+                                <span class="skill-tag">{{ tag }}</span>
+                            {% endfor %}
+                        </div>
+                        <a href="{{ url_for('organizations') }}" class="small text-primary text-decoration-none fw-semibold">
+                            Request Industry Mentorship/Sponsorship &rarr;
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- 4. Similar Challenges in Same Category -->
+            {% if similar_challenges %}
+            <div class="card border shadow-sm">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h6 class="fw-bold text-dark mb-0">
+                        <i class="fas fa-clone text-secondary me-2"></i> Similar Societal Challenges
+                    </h6>
+                </div>
+                <div class="card-body p-3">
+                    {% for sc in similar_challenges %}
+                    <div class="mb-3 pb-2 border-bottom">
+                        <a href="{{ url_for('challenge_detail', challenge_id=sc.id) }}" class="fw-semibold text-dark text-decoration-none small d-block mb-1">
+                            {{ sc.title }}
+                        </a>
+                        <div class="d-flex justify-content-between text-muted small">
+                            <span><i class="fas fa-map-marker-alt me-1"></i> {{ sc.location.split(',')[0] }}</span>
+                            <span class="badge bg-light text-dark border">{{ sc.ai_impact_score }}/100</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+

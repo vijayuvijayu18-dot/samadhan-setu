@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+
+{% block title %}National Impact Analytics - SamadhanSetu{% endblock %}
+
+{% block content %}
+<div class="bg-primary text-white py-4 mb-4" style="background: linear-gradient(135deg, #0b2545 0%, #134074 100%);">
+    <div class="container">
+        <span class="badge bg-warning text-dark text-uppercase px-2 py-1 mb-2 fw-bold">National Outcomes Ledger</span>
+        <h2 class="fw-bold mb-1">Societal Impact & Economic Gains</h2>
+        <p class="text-light opacity-90 small mb-0">Audited metrics quantifying citizen benefits, environmental gains, and municipal cost savings generated through platform deployments.</p>
+    </div>
+</div>
+
+<div class="container mb-5">
+    <!-- 8 National KPI Impact Cards -->
+    <div class="row g-3 mb-4">
+        <!-- 1. People Impacted -->
+        <div class="col-sm-6 col-lg-3">
+            <div class="kpi-card h-100">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="kpi-label">People Impacted</div>
+                    <div class="kpi-icon-box bg-danger bg-opacity-10 text-danger">
+                        <i class="fas fa-heart"></i>
+                    </div>
+                </div>
+                <div class="kpi-val text-danger">{{ "{:,}".format(total_people) }}+</div>
+                <div class="text-muted small mt-1">Ground-verified beneficiaries</div>
+            </div>
+        </div>
+
+        <!-- 2. Villages / Areas Reached -->
+        <div class="col-sm-6 col-lg-3">
+            <div class="kpi-card h-100">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="kpi-label">Villages & Wards Reached</div>
+                    <div class="kpi-icon-box bg-primary bg-opacity-10 text-primary">
+                        <i class="fas fa-map-marked-alt"></i>
+                    </div>
+                </div>
+                <div class="kpi-val text-primary">{{ total_villages }}</div>
+                <div class="text-muted small mt-1">Across 18 Aspirational Districts</div>
+            </div>
+        </div>
+
+        <!-- 3. Cost Saved -->
+        <div class="col-sm-6 col-lg-3">
+            <div class="kpi-card h-100">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="kpi-label">Municipal Cost Saved</div>
+                    <div class="kpi-icon-box bg-success bg-opacity-10 text-success">
+                        <i class="fas fa-rupee-sign"></i>
+                    </div>
+                </div>
+                <div class="kpi-val text-success">₹{{ "%.1f"|format(total_cost_saved / 100) }} Cr</div>
+                <div class="text-muted small mt-1">Operational expenditure saved</div>
+            </div>
+        </div>
+
+        <!-- 4. Time Saved -->
+        <div class="col-sm-6 col-lg-3">
+            <div class="kpi-card h-100">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="kpi-label">Average Time Saved</div>
+                    <div class="kpi-icon-box bg-warning bg-opacity-10 text-warning">
+                        <i class="fas fa-history"></i>
+                    </div>
+                </div>
+                <div class="kpi-val text-warning">{{ avg_time_saved }}%</div>
+                <div class="text-muted small mt-1">In transit, diagnostics, & water audit</div>
+            </div>
+        </div>
+
+        <!-- 5. Environmental Impact -->
+        <div class="col-sm-6 col-lg-3">
+            <div class="kpi-card h-100">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="kpi-label">CO2 Emissions Avoided</div>
+                    <div class="kpi-icon-box bg-success bg-opacity-10 text-success">
+                        <i class="fas fa-leaf"></i>
+                    </div>
+                </div>
+                <div class="kpi-val text-success">1,480 MT</div>
+                <div class="text-muted small mt-1">Through solar & smart truck dispatch</div>
+            </div>
+        </div>
+
+        <!-- 6. Employment Created -->
+        <div class="col-sm-6 col-lg-3">
+            <div class="kpi-card h-100">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="kpi-label">Jobs / Livelihoods Created</div>
+                    <div class="kpi-icon-box bg-info bg-opacity-10 text-info">
+                        <i class="fas fa-briefcase"></i>
+                    </div>
+                </div>
+                <div class="kpi-val text-info">{{ total_jobs }}</div>
+                <div class="text-muted small mt-1">Rural technicians & field operators</div>
+            </div>
+        </div>
+
+        <!-- 7. Resources Saved -->
+        <div class="col-sm-6 col-lg-3">
+            <div class="kpi-card h-100">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="kpi-label">Water & Fuel Saved</div>
+                    <div class="kpi-icon-box bg-secondary bg-opacity-10 text-secondary">
+                        <i class="fas fa-tint"></i>
+                    </div>
+                </div>
+                <div class="kpi-val text-secondary">180M Ltr</div>
+                <div class="text-muted small mt-1">Potable water pipeline leakage conserved</div>
+            </div>
+        </div>
+
+        <!-- 8. Projects Implemented -->
+        <div class="col-sm-6 col-lg-3">
+            <div class="kpi-card h-100">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="kpi-label">Projects Implemented</div>
+                    <div class="kpi-icon-box bg-dark bg-opacity-10 text-dark">
+                        <i class="fas fa-award"></i>
+                    </div>
+                </div>
+                <div class="kpi-val text-dark">{{ implemented_projects_count }}</div>
+                <div class="text-muted small mt-1">Scalable pilots completed</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart Visualizations -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-8">
+            <div class="card border shadow-sm h-100">
+                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold text-dark mb-0"><i class="fas fa-chart-area text-primary me-2"></i> Cumulative Beneficiaries Reached (Growth Over Quarters)</h6>
+                    <span class="badge bg-light text-dark border">Q1 2025 - Q3 2026</span>
+                </div>
+                <div class="card-body p-3">
+                    <canvas id="growthChart" style="max-height: 320px;"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card border shadow-sm h-100">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h6 class="fw-bold text-dark mb-0"><i class="fas fa-chart-pie text-success me-2"></i> Impact by SDG Sector</h6>
+                </div>
+                <div class="card-body p-3">
+                    <canvas id="sdgChart" style="max-height: 320px;"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Ground Deployment Audits Table -->
+    <div class="card border shadow-sm">
+        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+            <h5 class="fw-bold text-dark mb-0"><i class="fas fa-clipboard-check text-success me-2"></i> Third-Party Verified Project Impact Audits</h5>
+            <span class="badge bg-success">Gov Verified</span>
+        </div>
+        <div class="card-body p-4">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Project Deployment</th>
+                            <th>Sector</th>
+                            <th>Beneficiaries</th>
+                            <th>Villages / Wards</th>
+                            <th>Cost Saved</th>
+                            <th>Environmental / Social Gain</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for m in metrics %}
+                        <tr>
+                            <td class="fw-bold text-dark">{{ m.project_title }}</td>
+                            <td><span class="badge-category">{{ m.category }}</span></td>
+                            <td class="fw-semibold text-danger">{{ "{:,}".format(m.people_impacted) }}</td>
+                            <td>{{ m.villages_reached }} locations</td>
+                            <td class="text-success fw-bold">₹{{ m.cost_saved_lakhs }} L</td>
+                            <td class="small text-secondary">{{ m.environmental_gain or m.resources_saved }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 1. Growth Chart
+    const growthCtx = document.getElementById('growthChart').getContext('2d');
+    new Chart(growthCtx, {
+        type: 'line',
+        data: {
+            labels: ['Q1 2025', 'Q2 2025', 'Q3 2025', 'Q4 2025', 'Q1 2026', 'Q2 2026', 'Q3 2026'],
+            datasets: [{
+                label: 'Beneficiaries Impacted (Millions)',
+                data: [0.15, 0.42, 0.78, 1.20, 1.65, 2.10, 2.45],
+                borderColor: '#0b2545',
+                backgroundColor: 'rgba(19, 64, 116, 0.12)',
+                fill: true,
+                tension: 0.35,
+                borderWidth: 3,
+                pointBackgroundColor: '#d97706',
+                pointRadius: 5
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { callback: function(val) { return val + 'M'; } }
+                }
+            }
+        }
+    });
+
+    // 2. SDG Sector Breakdown
+    const sdgCtx = document.getElementById('sdgChart').getContext('2d');
+    new Chart(sdgCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Clean Water', 'Healthcare', 'Waste Mgmt', 'Clean Energy', 'AgriTech'],
+            datasets: [{
+                data: [35, 25, 20, 12, 8],
+                backgroundColor: ['#0284c7', '#dc2626', '#059669', '#d97706', '#10b981'],
+                borderWidth: 2,
+                borderColor: '#ffffff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom' }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}
+

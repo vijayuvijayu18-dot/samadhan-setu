@@ -1,0 +1,294 @@
+{% extends "base.html" %}
+
+{% block title %}SamadhanSetu - Turn Societal Challenges Into Real-World Solutions{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section text-white">
+    <div class="container py-4">
+        <div class="row align-items-center g-5">
+            <div class="col-lg-7">
+                <div class="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill bg-white bg-opacity-10 border border-white border-opacity-25 mb-3">
+                    <span class="badge bg-warning text-dark fw-bold">Jharkhand State Innovation Framework</span>
+                    <span class="small">NEP 2020 Experiential Learning & SIH 2026</span>
+                </div>
+                <h1 class="display-4 fw-extrabold mb-3 lh-tight" style="font-family: 'Plus Jakarta Sans', sans-serif;">
+                    Empowering Jharkhand Through <span style="color: #fbbf24;">University & Industry Partnerships.</span>
+                </h1>
+                <p class="lead mb-4 text-light opacity-90" style="font-size: 1.15rem; font-weight: 400;">
+                    Connect citizens, community organizations, and local bodies across all 24 districts of Jharkhand with Higher Education Institutions (BIT Mesra, IIT ISM Dhanbad, NIT Jamshedpur, BAU, AIIMS) and Industry CSR leaders (Tata Steel, CCL, SAIL) to transform grassroots challenges into deployable, high-impact innovations.
+                </p>
+                <div class="d-flex flex-wrap gap-3">
+                    <a href="{{ url_for('challenges') }}" class="btn btn-accent btn-lg px-4 shadow">
+                        <i class="fas fa-search me-2"></i> Explore Challenges
+                    </a>
+                    <a href="{{ url_for('submit_challenge') }}" class="btn btn-outline-light btn-lg px-4">
+                        <i class="fas fa-plus-circle me-2"></i> Submit a Challenge
+                    </a>
+                </div>
+            </div>
+
+            <div class="col-lg-5">
+                <!-- Visual Card with Interactive Platform Architecture -->
+                <div class="card border-0 shadow-lg text-dark overflow-hidden rounded-4">
+                    <div class="card-header bg-dark text-white py-3 d-flex justify-content-between align-items-center">
+                        <span class="small fw-bold text-uppercase text-warning"><i class="fas fa-circle text-danger me-1"></i> Live Innovation Pipeline</span>
+                        <span class="badge bg-success">National Grid Active</span>
+                    </div>
+                    <div class="card-body p-4 bg-white">
+                        <div class="d-flex align-items-center justify-content-between p-3 rounded-3 mb-3 bg-light border">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="kpi-icon-box bg-danger bg-opacity-10 text-danger rounded-circle">
+                                    <i class="fas fa-bullhorn"></i>
+                                </div>
+                                <div>
+                                    <div class="fw-bold">1. Societal Need Identified</div>
+                                    <div class="text-muted small">Citizens & NGOs submit ground realities</div>
+                                </div>
+                            </div>
+                            <span class="badge bg-danger-subtle text-danger border">Crowdsourced</span>
+                        </div>
+
+                        <div class="d-flex align-items-center justify-content-between p-3 rounded-3 mb-3 bg-light border">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="kpi-icon-box bg-primary bg-opacity-10 text-primary rounded-circle">
+                                    <i class="fas fa-brain"></i>
+                                </div>
+                                <div>
+                                    <div class="fw-bold">2. Smart Rule-Based Match</div>
+                                    <div class="text-muted small">IITs, NITs & Industry R&D mapped</div>
+                                </div>
+                            </div>
+                            <span class="badge bg-primary-subtle text-primary border">Automated</span>
+                        </div>
+
+                        <div class="d-flex align-items-center justify-content-between p-3 rounded-3 p-3 bg-light border">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="kpi-icon-box bg-success bg-opacity-10 text-success rounded-circle">
+                                    <i class="fas fa-seedling"></i>
+                                </div>
+                                <div>
+                                    <div class="fw-bold">3. Pilot & Deploy</div>
+                                    <div class="text-muted small">Real impact delivered to citizens</div>
+                                </div>
+                            </div>
+                            <span class="badge bg-success-subtle text-success border">Impact Delivered</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- National Impact Counters -->
+<section class="py-4 border-bottom bg-white shadow-sm">
+    <div class="container">
+        <div class="row g-4 text-center">
+            <div class="col-6 col-md-4 col-lg-2">
+                <div class="kpi-val text-primary">{{ total_challenges }}</div>
+                <div class="kpi-label">Challenges</div>
+            </div>
+            <div class="col-6 col-md-4 col-lg-2">
+                <div class="kpi-val text-success">{{ active_projects }}</div>
+                <div class="kpi-label">Active Projects</div>
+            </div>
+            <div class="col-6 col-md-4 col-lg-2">
+                <div class="kpi-val text-warning">{{ total_solutions }}</div>
+                <div class="kpi-label">Solutions</div>
+            </div>
+            <div class="col-6 col-md-4 col-lg-2">
+                <div class="kpi-val text-info">{{ total_univ }}</div>
+                <div class="kpi-label">Universities</div>
+            </div>
+            <div class="col-6 col-md-4 col-lg-2">
+                <div class="kpi-val text-indigo" style="color: #6366f1;">{{ total_ind }}</div>
+                <div class="kpi-label">Industries</div>
+            </div>
+            <div class="col-6 col-md-4 col-lg-2">
+                <div class="kpi-val text-danger">2.45M+</div>
+                <div class="kpi-label">People Impacted</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Mandatory Workflow Visualization Section -->
+<section class="py-5 bg-slate">
+    <div class="container">
+        <div class="text-center mb-5">
+            <span class="badge bg-primary text-uppercase px-3 py-2 mb-2">Process Lifecycle</span>
+            <h2 class="fw-bold text-dark">How The Platform Works</h2>
+            <p class="text-muted max-w-700 mx-auto">From an unattended grassroots grievance to a sustainable, engineered municipal or rural deployment.</p>
+        </div>
+
+        <div class="workflow-container">
+            <div class="workflow-step">
+                <div class="icon-wrap"><i class="fas fa-exclamation-triangle text-danger"></i></div>
+                <div class="fw-bold small text-dark">SOCIETAL PROBLEM</div>
+                <div class="text-muted" style="font-size: 0.72rem;">Unmet community need identified</div>
+            </div>
+
+            <div class="workflow-arrow"><i class="fas fa-chevron-right"></i></div>
+
+            <div class="workflow-step">
+                <div class="icon-wrap"><i class="fas fa-users text-primary"></i></div>
+                <div class="fw-bold small text-dark">CROWD SOURCE</div>
+                <div class="text-muted" style="font-size: 0.72rem;">Logged with metrics & context</div>
+            </div>
+
+            <div class="workflow-arrow"><i class="fas fa-chevron-right"></i></div>
+
+            <div class="workflow-step">
+                <div class="icon-wrap"><i class="fas fa-check-double text-info"></i></div>
+                <div class="fw-bold small text-dark">VERIFY</div>
+                <div class="text-muted" style="font-size: 0.72rem;">Vetted by administrators</div>
+            </div>
+
+            <div class="workflow-arrow"><i class="fas fa-chevron-right"></i></div>
+
+            <div class="workflow-step">
+                <div class="icon-wrap"><i class="fas fa-handshake text-warning"></i></div>
+                <div class="fw-bold small text-dark">COLLABORATION</div>
+                <div class="text-muted" style="font-size: 0.72rem;">Univ + Industry matched</div>
+            </div>
+
+            <div class="workflow-arrow"><i class="fas fa-chevron-right"></i></div>
+
+            <div class="workflow-step">
+                <div class="icon-wrap"><i class="fas fa-lightbulb text-success"></i></div>
+                <div class="fw-bold small text-dark">PROPOSAL</div>
+                <div class="text-muted" style="font-size: 0.72rem;">Innovative engineering pitch</div>
+            </div>
+
+            <div class="workflow-arrow"><i class="fas fa-chevron-right"></i></div>
+
+            <div class="workflow-step">
+                <div class="icon-wrap"><i class="fas fa-cubes text-primary"></i></div>
+                <div class="fw-bold small text-dark">WORKSPACE</div>
+                <div class="text-muted" style="font-size: 0.72rem;">Milestones & Tasks tracked</div>
+            </div>
+
+            <div class="workflow-arrow"><i class="fas fa-chevron-right"></i></div>
+
+            <div class="workflow-step">
+                <div class="icon-wrap"><i class="fas fa-rocket text-danger"></i></div>
+                <div class="fw-bold small text-dark">PILOT</div>
+                <div class="text-muted" style="font-size: 0.72rem;">Real-world field testing</div>
+            </div>
+
+            <div class="workflow-arrow"><i class="fas fa-chevron-right"></i></div>
+
+            <div class="workflow-step bg-primary text-white border-primary">
+                <div class="icon-wrap bg-white text-primary"><i class="fas fa-heart text-danger"></i></div>
+                <div class="fw-bold small text-white">SOCIAL IMPACT</div>
+                <div class="text-light" style="font-size: 0.72rem;">Measurable lives transformed</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Featured Verified Challenges -->
+<section class="py-5 bg-white">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-end mb-4">
+            <div>
+                <span class="badge bg-warning text-dark text-uppercase px-2 py-1 mb-1">High Priority</span>
+                <h2 class="fw-bold mb-0">Featured Challenges</h2>
+            </div>
+            <a href="{{ url_for('challenges') }}" class="btn btn-outline-primary fw-semibold">
+                View All {{ total_challenges }} Challenges <i class="fas fa-arrow-right ms-1"></i>
+            </a>
+        </div>
+
+        <div class="row g-4">
+            {% for c in featured_challenges %}
+            <div class="col-md-6 col-lg-4">
+                <div class="challenge-card">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="badge-category">{{ c.category }}</span>
+                        <span class="badge badge-severity-{{ c.severity.lower() }} px-2 py-1 rounded">{{ c.severity }} Priority</span>
+                    </div>
+
+                    <h5 class="fw-bold text-dark mb-2">
+                        <a href="{{ url_for('challenge_detail', challenge_id=c.id) }}" class="text-decoration-none text-dark hover-primary">
+                            {{ c.title }}
+                        </a>
+                    </h5>
+
+                    <p class="text-muted small flex-grow-1">
+                        {{ c.description[:140] }}...
+                    </p>
+
+                    <div class="p-2 rounded bg-light border mb-3 small">
+                        <div class="d-flex justify-content-between text-muted mb-1">
+                            <span><i class="fas fa-map-marker-alt text-danger me-1"></i> {{ c.location.split(',')[0] }}</span>
+                            <span><i class="fas fa-users text-primary me-1"></i> {{ c.affected_population[:20] }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="fw-semibold text-primary">AI Impact Score:</span>
+                            <span class="badge bg-dark">{{ c.ai_impact_score }}/100</span>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mt-auto pt-2 border-top">
+                        <span class="text-muted small"><i class="fas fa-lightbulb text-warning me-1"></i> {{ c.solutions|length }} Solutions</span>
+                        <a href="{{ url_for('challenge_detail', challenge_id=c.id) }}" class="btn btn-sm btn-primary-gov">
+                            View & Solve
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- Participating Top Institutions -->
+<section class="py-5 bg-slate border-top border-bottom">
+    <div class="container">
+        <div class="text-center mb-4">
+            <h3 class="fw-bold">Partnering Universities & Industry Leaders</h3>
+            <p class="text-muted">Top institutes and enterprise R&D groups actively solving challenges on SamadhanSetu.</p>
+        </div>
+
+        <div class="row g-3">
+            {% for org in featured_orgs %}
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 border p-3 bg-white shadow-sm">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="kpi-icon-box bg-light text-primary border rounded">
+                            <i class="fas {{ org.logo_icon }} fa-lg"></i>
+                        </div>
+                        <div>
+                            <div class="fw-bold text-dark">{{ org.name }}</div>
+                            <div class="text-muted small"><i class="fas fa-map-marker-alt me-1"></i> {{ org.location }}</div>
+                            <span class="badge bg-secondary-subtle text-secondary border mt-1">{{ org.type }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- Call to Action Banner -->
+<section class="py-5 bg-dark text-white text-center" style="background: linear-gradient(135deg, #0b2545 0%, #134074 100%);">
+    <div class="container py-3">
+        <h2 class="display-6 fw-bold mb-3">Ready to Build Measurable Social Impact?</h2>
+        <p class="lead text-light mb-4 max-w-700 mx-auto opacity-90">
+            Whether you are a citizen with a local problem, a student researcher with an algorithm, or an industry leader looking to sponsor deployment.
+        </p>
+        <div class="d-flex justify-content-center gap-3">
+            <a href="{{ url_for('login') }}" class="btn btn-accent btn-lg px-4">
+                Access Admin Portal
+            </a>
+            <a href="{{ url_for('challenges') }}" class="btn btn-outline-light btn-lg px-4">
+                Browse Directory
+            </a>
+        </div>
+    </div>
+</section>
+{% endblock %}
+

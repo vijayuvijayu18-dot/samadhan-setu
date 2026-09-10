@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}Organizations Directory - SamadhanSetu{% endblock %}
+
+{% block content %}
+<div class="bg-primary text-white py-4 mb-4" style="background: linear-gradient(135deg, #0b2545 0%, #134074 100%);">
+    <div class="container">
+        <span class="badge bg-warning text-dark text-uppercase px-2 py-1 mb-2 fw-bold">Ecosystem Coalition</span>
+        <h2 class="fw-bold mb-1">Institutions & Industry Partners</h2>
+        <p class="text-light opacity-90 small mb-0">Universities, corporate R&D cells, startups, and public bodies driving collaborative ground transformation.</p>
+    </div>
+</div>
+
+<div class="container mb-5">
+    <!-- Filter Pill Bar -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4 p-3 bg-white border rounded shadow-sm">
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{{ url_for('organizations', type='All') }}" class="btn btn-sm {% if not type_filter or type_filter == 'All' %}btn-primary-gov{% else %}btn-outline-secondary{% endif %}">
+                All Organizations
+            </a>
+            <a href="{{ url_for('organizations', type='University') }}" class="btn btn-sm {% if type_filter == 'University' %}btn-primary-gov{% else %}btn-outline-secondary{% endif %}">
+                <i class="fas fa-university me-1"></i> Universities (IITs/NITs)
+            </a>
+            <a href="{{ url_for('organizations', type='Industry') }}" class="btn btn-sm {% if type_filter == 'Industry' %}btn-primary-gov{% else %}btn-outline-secondary{% endif %}">
+                <i class="fas fa-industry me-1"></i> Industry / Corporate CSR
+            </a>
+            <a href="{{ url_for('organizations', type='Startup') }}" class="btn btn-sm {% if type_filter == 'Startup' %}btn-primary-gov{% else %}btn-outline-secondary{% endif %}">
+                <i class="fas fa-rocket me-1"></i> Tech Startups
+            </a>
+            <a href="{{ url_for('organizations', type='NGO') }}" class="btn btn-sm {% if type_filter == 'NGO' %}btn-primary-gov{% else %}btn-outline-secondary{% endif %}">
+                <i class="fas fa-hands-helping me-1"></i> Civil Society / NGOs
+            </a>
+            <a href="{{ url_for('organizations', type='Government') }}" class="btn btn-sm {% if type_filter == 'Government' %}btn-primary-gov{% else %}btn-outline-secondary{% endif %}">
+                <i class="fas fa-landmark me-1"></i> Government Agencies
+            </a>
+        </div>
+
+        <form method="GET" action="{{ url_for('organizations') }}" class="d-flex gap-2">
+            {% if type_filter %}
+                <input type="hidden" name="type" value="{{ type_filter }}">
+            {% endif %}
+            <input type="text" name="q" class="form-control form-control-sm" placeholder="Search by name, location..." value="{{ query_text or '' }}">
+            <button type="submit" class="btn btn-sm btn-primary-gov"><i class="fas fa-search"></i></button>
+        </form>
+    </div>
+
+    <!-- Organizations Grid -->
+    <div class="row g-4">
+        {% for org in organizations %}
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 border shadow-sm p-4 d-flex flex-column">
+                <div class="d-flex align-items-start justify-content-between mb-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="kpi-icon-box bg-light text-primary border rounded-3" style="width: 52px; height: 52px; font-size: 1.4rem;">
+                            <i class="fas {{ org.logo_icon }}"></i>
+                        </div>
+                        <div>
+                            <h5 class="fw-bold text-dark mb-0">{{ org.name }}</h5>
+                            <span class="badge bg-secondary-subtle text-secondary border mt-1">{{ org.type }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-muted small mb-2">
+                    <i class="fas fa-map-marker-alt text-danger me-1"></i> {{ org.location }}
+                </div>
+
+                <p class="text-secondary small flex-grow-1 mb-3">
+                    {{ org.description }}
+                </p>
+
+                <!-- Expertise Tags -->
+                <div class="mb-3">
+                    <div class="text-muted small mb-1 fw-bold" style="font-size: 0.72rem;">CORE RESEARCH CAPABILITY:</div>
+                    <div class="d-flex flex-wrap gap-1">
+                        {% for tag in org.expertise_tags.split(',') %}
+                            <span class="skill-tag">{{ tag.strip() }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center pt-2 border-top mt-auto">
+                    {% if org.website %}
+                        <a href="{{ org.website }}" target="_blank" class="small text-decoration-none text-primary fw-semibold">
+                            <i class="fas fa-external-link-alt me-1"></i> Visit Portal
+                        </a>
+                    {% else %}
+                        <span class="text-muted small">Verified Partner</span>
+                    {% endif %}
+                    <a href="{{ url_for('challenges', q=org.expertise_tags.split(',')[0]) }}" class="btn btn-sm btn-outline-primary">
+                        View Matched Challenges
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+

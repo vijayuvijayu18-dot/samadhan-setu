@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}Solutions Directory - SamadhanSetu{% endblock %}
+
+{% block content %}
+<div class="bg-primary text-white py-4 mb-4" style="background: linear-gradient(135deg, #0b2545 0%, #134074 100%);">
+    <div class="container">
+        <span class="badge bg-warning text-dark text-uppercase px-2 py-1 mb-2 fw-bold">Innovation Repository</span>
+        <h2 class="fw-bold mb-1">Proposed Solutions & Prototypes</h2>
+        <p class="text-light opacity-90 small mb-0">Browse innovative technological and grassroots solutions submitted by student squads, researchers, and startups.</p>
+    </div>
+</div>
+
+<div class="container mb-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="text-muted small">
+            Showing <strong class="text-dark">{{ solutions|length }}</strong> solution proposals
+        </div>
+        <a href="{{ url_for('challenges') }}" class="btn btn-outline-primary btn-sm">
+            <i class="fas fa-bullhorn me-1"></i> Browse Open Challenges
+        </a>
+    </div>
+
+    <div class="row g-4">
+        {% for sol in solutions %}
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 border shadow-sm p-3 d-flex flex-column">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="badge bg-warning text-dark">{{ sol.status }} Stage</span>
+                    <span class="text-muted small"><i class="fas fa-thumbs-up text-danger me-1"></i> {{ sol.endorsements_count }} Endorsements</span>
+                </div>
+
+                <h5 class="fw-bold text-dark mb-2">
+                    <a href="{{ url_for('solution_detail', solution_id=sol.id) }}" class="text-decoration-none text-dark hover-primary">
+                        {{ sol.title }}
+                    </a>
+                </h5>
+
+                <div class="small text-muted mb-2">
+                    <strong>Challenge:</strong> {{ sol.challenge.title[:65] }}...
+                </div>
+
+                <p class="text-secondary small flex-grow-1 mb-3">
+                    {{ sol.detailed_solution[:130] }}...
+                </p>
+
+                <div class="p-2 rounded bg-light border small mb-3">
+                    <div class="text-truncate"><strong>Tech:</strong> {{ sol.technology_stack }}</div>
+                    <div><strong>Budget:</strong> <span class="text-primary fw-semibold">{{ sol.estimated_cost }}</span></div>
+                    <div class="text-muted mt-1" style="font-size: 0.75rem;">By {{ sol.author.full_name }} ({{ sol.author.organization }})</div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center pt-2 border-top mt-auto">
+                    <a href="{{ url_for('solution_detail', solution_id=sol.id) }}" class="btn btn-sm btn-outline-primary">
+                        View Details
+                    </a>
+                    {% if sol.is_selected %}
+                        <span class="badge bg-success"><i class="fas fa-check-circle me-1"></i> In Workspace</span>
+                    {% else %}
+                        <span class="badge bg-light text-muted border">Reviewing</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+

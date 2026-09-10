@@ -1,0 +1,399 @@
+{% extends "base.html" %}
+
+{% block title %}Government Administrative Governance - SamadhanSetu{% endblock %}
+
+{% block content %}
+<div class="bg-dark text-white py-4 mb-4" style="background: linear-gradient(135deg, #0b1f3a 0%, #1e293b 100%);">
+    <div class="container">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <div>
+                <span class="badge bg-danger text-uppercase px-2 py-1 mb-2 fw-bold"><i class="fas fa-shield-alt me-1"></i> Apex Administrative Console</span>
+                <h2 class="fw-bold mb-1">National Innovation Command Center</h2>
+                <p class="text-light opacity-75 small mb-0">Ministry of Education / AICTE Smart India Hackathon Governance Portal</p>
+            </div>
+            <span class="badge bg-success-subtle text-success border p-2">System Status: Nominal (All Services Active)</span>
+        </div>
+    </div>
+</div>
+
+<div class="container mb-5">
+    <!-- 8 Admin KPI Summary Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3 col-lg-3">
+            <div class="kpi-card">
+                <div class="kpi-label">Total Users</div>
+                <div class="kpi-val text-primary">{{ stats.total_users }}</div>
+                <div class="text-muted small">Registered Citizens & Innovators</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3 col-lg-3">
+            <div class="kpi-card">
+                <div class="kpi-label">Total Challenges</div>
+                <div class="kpi-val text-dark">{{ stats.total_challenges }}</div>
+                <div class="text-muted small">Crowdsourced Submissions</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3 col-lg-3">
+            <div class="kpi-card">
+                <div class="kpi-label">Verified Challenges</div>
+                <div class="kpi-val text-success">{{ stats.verified_challenges }}</div>
+                <div class="text-muted small">Published to Marketplace</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3 col-lg-3">
+            <div class="kpi-card">
+                <div class="kpi-label">Solutions Proposed</div>
+                <div class="kpi-val text-warning">{{ stats.total_solutions }}</div>
+                <div class="text-muted small">Academic & Industry pitches</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3 col-lg-3">
+            <div class="kpi-card">
+                <div class="kpi-label">Active Projects</div>
+                <div class="kpi-val text-info">{{ stats.total_projects }}</div>
+                <div class="text-muted small">Collaborative Workspaces</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3 col-lg-3">
+            <div class="kpi-card">
+                <div class="kpi-label">Universities</div>
+                <div class="kpi-val text-primary">{{ stats.total_universities }}</div>
+                <div class="text-muted small">IITs, NITs, Central Univs</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3 col-lg-3">
+            <div class="kpi-card">
+                <div class="kpi-label">Industry Partners</div>
+                <div class="kpi-val text-secondary">{{ stats.total_industries }}</div>
+                <div class="text-muted small">Corporate R&D & Startups</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3 col-lg-3">
+            <div class="kpi-card">
+                <div class="kpi-label">Implemented Projects</div>
+                <div class="kpi-val text-success">{{ stats.implemented_projects }}</div>
+                <div class="text-muted small">Pilots Completed</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Tabs for Administration -->
+    <ul class="nav nav-pills mb-4 bg-white p-2 rounded border shadow-sm" id="adminTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active fw-bold" id="verify-tab" data-bs-toggle="pill" data-bs-target="#verifyTabContent" type="button" role="tab">
+                <i class="fas fa-clipboard-check me-1"></i> Challenge Verification Queue ({{ pending_challenges|length }})
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fw-bold" id="solutions-tab" data-bs-toggle="pill" data-bs-target="#solutionsTabContent" type="button" role="tab">
+                <i class="fas fa-lightbulb me-1"></i> Solution Proposals ({{ all_solutions|length }})
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fw-bold" id="challenges-tab" data-bs-toggle="pill" data-bs-target="#challengesTabContent" type="button" role="tab">
+                <i class="fas fa-bullhorn me-1"></i> All Challenges ({{ all_challenges|length }})
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fw-bold" id="users-tab" data-bs-toggle="pill" data-bs-target="#usersTabContent" type="button" role="tab">
+                <i class="fas fa-users-cog me-1"></i> Manage Users ({{ users|length }})
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fw-bold" id="projects-tab" data-bs-toggle="pill" data-bs-target="#projectsTabContent" type="button" role="tab">
+                <i class="fas fa-tasks me-1"></i> Projects & Workspaces
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="adminTabsContent">
+        <!-- Tab 1: Challenge Verification Queue -->
+        <div class="tab-pane fade show active" id="verifyTabContent" role="tabpanel">
+            <div class="card border shadow-sm">
+                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold text-dark mb-0">Submissions Requiring Official Verification</h5>
+                    <span class="badge bg-warning text-dark">Pending Evaluation</span>
+                </div>
+                <div class="card-body p-4">
+                    {% if pending_challenges %}
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Title & Submitter</th>
+                                        <th>Category</th>
+                                        <th>Location</th>
+                                        <th>Date</th>
+                                        <th>Priority</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for ch in pending_challenges %}
+                                    <tr>
+                                        <td>
+                                            <span class="badge bg-light text-dark border font-monospace">{{ ch.code }}</span>
+                                        </td>
+                                        <td>
+                                            <a href="{{ url_for('challenge_detail', challenge_id=ch.id) }}" class="fw-bold text-dark text-decoration-none hover-primary">
+                                                {{ ch.title }}
+                                            </a>
+                                            <div class="text-muted small">Submitted by: {{ ch.creator.full_name if ch.creator else 'Grassroots Citizen' }} ({{ ch.creator.user_type if ch.creator else ch.submitter_type }})</div>
+                                        </td>
+                                        <td><span class="badge-category">{{ ch.category }}</span></td>
+                                        <td class="small text-secondary">{{ ch.location }}</td>
+                                        <td class="small text-muted">{{ ch.created_date.strftime('%d %b %Y') }}</td>
+                                        <td>
+                                            <span class="badge badge-severity-{{ ch.severity.lower() }}">{{ ch.severity }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-warning text-dark">{{ ch.status }}</span>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex gap-1">
+                                                <form method="POST" action="{{ url_for('approve_challenge', challenge_id=ch.id) }}">
+                                                    <button type="submit" class="btn btn-sm btn-success fw-bold" title="Approve Challenge">
+                                                        <i class="fas fa-check me-1"></i> Approve
+                                                    </button>
+                                                </form>
+                                                <form method="POST" action="{{ url_for('request_info_challenge', challenge_id=ch.id) }}">
+                                                    <button type="submit" class="btn btn-sm btn-outline-info" title="Request More Info">
+                                                        <i class="fas fa-question-circle"></i>
+                                                    </button>
+                                                </form>
+                                                <form method="POST" action="{{ url_for('reject_challenge', challenge_id=ch.id) }}">
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Reject Submission">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4 text-muted">
+                            <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                            <h5 class="fw-bold text-dark">Verification Queue Cleared</h5>
+                            <p class="small">All submitted societal challenges have been verified and made available to academic researchers and industry.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Solution Proposals Review & Multi-Partner Project Creation -->
+        <div class="tab-pane fade" id="solutionsTabContent" role="tabpanel">
+            <div class="card border shadow-sm">
+                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold text-dark mb-0">Solution Proposals & Multi-Organization Selection</h5>
+                    <span class="badge bg-primary">{{ all_solutions|length }} Proposals Registered</span>
+                </div>
+                <div class="card-body p-4">
+                    {% if all_solutions %}
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Solution ID</th>
+                                        <th>Target Challenge</th>
+                                        <th>Organization / Submitter</th>
+                                        <th>Solution Title</th>
+                                        <th>Est. Cost</th>
+                                        <th>Stage</th>
+                                        <th class="text-end">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for s in all_solutions %}
+                                    <tr>
+                                        <td>
+                                            <span class="badge bg-light text-dark border font-monospace">{{ s.code }}</span>
+                                        </td>
+                                        <td>
+                                            <a href="{{ url_for('challenge_detail', challenge_id=s.challenge.id) }}" class="text-decoration-none fw-semibold">
+                                                {{ s.challenge.code }}
+                                            </a>
+                                            <div class="text-muted small text-truncate" style="max-width: 160px;">{{ s.challenge.title }}</div>
+                                        </td>
+                                        <td>
+                                            <div class="fw-bold text-dark">{{ s.author.full_name if s.author else 'Lead Innovator' }}</div>
+                                            <div class="text-muted small">{{ s.author.organization if s.author else 'Independent' }} ({{ s.author.user_type if s.author else 'Expert' }})</div>
+                                        </td>
+                                        <td>
+                                            <a href="{{ url_for('solution_detail', solution_id=s.id) }}" class="fw-bold text-dark text-decoration-none hover-primary">
+                                                {{ s.title }}
+                                            </a>
+                                            <div class="text-muted small text-truncate" style="max-width: 200px;">{{ s.technology_stack }}</div>
+                                        </td>
+                                        <td class="font-monospace small">{{ s.estimated_cost }}</td>
+                                        <td>
+                                            <span class="badge bg-info text-dark">{{ s.status }}</span>
+                                        </td>
+                                        <td class="text-end">
+                                            <div class="d-flex justify-content-end gap-2">
+                                                <a href="{{ url_for('solution_detail', solution_id=s.id) }}" class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-eye me-1"></i> View
+                                                </a>
+                                                <form method="POST" action="{{ url_for('select_solution_for_project', solution_id=s.id) }}" onsubmit="return confirm('Launch Quadruple Helix Project Workspace connecting University + Industry + Local Administration for this solution?');">
+                                                    <button type="submit" class="btn btn-sm btn-accent fw-bold shadow-sm">
+                                                        <i class="fas fa-cubes me-1"></i> Select for Implementation
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4 text-muted">
+                            <i class="fas fa-lightbulb fa-3x text-warning mb-3"></i>
+                            <h5 class="fw-bold text-dark">No Solution Proposals Yet</h5>
+                            <p class="small">Approved challenges on the marketplace will receive technical proposals from universities and industries.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 2: All Challenges -->
+        <div class="tab-pane fade" id="challengesTabContent" role="tabpanel">
+            <div class="card border shadow-sm">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h5 class="fw-bold text-dark mb-0">Master Registry of Societal Challenges</h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Title</th>
+                                    <th>Category</th>
+                                    <th>Status</th>
+                                    <th>Severity</th>
+                                    <th>Solutions</th>
+                                    <th>Link</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for ch in all_challenges %}
+                                <tr>
+                                    <td class="text-muted">#{{ ch.id }}</td>
+                                    <td class="fw-bold text-dark">{{ ch.title[:50] }}...</td>
+                                    <td><span class="badge-category">{{ ch.category }}</span></td>
+                                    <td><span class="badge bg-secondary-subtle text-secondary">{{ ch.status }}</span></td>
+                                    <td><span class="badge badge-severity-{{ ch.severity.lower() }}">{{ ch.severity }}</span></td>
+                                    <td><span class="badge bg-primary rounded-pill">{{ ch.solutions|length }}</span></td>
+                                    <td>
+                                        <a href="{{ url_for('challenge_detail', challenge_id=ch.id) }}" class="btn btn-sm btn-outline-primary">
+                                            View
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 3: Manage Users -->
+        <div class="tab-pane fade" id="usersTabContent" role="tabpanel">
+            <div class="card border shadow-sm">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h5 class="fw-bold text-dark mb-0">User Directory & Role Assignments</h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>User</th>
+                                    <th>Role / Type</th>
+                                    <th>Organization</th>
+                                    <th>Location</th>
+                                    <th>Score</th>
+                                    <th>Registered</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for u in users %}
+                                <tr>
+                                    <td>
+                                        <div class="fw-bold text-dark">{{ u.full_name }}</div>
+                                        <div class="small text-muted">{{ u.email }}</div>
+                                    </td>
+                                    <td><span class="badge bg-primary-subtle text-primary border">{{ u.user_type }}</span></td>
+                                    <td class="text-secondary small">{{ u.organization }}</td>
+                                    <td class="text-muted small">{{ u.location }}</td>
+                                    <td><span class="badge bg-warning text-dark">{{ u.contribution_score }} pts</span></td>
+                                    <td class="text-muted small">{{ u.created_at.strftime('%d %b %Y') }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 4: Projects & Workspaces -->
+        <div class="tab-pane fade" id="projectsTabContent" role="tabpanel">
+            <div class="card border shadow-sm">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h5 class="fw-bold text-dark mb-0">Collaborative Workspaces in Execution</h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Project Workspace</th>
+                                    <th>University</th>
+                                    <th>Industry Sponsor</th>
+                                    <th>Status</th>
+                                    <th>Progress</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for pr in all_projects %}
+                                <tr>
+                                    <td>
+                                        <div class="fw-bold text-dark">{{ pr.title }}</div>
+                                        <div class="text-muted small">Lead: {{ pr.lead_user.full_name }}</div>
+                                    </td>
+                                    <td class="small text-secondary">{{ pr.university_partner }}</td>
+                                    <td class="small text-secondary">{{ pr.industry_partner }}</td>
+                                    <td><span class="badge bg-success-subtle text-success border">{{ pr.status }}</span></td>
+                                    <td style="width: 150px;">
+                                        <div class="small fw-bold text-muted mb-1">{{ pr.progress_pct }}%</div>
+                                        <div class="progress" style="height: 6px;">
+                                            <div class="progress-bar bg-success" style="width: {{ pr.progress_pct }}%"></div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('project_detail', project_id=pr.id) }}" class="btn btn-sm btn-outline-primary">
+                                            Open Workspace
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

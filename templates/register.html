@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+
+{% block title %}Register - SamadhanSetu National Portal{% endblock %}
+
+{% block content %}
+<div class="auth-split-wrapper py-5">
+    <div class="container">
+        <div class="auth-card mx-auto" style="max-width: 980px;">
+            <div class="row g-0">
+                <!-- Left Banner -->
+                <div class="col-lg-4 auth-left-banner d-none d-lg-flex">
+                    <div>
+                        <div class="d-flex align-items-center gap-2 mb-4">
+                            <span class="d-inline-flex align-items-center justify-content-center bg-white text-primary rounded-circle shadow" style="width: 40px; height: 40px;">
+                                <i class="fas fa-hands-helping fa-lg text-primary"></i>
+                            </span>
+                            <h5 class="text-white fw-bold mb-0">SamadhanSetu</h5>
+                        </div>
+
+                        <h3 class="fw-bold text-white mb-3">Join the National Innovation Grid</h3>
+                        <p class="text-light opacity-80 small">
+                            Connect your institution, research team, or corporate R&D arm to thousands of verified societal challenges across India.
+                        </p>
+
+                        <div class="mt-4">
+                            <div class="d-flex align-items-center gap-2 text-light small mb-2">
+                                <i class="fas fa-check-circle text-warning"></i>
+                                <span>University-Industry Collaboration</span>
+                            </div>
+                            <div class="d-flex align-items-center gap-2 text-light small mb-2">
+                                <i class="fas fa-check-circle text-warning"></i>
+                                <span>Project Workspaces with Milestones</span>
+                            </div>
+                            <div class="d-flex align-items-center gap-2 text-light small mb-2">
+                                <i class="fas fa-check-circle text-warning"></i>
+                                <span>SIH Direct Recognition & Mentorship</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="text-muted small mt-auto text-light opacity-75">
+                        Protected by Government Security Standards
+                    </div>
+                </div>
+
+                <!-- Registration Form -->
+                <div class="col-lg-8 auth-right-form p-4 p-md-5">
+                    <div class="mb-4">
+                        <h3 class="fw-extrabold text-dark mb-1">Create Your Account</h3>
+                        <p class="text-muted small">Register to participate in societal problem solving, propose solutions, or mentor student squads.</p>
+                    </div>
+
+                    <form method="POST" action="{{ url_for('register') }}">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-dark">Full Name *</label>
+                                <div class="auth-input-group">
+                                    <i class="fas fa-user input-icon"></i>
+                                    <input type="text" name="full_name" class="form-control" placeholder="e.g. Rohit Sharma" value="{{ full_name or '' }}" required>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-dark">Email Address *</label>
+                                <div class="auth-input-group">
+                                    <i class="fas fa-envelope input-icon"></i>
+                                    <input type="email" name="email" class="form-control" placeholder="name@institution.ac.in" value="{{ email or '' }}" required>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-dark">Phone Number</label>
+                                <div class="auth-input-group">
+                                    <i class="fas fa-phone input-icon"></i>
+                                    <input type="text" name="phone" class="form-control" placeholder="+91 98765 43210" value="{{ phone or '' }}">
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-dark">User Type / Role *</label>
+                                <div class="auth-input-group">
+                                    <i class="fas fa-id-badge input-icon"></i>
+                                    <select name="user_type" class="form-select" required>
+                                        {% for ut in all_user_types %}
+                                            <option value="{{ ut }}" {% if user_type == ut %}selected{% elif ut == 'Student' and not user_type %}selected{% endif %}>{{ ut }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-dark">Organization / University / Institute *</label>
+                                <div class="auth-input-group">
+                                    <i class="fas fa-building input-icon"></i>
+                                    <input type="text" name="organization" class="form-control" placeholder="e.g. IIT Bombay / Tata Motors" value="{{ organization or '' }}" required>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-dark">Location / City & State</label>
+                                <div class="auth-input-group">
+                                    <i class="fas fa-map-marker-alt input-icon"></i>
+                                    <input type="text" name="location" class="form-control" placeholder="e.g. Pune, Maharashtra" value="{{ location or '' }}">
+                                </div>
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label small fw-bold text-dark">Skills / Domain Expertise (Comma Separated)</label>
+                                <div class="auth-input-group">
+                                    <i class="fas fa-tools input-icon"></i>
+                                    <input type="text" name="skills" class="form-control" placeholder="e.g. Python, AI, IoT, Clean Water, Embedded Systems, Solar Energy" value="{{ skills or '' }}">
+                                </div>
+                                <div class="form-text small">Used by our rule-based matching engine to recommend relevant challenges and research partners.</div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-dark">Password *</label>
+                                <div class="auth-input-group">
+                                    <i class="fas fa-lock input-icon"></i>
+                                    <input type="password" name="password" id="reg_pass" class="form-control" placeholder="Minimum 6 characters" required>
+                                    <button type="button" class="password-toggle-btn" data-target="reg_pass">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-dark">Confirm Password *</label>
+                                <div class="auth-input-group">
+                                    <i class="fas fa-lock input-icon"></i>
+                                    <input type="password" name="confirm_password" id="reg_confirm" class="form-control" placeholder="Re-enter password" required>
+                                    <button type="button" class="password-toggle-btn" data-target="reg_confirm">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-check mt-3 mb-4">
+                            <input class="form-check-input" type="checkbox" id="terms" required checked>
+                            <label class="form-check-label small text-muted" for="terms">
+                                I agree to the <a href="#" class="text-primary text-decoration-none">SamadhanSetu Guidelines</a> and confirm my institutional affiliation.
+                            </label>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary-gov w-100 py-2 fw-bold text-uppercase shadow-sm">
+                            <i class="fas fa-user-plus me-2"></i> Register Account
+                        </button>
+
+                        <div class="text-center mt-3">
+                            <span class="text-muted small">Already have an account?</span>
+                            <a href="{{ url_for('login') }}" class="fw-bold text-primary text-decoration-none ms-1">Sign In Here</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

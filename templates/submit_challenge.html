@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+
+{% block title %}Submit Societal Challenge - Jharkhand Innovation Portal{% endblock %}
+
+{% block content %}
+<div class="bg-primary text-white py-4 mb-4" style="background: linear-gradient(135deg, #0b2545 0%, #134074 100%);">
+    <div class="container">
+        <div class="d-flex align-items-center gap-2 mb-2">
+            <span class="badge bg-warning text-dark text-uppercase px-2 py-1 fw-bold">NEP 2020 Innovation Registry</span>
+            <span class="badge bg-light text-dark border">24 Districts of Jharkhand</span>
+        </div>
+        <h2 class="fw-bold mb-1">Submit Grassroots Societal Challenge</h2>
+        <p class="text-light opacity-90 small mb-0">
+            Submit grassroots problems from communities across Jharkhand for AI domain classification, university allocation, and industry co-sponsorship.
+        </p>
+    </div>
+</div>
+
+<div class="container mb-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card border shadow-sm rounded-3">
+                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold text-dark mb-0">
+                        <i class="fas fa-file-alt text-primary me-2"></i> Problem Statement Specification
+                    </h5>
+                    <span class="badge bg-primary-subtle text-primary border">Smart India Hackathon 2026</span>
+                </div>
+
+                <div class="card-body p-4">
+                    <form method="POST" action="{{ url_for('submit_challenge') }}">
+                        <!-- Section 1: Submitter & Geographic Details -->
+                        <div class="bg-light p-3 rounded-3 border mb-4">
+                            <h6 class="fw-bold text-primary mb-3">
+                                <i class="fas fa-map-marker-alt me-1"></i> 1. Origin & Submitter Information
+                            </h6>
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-bold text-dark">Submitting Entity *</label>
+                                    <select name="submitter_type" class="form-select" required>
+                                        {% for st in submitter_types or ["Citizen / Resident", "Gram Panchayat / Local Body", "Community Org / SHG", "Government Agency"] %}
+                                            <option value="{{ st }}">{{ st }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-bold text-dark">Jharkhand District *</label>
+                                    <select name="district" id="districtSelect" class="form-select" onchange="syncLocationField()" required>
+                                        {% for d in districts or ["Ranchi", "East Singhbhum (Jamshedpur)", "Dhanbad", "Bokaro", "Deoghar", "Dumka", "Hazaribagh", "West Singhbhum (Chaibasa)", "Ramgarh", "Giridih", "Palamu", "Gumla", "Khunti", "Simdega", "Lohardaga", "Latehar", "Garhwa", "Chatra", "Koderma", "Jamtara", "Godda", "Sahibganj", "Pakur", "Saraikela Kharsawan"] %}
+                                            <option value="{{ d }}">{{ d }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-bold text-dark">Block / Panchayat / Ward</label>
+                                    <input type="text" name="block" id="blockInput" class="form-control" placeholder="e.g. Baghmara / Bero / Kanke" oninput="syncLocationField()">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold text-dark">Location / Jurisdiction Display *</label>
+                                    <input type="text" name="location" id="locationInput" class="form-control" value="Ranchi, Jharkhand" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold text-dark">Responsible Local Body / Nodal Agency *</label>
+                                    <input type="text" name="organization" class="form-control" placeholder="e.g. DWSD Dhanbad / Ranchi Municipal Corp" value="Jharkhand State Nodal Body" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 2: Problem Definition & Real-Time AI Domain Classifier -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-12">
+                                <label class="form-label small fw-bold text-dark">Problem Title *</label>
+                                <input type="text" name="title" id="titleInput" class="form-control" placeholder="e.g. Abandoned Mine Pit Water Purification & Fluoride Remediation for Tribal Hamlets" required oninput="triggerAIClassification()">
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label small fw-bold text-dark">Detailed Description & Root Cause *</label>
+                                <textarea name="description" id="descriptionInput" class="form-control" rows="4" placeholder="Describe the ground reality, affected population, previous shortcomings, and consequences..." required oninput="triggerAIClassification()"></textarea>
+                            </div>
+
+                            <!-- Live AI Thematic Domain Auto-Classifier Banner -->
+                            <div class="col-12">
+                                <div class="p-3 rounded-3 border bg-light d-flex align-items-center justify-content-between flex-wrap gap-2" id="aiClassifierBox">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="kpi-icon-box bg-primary bg-opacity-10 text-primary rounded-circle" style="width: 42px; height: 42px;">
+                                            <i class="fas fa-brain"></i>
+                                        </div>
+                                        <div>
+                                            <div class="small fw-bold text-dark">AI Thematic Domain Auto-Classification</div>
+                                            <div class="small text-muted" id="aiClassificationText">Type title & description above to auto-detect domain and confidence...</div>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2" id="aiClassificationBadgeArea">
+                                        <span class="badge bg-secondary" id="aiDomainBadge">Auto-Detecting</span>
+                                        <span class="badge bg-info text-dark" id="aiConfidenceBadge">0% Match</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-dark">Thematic Domain / Category *</label>
+                                <select name="category" id="categorySelect" class="form-select" required>
+                                    {% for cat in categories or ["Water Resources", "Agriculture", "Healthcare", "Rural Livelihoods", "Environment", "Energy", "Education", "Urban Development", "Accessibility", "Public Administration", "Smart Cities", "Other"] %}
+                                        <option value="{{ cat }}">{{ cat }}</option>
+                                    {% endfor %}
+                                </select>
+                                <div class="form-text small">Selected automatically by AI or choose manually.</div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-dark">Government / Nodal Department *</label>
+                                <select name="department" class="form-select" required>
+                                    {% for dept in departments or ["Drinking Water and Sanitation Department (DWSD Jharkhand)", "Department of Agriculture, Animal Husbandry & Co-operative", "Department of Health, Medical Education & Family Welfare", "Department of Rural Development & Panchayati Raj", "Jharkhand State Pollution Control Board (JSPCB)", "Jharkhand Renewable Energy Development Agency (JREDA)", "Department of Higher & Technical Education", "Urban Development and Housing Department (UDHD Jharkhand)"] %}
+                                        <option value="{{ dept }}">{{ dept }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label small fw-bold text-dark">Priority / Severity *</label>
+                                <select name="priority" class="form-select" required>
+                                    <option value="Critical">Critical (Immediate Hazard)</option>
+                                    <option value="High" selected>High (Significant Impact)</option>
+                                    <option value="Medium">Medium (Moderate Severity)</option>
+                                    <option value="Low">Low (Long-Term Improvement)</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label small fw-bold text-dark">Workflow Status *</label>
+                                <select name="status" class="form-select" required>
+                                    <option value="Open" selected>Open (Awaiting HEI Allocation)</option>
+                                    <option value="Under Review">Under Review</option>
+                                    <option value="In Progress">In Progress (Active Project)</option>
+                                    <option value="Pilot">Pilot Deployment</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label small fw-bold text-dark">Target Resolution Deadline</label>
+                                <input type="date" name="deadline" class="form-control">
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label small fw-bold text-dark">Required Engineering Skills & Disciplines</label>
+                                <input type="text" name="required_skills" class="form-control" placeholder="e.g. IoT, LoRaWAN, Water Membrane Filtration, Telemedicine, AgriTech, Solar Microgrids">
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label small fw-bold text-dark">Expected Measurable Outcome</label>
+                                <textarea name="expected_outcome" class="form-control" rows="2" placeholder="e.g. 50,000 Litres/day potable drinking water purified meeting WHO standards, serving 6,000 tribal households."></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Section 3: Evidence & Attachments -->
+                        <div class="bg-light p-3 rounded-3 border mb-4">
+                            <h6 class="fw-bold text-primary mb-3">
+                                <i class="fas fa-paperclip me-1"></i> 3. Photographs, Videos & Supporting Documentation
+                            </h6>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold text-dark">Photographs / Video Evidence Link</label>
+                                    <input type="text" name="media_url" class="form-control" placeholder="e.g. https://storage.jharkhand.gov.in/evidence/water-dhanbad.jpg">
+                                    <div class="form-text small">Field photograph or inspection recording URL.</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold text-dark">Field Survey / Lab Test Document Link</label>
+                                    <input type="text" name="document_url" class="form-control" placeholder="e.g. https://storage.jharkhand.gov.in/docs/fluoride-report-baghmara.pdf">
+                                    <div class="form-text small">Panchayat resolution, water test report, or survey PDF.</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                            <a href="{{ url_for('challenges') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-1"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary-gov px-4 fw-bold">
+                                <i class="fas fa-check-circle me-1"></i> Submit & Route to University Grid
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function syncLocationField() {
+    const district = document.getElementById('districtSelect').value;
+    const block = document.getElementById('blockInput').value.trim();
+    const locInput = document.getElementById('locationInput');
+    if (block) {
+        locInput.value = `${block}, ${district}, Jharkhand`;
+    } else {
+        locInput.value = `${district}, Jharkhand`;
+    }
+}
+
+let debounceTimer = null;
+function triggerAIClassification() {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+        const title = document.getElementById('titleInput').value.trim();
+        const description = document.getElementById('descriptionInput').value.trim();
+        if (!title && !description) return;
+
+        fetch('/api/classify-domain', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title: title, description: description })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data && data.domain) {
+                const domainBadge = document.getElementById('aiDomainBadge');
+                const confBadge = document.getElementById('aiConfidenceBadge');
+                const descText = document.getElementById('aiClassificationText');
+                const catSelect = document.getElementById('categorySelect');
+
+                domainBadge.className = 'badge bg-success';
+                domainBadge.innerText = data.domain;
+
+                confBadge.className = 'badge bg-primary';
+                confBadge.innerText = `${data.confidence}% AI Confidence`;
+
+                let kwText = data.matched_keywords && data.matched_keywords.length > 0 ? ` (Keywords: ${data.matched_keywords.join(', ')})` : '';
+                descText.innerText = `Classified as ${data.domain} with ${data.confidence}% confidence${kwText}.`;
+
+                // Set select dropdown if it matches
+                for (let i = 0; i < catSelect.options.length; i++) {
+                    if (catSelect.options[i].value === data.domain) {
+                        catSelect.selectedIndex = i;
+                        break;
+                    }
+                }
+            }
+        })
+        .catch(err => console.log('AI classify error:', err));
+    }, 450);
+}
+</script>
+{% endblock %}

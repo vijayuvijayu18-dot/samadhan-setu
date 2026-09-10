@@ -1,0 +1,386 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - SamadhanSetu{% endblock %}
+
+{% block content %}
+<div class="app-container">
+    <!-- Left Navigation Sidebar -->
+    <aside class="app-sidebar shadow-sm">
+        <div class="d-flex align-items-center gap-3 p-2 mb-3 bg-light rounded border">
+            <div class="kpi-icon-box bg-primary text-white rounded-circle shadow-sm" style="width: 40px; height: 40px; font-size: 1.1rem;">
+                <i class="fas fa-shield-alt"></i>
+            </div>
+            <div class="text-truncate">
+                <div class="fw-bold text-dark small text-truncate">Administrator</div>
+                <span class="badge bg-danger text-white fw-bold" style="font-size: 0.68rem; letter-spacing: 0.5px;">ADMINISTRATOR</span>
+            </div>
+        </div>
+
+        <div class="sidebar-heading">Navigation</div>
+        <a href="{{ url_for('dashboard') }}" class="sidebar-nav-item active">
+            <i class="fas fa-tachometer-alt"></i> Dashboard
+        </a>
+        <a href="{{ url_for('challenges') }}" class="sidebar-nav-item">
+            <i class="fas fa-bullhorn"></i> Challenges
+        </a>
+        <a href="{{ url_for('solutions') }}" class="sidebar-nav-item">
+            <i class="fas fa-lightbulb"></i> Solutions
+        </a>
+        <a href="{{ url_for('projects') }}" class="sidebar-nav-item">
+            <i class="fas fa-cubes"></i> Projects
+        </a>
+        <a href="{{ url_for('organizations') }}" class="sidebar-nav-item">
+            <i class="fas fa-university"></i> Organizations
+        </a>
+        <a href="{{ url_for('impact') }}" class="sidebar-nav-item">
+            <i class="fas fa-chart-line"></i> Impact
+        </a>
+
+        <div class="sidebar-heading">Administration</div>
+        <a href="{{ url_for('profile') }}" class="sidebar-nav-item">
+            <i class="fas fa-user-shield"></i> Admin Profile
+        </a>
+        <a href="{{ url_for('logout') }}" class="sidebar-nav-item text-danger mt-auto">
+            <i class="fas fa-sign-out-alt"></i> Logout
+        </a>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="app-main">
+        <!-- Dashboard Top Header Bar -->
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 pb-3 border-bottom gap-3">
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    <h3 class="fw-bold text-dark mb-0">Admin Dashboard</h3>
+                    <span class="badge bg-danger text-white px-2 py-1 fw-bold">ADMINISTRATOR</span>
+                </div>
+                <div class="text-muted small">
+                    <span><i class="fas fa-envelope me-1"></i> admin@samadhansetu.com</span> &bull; 
+                    <span><i class="fas fa-building me-1"></i> National Innovation Cell</span> &bull; 
+                    <span class="text-success fw-semibold"><i class="fas fa-check-circle me-1"></i> Controlled Database Active</span>
+                </div>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{{ url_for('submit_challenge') }}" class="btn btn-accent btn-sm shadow-sm">
+                    <i class="fas fa-plus-circle me-1"></i> Add Challenge
+                </a>
+                <a href="{{ url_for('challenges') }}" class="btn btn-primary-gov btn-sm shadow-sm">
+                    <i class="fas fa-list me-1"></i> Manage Challenges
+                </a>
+            </div>
+        </div>
+
+        <!-- 6 KPI Stat Cards -->
+        <div class="row g-3 mb-4">
+            <div class="col-sm-6 col-xl-4 col-xxl-2">
+                <div class="kpi-card h-100">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="kpi-label">Total Challenges</div>
+                        <div class="kpi-icon-box bg-primary bg-opacity-10 text-primary">
+                            <i class="fas fa-bullhorn"></i>
+                        </div>
+                    </div>
+                    <div class="kpi-val text-primary">{{ total_challenges }}</div>
+                    <div class="text-muted small mt-1">Controlled database</div>
+                </div>
+            </div>
+
+            <div class="col-sm-6 col-xl-4 col-xxl-2">
+                <div class="kpi-card h-100">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="kpi-label">Active Projects</div>
+                        <div class="kpi-icon-box bg-success bg-opacity-10 text-success">
+                            <i class="fas fa-tasks"></i>
+                        </div>
+                    </div>
+                    <div class="kpi-val text-success">{{ active_projects }}</div>
+                    <div class="text-muted small mt-1">Active workspaces</div>
+                </div>
+            </div>
+
+            <div class="col-sm-6 col-xl-4 col-xxl-2">
+                <div class="kpi-card h-100">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="kpi-label">Solutions</div>
+                        <div class="kpi-icon-box bg-warning bg-opacity-10 text-warning">
+                            <i class="fas fa-lightbulb"></i>
+                        </div>
+                    </div>
+                    <div class="kpi-val text-warning">{{ solutions_submitted }}</div>
+                    <div class="text-muted small mt-1">Proposals submitted</div>
+                </div>
+            </div>
+
+            <div class="col-sm-6 col-xl-4 col-xxl-2">
+                <div class="kpi-card h-100">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="kpi-label">University Partners</div>
+                        <div class="kpi-icon-box bg-info bg-opacity-10 text-info">
+                            <i class="fas fa-university"></i>
+                        </div>
+                    </div>
+                    <div class="kpi-val text-info">{{ university_partners }}</div>
+                    <div class="text-muted small mt-1">IITs, NITs, Central Labs</div>
+                </div>
+            </div>
+
+            <div class="col-sm-6 col-xl-4 col-xxl-2">
+                <div class="kpi-card h-100">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="kpi-label">Industry Partners</div>
+                        <div class="kpi-icon-box bg-secondary bg-opacity-10 text-secondary">
+                            <i class="fas fa-industry"></i>
+                        </div>
+                    </div>
+                    <div class="kpi-val text-secondary">{{ industry_partners }}</div>
+                    <div class="text-muted small mt-1">Corporate R&D & CSR</div>
+                </div>
+            </div>
+
+            <div class="col-sm-6 col-xl-4 col-xxl-2">
+                <div class="kpi-card h-100">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="kpi-label">People Impacted</div>
+                        <div class="kpi-icon-box bg-danger bg-opacity-10 text-danger">
+                            <i class="fas fa-heart"></i>
+                        </div>
+                    </div>
+                    <div class="kpi-val text-danger">2.45M+</div>
+                    <div class="text-muted small mt-1">Ground verified</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="row g-4 mb-4">
+            <div class="col-lg-7">
+                <div class="card border shadow-sm h-100">
+                    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-bottom">
+                        <h6 class="fw-bold text-dark mb-0"><i class="fas fa-chart-pie text-primary me-2"></i> Challenges by Sector</h6>
+                        <span class="badge bg-light text-dark border">Stable Database</span>
+                    </div>
+                    <div class="card-body p-3">
+                        <canvas id="categoryChart" style="max-height: 280px;"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-5">
+                <div class="card border shadow-sm h-100">
+                    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-bottom">
+                        <h6 class="fw-bold text-dark mb-0"><i class="fas fa-project-diagram text-success me-2"></i> Project Execution Pipeline</h6>
+                        <span class="badge bg-success-subtle text-success">Active Pilots</span>
+                    </div>
+                    <div class="card-body p-3">
+                        <canvas id="pipelineChart" style="max-height: 280px;"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Jharkhand Government Department Executive Analytics -->
+        <div class="card border shadow-sm mb-4">
+            <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div>
+                    <span class="badge bg-warning text-dark text-uppercase px-2 py-1 fw-bold">Executive Governance Console</span>
+                    <h5 class="fw-bold text-dark mb-0 mt-1">
+                        <i class="fas fa-landmark text-primary me-2"></i> Jharkhand Departmental & District Analytics (NEP 2020)
+                    </h5>
+                    <small class="text-muted">Monitoring challenges received, domain distribution, institutional routing, and social outcomes across Jharkhand</small>
+                </div>
+                <div class="d-flex gap-2">
+                    <span class="badge bg-light text-dark border p-2"><i class="fas fa-map-marked-alt text-danger me-1"></i> 24 Districts Monitored</span>
+                    <span class="badge bg-light text-dark border p-2"><i class="fas fa-university text-info me-1"></i> 6 Premier HEIs Routed</span>
+                </div>
+            </div>
+            <div class="card-body p-4">
+                <div class="row g-4">
+                    <!-- District Breakdown Table -->
+                    <div class="col-lg-6">
+                        <h6 class="fw-bold text-dark mb-3"><i class="fas fa-map-pin text-danger me-2"></i> District-Wise Challenge Distribution</h6>
+                        <div class="table-responsive border rounded">
+                            <table class="table table-hover table-sm align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Jharkhand District</th>
+                                        <th class="text-center">Active Problems</th>
+                                        <th>Status</th>
+                                        <th class="text-end">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for dist, count in district_counts.items() %}
+                                    <tr>
+                                        <td class="fw-semibold text-dark">{{ dist }}</td>
+                                        <td class="text-center"><span class="badge bg-primary rounded-pill">{{ count }}</span></td>
+                                        <td><span class="badge bg-success-subtle text-success border">HEI Routed</span></td>
+                                        <td class="text-end">
+                                            <a href="{{ url_for('challenges', location=dist) }}" class="btn btn-xs btn-outline-primary py-0 px-2 small" style="font-size: 0.75rem;">
+                                                Filter
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% else %}
+                                    <tr>
+                                        <td colspan="4" class="text-center py-2 text-muted small">No district-specific challenges logged yet.</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Thematic Domains & Institutional Allocation Status -->
+                    <div class="col-lg-6">
+                        <h6 class="fw-bold text-dark mb-3"><i class="fas fa-sitemap text-primary me-2"></i> Thematic Domain Distribution & Routing</h6>
+                        <div class="row g-2">
+                            {% for cat, cnt in category_counts.items() %}
+                            <div class="col-sm-6">
+                                <div class="p-2 rounded border bg-light d-flex justify-content-between align-items-center">
+                                    <span class="small fw-semibold text-dark">{{ cat }}</span>
+                                    <span class="badge bg-secondary-subtle text-dark border">{{ cnt }} active</span>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="mt-3 p-3 rounded bg-primary bg-opacity-10 border border-primary border-opacity-25 small text-primary-emphasis">
+                            <i class="fas fa-graduation-cap me-1 fw-bold"></i>
+                            <strong>NEP 2020 Multi-Disciplinary Credit Framework:</strong> All validated problems are mapped for university experiential learning, multidisciplinary research, and faculty guided capstones.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Challenges & Projects -->
+        <div class="row g-4">
+            <div class="col-lg-7">
+                <div class="card border shadow-sm h-100">
+                    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-bottom">
+                        <h6 class="fw-bold text-dark mb-0"><i class="fas fa-bullhorn text-primary me-2"></i> Managed Societal Challenges</h6>
+                        <a href="{{ url_for('challenges') }}" class="btn btn-outline-primary btn-sm">View All Challenges</a>
+                    </div>
+                    <div class="card-body p-3">
+                        {% for ch in recent_challenges %}
+                        <div class="p-3 mb-3 rounded border bg-light">
+                            <div class="d-flex justify-content-between align-items-start mb-1">
+                                <div>
+                                    <span class="badge-category">{{ ch.category }}</span>
+                                    <span class="badge bg-secondary-subtle text-secondary ms-1">{{ ch.status }}</span>
+                                </div>
+                                <span class="badge badge-severity-{{ ch.priority.lower() }}">{{ ch.priority }} Priority</span>
+                            </div>
+                            <h6 class="fw-bold mt-2 mb-1">
+                                <a href="{{ url_for('challenge_detail', challenge_id=ch.id) }}" class="text-decoration-none text-dark">
+                                    {{ ch.title }}
+                                </a>
+                            </h6>
+                            <div class="text-muted small mb-2"><i class="fas fa-building me-1"></i> {{ ch.department }} &bull; <i class="fas fa-map-marker-alt me-1"></i> {{ ch.location }}</div>
+                            <div class="d-flex justify-content-between align-items-center pt-2 border-top">
+                                <span class="small text-muted">{{ ch.organization }}</span>
+                                <div class="d-flex gap-2">
+                                    <a href="{{ url_for('edit_challenge', challenge_id=ch.id) }}" class="btn btn-sm btn-outline-secondary py-1 px-2">
+                                        <i class="fas fa-edit"></i> Edit
+                                    </a>
+                                    <a href="{{ url_for('challenge_detail', challenge_id=ch.id) }}" class="btn btn-sm btn-primary-gov py-1 px-3">
+                                        View
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-5">
+                <div class="card border shadow-sm h-100">
+                    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-bottom">
+                        <h6 class="fw-bold text-dark mb-0"><i class="fas fa-cubes text-primary me-2"></i> Active Workspaces</h6>
+                        <a href="{{ url_for('projects') }}" class="btn btn-outline-secondary btn-sm">View All</a>
+                    </div>
+                    <div class="card-body p-3">
+                        {% for p in recent_projects %}
+                        <div class="p-3 mb-3 rounded border bg-white shadow-sm">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle">{{ p.status }}</span>
+                                <span class="fw-bold text-success small">{{ p.progress_pct }}% Complete</span>
+                            </div>
+                            <div class="progress mb-2" style="height: 6px;">
+                                <div class="progress-bar bg-success" role="progressbar" style="width: {{ p.progress_pct }}%"></div>
+                            </div>
+                            <h6 class="fw-bold mb-1">
+                                <a href="{{ url_for('project_detail', project_id=p.id) }}" class="text-decoration-none text-dark">
+                                    {{ p.title }}
+                                </a>
+                            </h6>
+                            <div class="small text-muted mb-2">
+                                <i class="fas fa-university text-info me-1"></i> {{ p.university_partner or 'IIT Bombay' }}<br>
+                                <i class="fas fa-industry text-warning me-1"></i> {{ p.industry_partner or 'Tata CleanTech' }}
+                            </div>
+                            <a href="{{ url_for('project_detail', project_id=p.id) }}" class="btn btn-sm btn-outline-primary w-100">
+                                Open Workspace <i class="fas fa-external-link-alt ms-1"></i>
+                            </a>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const catCtx = document.getElementById('categoryChart').getContext('2d');
+    const catLabels = {{ category_counts.keys()|list|tojson }};
+    const catData = {{ category_counts.values()|list|tojson }};
+
+    new Chart(catCtx, {
+        type: 'doughnut',
+        data: {
+            labels: catLabels,
+            datasets: [{
+                data: catData,
+                backgroundColor: [
+                    '#0b2545', '#134074', '#059669', '#d97706',
+                    '#dc2626', '#6366f1', '#0284c7', '#8b5cf6'
+                ],
+                borderWidth: 2,
+                borderColor: '#ffffff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'right', labels: { boxWidth: 12, font: { size: 11 } } }
+            }
+        }
+    });
+
+    const pipeCtx = document.getElementById('pipelineChart').getContext('2d');
+    new Chart(pipeCtx, {
+        type: 'bar',
+        data: {
+            labels: ['Research', 'Prototype', 'Testing', 'Pilot', 'Deployment'],
+            datasets: [{
+                label: 'Projects in Stage',
+                data: [12, 18, 9, 14, 6],
+                backgroundColor: '#134074',
+                borderRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: { y: { beginAtZero: true, ticks: { stepSize: 5 } } },
+            plugins: { legend: { display: false } }
+        }
+    });
+});
+</script>
+{% endblock %}

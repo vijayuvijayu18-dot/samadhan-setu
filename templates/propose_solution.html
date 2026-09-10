@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}Propose Solution - SamadhanSetu{% endblock %}
+
+{% block content %}
+<div class="bg-primary text-white py-4 mb-4" style="background: linear-gradient(135deg, #0b2545 0%, #134074 100%);">
+    <div class="container">
+        <span class="badge bg-warning text-dark text-uppercase px-2 py-1 mb-2 fw-bold">Collaborative Problem Solving</span>
+        <h2 class="fw-bold mb-1">Propose a Solution</h2>
+        <p class="text-light opacity-90 small mb-0">For Challenge: <strong>{{ challenge.title }}</strong></p>
+    </div>
+</div>
+
+<div class="container mb-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <!-- Problem Context Summary Card -->
+            <div class="card border-primary border-opacity-25 bg-light mb-4 p-3 rounded">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="kpi-icon-box bg-primary text-white rounded-circle">
+                        <i class="fas fa-bullhorn"></i>
+                    </div>
+                    <div>
+                        <div class="small fw-bold text-muted text-uppercase">Challenge Target</div>
+                        <h6 class="fw-bold text-dark mb-1">{{ challenge.title }}</h6>
+                        <span class="small text-muted"><i class="fas fa-map-marker-alt me-1"></i> {{ challenge.location }} &bull; Category: {{ challenge.category }} &bull; Expected: {{ challenge.expected_outcome[:120] }}...</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card border shadow-sm rounded-3">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h5 class="fw-bold text-dark mb-0"><i class="fas fa-drafting-compass text-primary me-2"></i> Solution Proposal Form</h5>
+                    <small class="text-muted">Enter concrete engineering and operational blueprints for academic review</small>
+                </div>
+
+                <div class="card-body p-4">
+                    <form method="POST" action="{{ url_for('propose_solution', challenge_id=challenge.id) }}">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label small fw-bold text-dark">Solution Title *</label>
+                                <input type="text" name="title" class="form-control" placeholder="e.g. CleanGrid: Edge-Vision Solar Fill Sensors with Dynamic Travelling Salesman Route Engine" required>
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label small fw-bold text-dark">Detailed Solution Description *</label>
+                                <textarea name="detailed_solution" class="form-control" rows="4" placeholder="Explain the exact technical architecture, operational methodology, and how this solves the ground challenge..." required></textarea>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-dark">Innovation & Novelty *</label>
+                                <textarea name="innovation_points" class="form-control" rows="3" placeholder="What makes this solution unique over prior existing methods? (e.g. 10x cheaper, zero battery replacement, offline ML)" required></textarea>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-dark">Technology Stack & Hardware / Software BOM *</label>
+                                <textarea name="technology_stack" class="form-control" rows="3" placeholder="e.g. ESP32-S3, Micro-LiDAR, MicroPython, MQTT, Python Flask, PostgreSQL" required></textarea>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-dark">Expected Measurable Impact *</label>
+                                <textarea name="expected_impact" class="form-control" rows="3" placeholder="Quantify impact (e.g. 35% fuel savings, 45,000 villagers screened, 50% non-revenue water loss reduced)" required></textarea>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-dark">Estimated Cost / Budget (INR) *</label>
+                                <input type="text" name="estimated_cost" class="form-control mb-2" placeholder="e.g. INR 2,400 per node; Total INR 12 Lakhs for pilot" required>
+                                <label class="form-label small fw-bold text-dark">Implementation Roadmap (Phases)</label>
+                                <textarea name="implementation_plan" class="form-control" rows="2" placeholder="Month 1: Lab prototype. Month 2: Ward testing. Month 3: Full pilot deployment."></textarea>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-dark">Scalability Model</label>
+                                <input type="text" name="scalability" class="form-control" placeholder="e.g. Can be adapted across tier-1 and tier-2 Smart Cities.">
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-dark">Sustainability & Financing Plan</label>
+                                <input type="text" name="sustainability" class="form-control" placeholder="e.g. Carbon credits / Municipal procurement / CSR funding.">
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label small fw-bold text-dark">Team Members & Participating Institutions</label>
+                                <input type="text" name="team_members_info" class="form-control" placeholder="e.g. Rohit Sharma (Student Lead), Dr. Meera Swaminathan (Faculty Guide), Rajesh Patel (Tata Mentor)">
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+                            <a href="{{ url_for('challenge_detail', challenge_id=challenge.id) }}" class="btn btn-outline-secondary px-4">Cancel</a>
+                            <button type="submit" class="btn btn-accent px-4 fw-bold">
+                                <i class="fas fa-lightbulb me-1"></i> Submit Solution Proposal
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

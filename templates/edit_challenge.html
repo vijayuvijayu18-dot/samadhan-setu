@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Challenge - SamadhanSetu{% endblock %}
+
+{% block content %}
+<div class="bg-primary text-white py-4 mb-4" style="background: linear-gradient(135deg, #0b2545 0%, #134074 100%);">
+    <div class="container">
+        <span class="badge bg-warning text-dark text-uppercase px-2 py-1 mb-2 fw-bold">Admin Database Management</span>
+        <h2 class="fw-bold mb-1">Edit Societal Challenge #{{ challenge.id }}</h2>
+        <p class="text-light opacity-90 small mb-0">Modify challenge specifications, department, priority, and operational deadlines.</p>
+    </div>
+</div>
+
+<div class="container mb-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card border shadow-sm rounded-3">
+                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold text-dark mb-0"><i class="fas fa-edit text-primary me-2"></i> Edit Challenge Record</h5>
+                    <span class="badge bg-light text-dark border">ID: #{{ challenge.id }}</span>
+                </div>
+
+                <div class="card-body p-4">
+                    <form method="POST" action="{{ url_for('edit_challenge', challenge_id=challenge.id) }}">
+                        <div class="row g-3 mb-4">
+                            <div class="col-12">
+                                <label class="form-label small fw-bold text-dark">Challenge Title *</label>
+                                <input type="text" name="title" class="form-control" value="{{ challenge.title }}" required>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label small fw-bold text-dark">Submitting Entity</label>
+                                <select name="submitter_type" class="form-select">
+                                    {% for st in submitter_types or ["Citizen / Resident", "Gram Panchayat / Local Body", "Community Org / SHG", "Government Agency"] %}
+                                        <option value="{{ st }}" {% if challenge.submitter_type == st %}selected{% endif %}>{{ st }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label small fw-bold text-dark">Jharkhand District</label>
+                                <select name="district" class="form-select">
+                                    {% for d in districts or ["Ranchi", "East Singhbhum (Jamshedpur)", "Dhanbad", "Bokaro", "Deoghar", "Dumka", "Hazaribagh", "West Singhbhum (Chaibasa)", "Ramgarh", "Giridih", "Palamu", "Gumla", "Khunti", "Simdega", "Lohardaga", "Latehar", "Garhwa", "Chatra", "Koderma", "Jamtara", "Godda", "Sahibganj", "Pakur", "Saraikela Kharsawan"] %}
+                                        <option value="{{ d }}" {% if challenge.district == d %}selected{% endif %}>{{ d }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label small fw-bold text-dark">Block / Ward</label>
+                                <input type="text" name="block" class="form-control" value="{{ challenge.block or '' }}">
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-dark">Category *</label>
+                                <select name="category" class="form-select" required>
+                                    {% for cat in all_categories %}
+                                        <option value="{{ cat }}" {% if challenge.category == cat %}selected{% endif %}>{{ cat }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-dark">Government / Public Department *</label>
+                                <select name="department" class="form-select" required>
+                                    {% for dept in all_departments %}
+                                        <option value="{{ dept }}" {% if challenge.department == dept %}selected{% endif %}>{{ dept }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-dark">Location / Jurisdiction *</label>
+                                <input type="text" name="location" class="form-control" value="{{ challenge.location }}" required>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-dark">Responsible Organization *</label>
+                                <input type="text" name="organization" class="form-control" value="{{ challenge.organization }}" required>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label small fw-bold text-dark">Priority Level *</label>
+                                <select name="priority" class="form-select" required>
+                                    {% for pri in all_priorities %}
+                                        <option value="{{ pri }}" {% if challenge.priority == pri %}selected{% endif %}>{{ pri }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label small fw-bold text-dark">Status *</label>
+                                <select name="status" class="form-select" required>
+                                    {% for st in all_statuses %}
+                                        <option value="{{ st }}" {% if challenge.status == st %}selected{% endif %}>{{ st }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label small fw-bold text-dark">Target Deadline</label>
+                                <input type="date" name="deadline" class="form-control" value="{{ challenge.deadline.strftime('%Y-%m-%d') if challenge.deadline else '' }}">
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label small fw-bold text-dark">Detailed Description *</label>
+                                <textarea name="description" class="form-control" rows="5" required>{{ challenge.description }}</textarea>
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label small fw-bold text-dark">Required Skills / Disciplines</label>
+                                <input type="text" name="required_skills" class="form-control" value="{{ challenge.required_skills or '' }}">
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-dark">Photographs / Video Evidence Link</label>
+                                <input type="text" name="media_url" class="form-control" value="{{ challenge.media_url or '' }}" placeholder="https://...">
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-dark">Field Survey / Report Document Link</label>
+                                <input type="text" name="document_url" class="form-control" value="{{ challenge.document_url or '' }}" placeholder="https://...">
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label small fw-bold text-dark">Expected Measurable Outcome</label>
+                                <textarea name="expected_outcome" class="form-control" rows="3">{{ challenge.expected_outcome or '' }}</textarea>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                            <a href="{{ url_for('challenge_detail', challenge_id=challenge.id) }}" class="btn btn-outline-secondary">
+                                Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary-gov px-4 fw-bold">
+                                <i class="fas fa-save me-1"></i> Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

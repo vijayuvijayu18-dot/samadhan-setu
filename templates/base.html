@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SamadhanSetu - National Societal Innovation & Industry-Academia Platform{% endblock %}</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Custom Enterprise CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+    <!-- National Tricolor Strip -->
+    <div class="gov-top-strip"></div>
+
+    <!-- Official Portal Identity Banner -->
+    <div class="gov-sub-header">
+        <div class="container d-flex justify-content-between align-items-center">
+            <div>
+                <span class="fw-bold"><i class="fas fa-landmark text-primary me-1"></i> Jharkhand Societal Innovation & Industry-Academia Platform</span>
+                <span class="text-muted d-none d-md-inline ms-2">| NEP 2020 & SIH Collaborative Problem Solving Framework</span>
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                <span class="badge bg-light text-dark border"><i class="fas fa-shield-alt text-success me-1"></i> Gov Secure SSL</span>
+                <span class="text-muted small d-none d-sm-inline">24x7 Helpdesk: 1800-345-2026</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('landing') }}">
+                <span class="d-inline-flex align-items-center justify-content-center bg-white text-primary rounded-circle shadow-sm" style="width: 36px; height: 36px;">
+                    <i class="fas fa-hands-helping fa-lg text-primary"></i>
+                </span>
+                <span>SamadhanSetu</span>
+                <span class="brand-badge">JHARKHAND • NEP 2020</span>
+            </a>
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent" aria-controls="navbarContent" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarContent">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-3">
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'landing' %}active{% endif %}" href="{{ url_for('landing') }}">
+                            <i class="fas fa-home me-1"></i> Home
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'challenges' %}active{% endif %}" href="{{ url_for('challenges') }}">
+                            <i class="fas fa-bullhorn me-1"></i> Challenges
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'solutions' %}active{% endif %}" href="{{ url_for('solutions') }}">
+                            <i class="fas fa-lightbulb me-1"></i> Solutions
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'projects' %}active{% endif %}" href="{{ url_for('projects') }}">
+                            <i class="fas fa-tasks me-1"></i> Projects
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'organizations' %}active{% endif %}" href="{{ url_for('organizations') }}">
+                            <i class="fas fa-university me-1"></i> Organizations
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'impact' %}active{% endif %}" href="{{ url_for('impact') }}">
+                            <i class="fas fa-chart-line me-1"></i> Impact
+                        </a>
+                    </li>
+                </ul>
+
+                <div class="d-flex align-items-center gap-2 mt-3 mt-lg-0">
+                    <a href="{{ url_for('submit_challenge') }}" class="btn btn-accent btn-sm d-flex align-items-center">
+                        <i class="fas fa-plus-circle me-1"></i> Submit Challenge
+                    </a>
+
+                    {% if current_user %}
+                        <!-- Notification Bell with Counter -->
+                        <div class="dropdown me-1">
+                            <a class="btn btn-outline-light btn-sm position-relative px-2" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false" title="Notifications">
+                                <i class="fas fa-bell"></i>
+                                {% if unread_count > 0 %}
+                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                    {{ unread_count }}
+                                    <span class="visually-hidden">unread messages</span>
+                                </span>
+                                {% endif %}
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end shadow border-0" style="width: 290px; max-height: 380px; overflow-y: auto;">
+                                <li class="dropdown-header d-flex justify-content-between align-items-center fw-bold text-dark">
+                                    <span>Notifications</span>
+                                    <a href="{{ url_for('notifications') }}" class="text-primary small text-decoration-none">View All</a>
+                                </li>
+                                <li><hr class="dropdown-divider my-1"></li>
+                                {% if current_user.notifications %}
+                                    {% for n in current_user.notifications[:4] %}
+                                    <li>
+                                        <a class="dropdown-item py-2 {% if not n.is_read %}bg-light fw-semibold{% endif %}" href="{{ url_for('read_notification', notif_id=n.id) }}">
+                                            <div class="small text-dark">{{ n.title }}</div>
+                                            <div class="text-muted small text-truncate" style="max-width: 260px;">{{ n.message }}</div>
+                                            <div class="text-muted" style="font-size: 0.7rem;">{{ n.created_at.strftime('%d %b %H:%M') }}</div>
+                                        </a>
+                                    </li>
+                                    {% endfor %}
+                                {% else %}
+                                    <li class="p-3 text-center text-muted small">No new notifications</li>
+                                {% endif %}
+                            </ul>
+                        </div>
+
+                        <!-- User Profile Dropdown -->
+                        <div class="dropdown">
+                            <a class="btn btn-light btn-sm dropdown-toggle fw-semibold d-flex align-items-center gap-2" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                {% if current_user.user_type == 'ADMINISTRATOR' %}
+                                    <span class="badge bg-danger text-white rounded-pill px-2 py-1">ADMINISTRATOR</span>
+                                    <span>Admin</span>
+                                {% else %}
+                                    <span class="badge bg-primary text-white rounded-pill px-2 py-1">{{ current_user.user_type }}</span>
+                                    <span>{{ current_user.full_name.split()[0] }}</span>
+                                {% endif %}
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+                                <li class="px-3 py-2 border-bottom">
+                                    <div class="fw-bold text-dark">{{ current_user.full_name }}</div>
+                                    <div class="small text-muted text-truncate" style="max-width: 180px;">{{ current_user.email }}</div>
+                                    {% if current_user.user_type == 'ADMINISTRATOR' %}
+                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle mt-1">ADMINISTRATOR</span>
+                                    {% else %}
+                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle mt-1">{{ current_user.user_type }}</span>
+                                    {% endif %}
+                                </li>
+                                {% if current_user.user_type == 'ADMINISTRATOR' %}
+                                    <li><a class="dropdown-item py-2" href="{{ url_for('dashboard') }}"><i class="fas fa-tachometer-alt text-primary me-2"></i> Operations Gateway</a></li>
+                                    <li><a class="dropdown-item py-2" href="{{ url_for('admin_panel') }}"><i class="fas fa-shield-alt text-danger me-2"></i> Verification Center</a></li>
+                                {% else %}
+                                    <li><a class="dropdown-item py-2" href="{{ url_for('user_dashboard') }}"><i class="fas fa-columns text-primary me-2"></i> User Dashboard</a></li>
+                                {% endif %}
+                                <li><a class="dropdown-item py-2" href="{{ url_for('challenges') }}"><i class="fas fa-bullhorn text-warning me-2"></i> Challenges</a></li>
+                                <li><a class="dropdown-item py-2" href="{{ url_for('profile') }}"><i class="fas fa-user-circle text-info me-2"></i> Profile</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item py-2 text-danger" href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt me-2"></i> Logout</a></li>
+                            </ul>
+                        </div>
+                    {% else %}
+                        <a href="{{ url_for('login') }}" class="btn btn-light btn-sm px-3 fw-bold text-primary">
+                            <i class="fas fa-sign-in-alt me-1"></i> Login
+                        </a>
+                        <a href="{{ url_for('register') }}" class="btn btn-outline-light btn-sm px-3 fw-bold">
+                            <i class="fas fa-user-plus me-1"></i> Register
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Global Alerts & Flash Toasts -->
+    <div class="container mt-3">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category if category != 'error' else 'danger' }} alert-dismissible fade show shadow-sm border" role="alert">
+                        <div class="d-flex align-items-center">
+                            {% if category == 'success' %}
+                                <i class="fas fa-check-circle fa-lg text-success me-2"></i>
+                            {% elif category == 'danger' %}
+                                <i class="fas fa-exclamation-triangle fa-lg text-danger me-2"></i>
+                            {% elif category == 'warning' %}
+                                <i class="fas fa-exclamation-circle fa-lg text-warning me-2"></i>
+                            {% else %}
+                                <i class="fas fa-info-circle fa-lg text-primary me-2"></i>
+                            {% endif %}
+                            <div>{{ message }}</div>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <!-- Main Content Injection -->
+    <main class="flex-grow-1">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Enterprise Government Footer -->
+    <footer class="gov-footer">
+        <div class="container">
+            <div class="row g-4">
+                <div class="col-lg-4">
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <span class="d-inline-flex align-items-center justify-content-center bg-white text-primary rounded-circle" style="width: 32px; height: 32px;">
+                            <i class="fas fa-hands-helping text-primary"></i>
+                        </span>
+                        <h5 class="text-white mb-0 fw-bold">SamadhanSetu</h5>
+                    </div>
+                    <p class="text-muted small">
+                        National Crowdsourcing & Collaborative Problem-Solving Platform bridging Citizens, Universities, and Industries to create sustainable, scalable societal impact.
+                    </p>
+                    <div class="d-flex gap-3 text-muted">
+                        <a href="#"><i class="fab fa-twitter"></i></a>
+                        <a href="#"><i class="fab fa-linkedin"></i></a>
+                        <a href="#"><i class="fab fa-github"></i></a>
+                        <a href="#"><i class="fab fa-youtube"></i></a>
+                    </div>
+                </div>
+
+                <div class="col-6 col-lg-2">
+                    <h6 class="text-white fw-bold mb-3">Explore</h6>
+                    <ul class="list-unstyled small">
+                        <li class="mb-2"><a href="{{ url_for('challenges') }}">Societal Challenges</a></li>
+                        <li class="mb-2"><a href="{{ url_for('solutions') }}">Solution Proposals</a></li>
+                        <li class="mb-2"><a href="{{ url_for('projects') }}">Active Projects</a></li>
+                        <li class="mb-2"><a href="{{ url_for('organizations') }}">Academic Partners</a></li>
+                        <li class="mb-2"><a href="{{ url_for('impact') }}">Impact Metrics</a></li>
+                    </ul>
+                </div>
+
+                <div class="col-6 col-lg-3">
+                    <h6 class="text-white fw-bold mb-3">Key Stakeholders</h6>
+                    <ul class="list-unstyled small">
+                        <li class="mb-2"><a href="{{ url_for('login') }}">University Faculty & Researchers</a></li>
+                        <li class="mb-2"><a href="{{ url_for('login') }}">Student Innovators & Hackers</a></li>
+                        <li class="mb-2"><a href="{{ url_for('login') }}">Corporate R&D & CSR Wings</a></li>
+                        <li class="mb-2"><a href="{{ url_for('login') }}">Civil Society & NGO Partners</a></li>
+                        <li class="mb-2"><a href="{{ url_for('login') }}">Municipal & District Officers</a></li>
+                    </ul>
+                </div>
+
+                <div class="col-lg-3">
+                    <h6 class="text-white fw-bold mb-3">Smart India Hackathon 2026</h6>
+                    <div class="p-3 rounded bg-dark border border-secondary small text-muted">
+                        <div class="text-white fw-semibold mb-1"><i class="fas fa-award text-warning me-1"></i> SIH Problem Statement</div>
+                        <div>Crowdsource societal challenges and facilitate collaborative problem-solving through universities and industry partnerships.</div>
+                    </div>
+                </div>
+            </div>
+
+            <hr class="border-secondary my-4">
+
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-center small text-muted">
+                <div>
+                    &copy; 2026 SamadhanSetu - Ministry of Education Innovation Cell. All Rights Reserved.
+                </div>
+                <div class="d-flex gap-3 mt-2 mt-md-0">
+                    <a href="#">Privacy Policy</a>
+                    <span>&bull;</span>
+                    <a href="#">Terms of Use</a>
+                    <span>&bull;</span>
+                    <a href="#">Security Guidelines</a>
+                    <span>&bull;</span>
+                    <a href="#">Site Map</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom Application JS -->
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>
+
