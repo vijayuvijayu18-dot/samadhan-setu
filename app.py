@@ -1,5 +1,6 @@
 import os
 import math
+import uuid
 import logging
 from datetime import datetime, timedelta
 from functools import wraps
@@ -10,14 +11,43 @@ from flask import (
 )
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
+
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
+from samadhan_ai_engine import SamadhanAiService, SamadhanAiEngine
 
 # ---------------------------------------------------------
 # APPLICATION CONFIGURATION & LOGGING
 # ---------------------------------------------------------
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'samadhan-setu-sih-secret-key-2026-gov-enterprise-secured'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(BASE_DIR, 'samadhan_setu.db')
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'samadhan-setu-sih-secret-key-2026-gov-enterprise-secured')
+
+# Uploads configuration for multimedia evidence
+UPLOAD_FOLDER = os.path.join(BASE_DIR, 'static', 'uploads')
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['MAX_CONTENT_LENGTH'] = 32 * 1024 * 1024  # 32 MB max
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp', 'gif', 'mp4', 'mov', 'webm', 'avi', 'pdf', 'docx', 'txt', 'csv'}
+
+database_url = os.environ.get('DATABASE_URL')
+if database_url:
+    # Standardize postgres:// to postgresql:// for SQLAlchemy 2.0+
+    if database_url.startswith("postgres://"):
+        database_url = database_url.replace("postgres://", "postgresql://", 1)
+    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+        'pool_pre_ping': True,
+        'pool_recycle': 300,
+    }
+else:
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(BASE_DIR, 'samadhan_setu.db')
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
@@ -93,6 +123,38 @@ SOLUTION_STAGES = [
     "IDEA", "VALIDATION", "PROTOTYPE", "PILOT", "DEPLOYMENT", "IMPACT"
 ]
 
+PROJECT_LIFECYCLE_STAGES = [
+    "Challenge Submitted",
+    "Challenge Validated",
+    "Team Formed",
+    "Solution Proposed",
+    "Prototype Development",
+    "Pilot Testing",
+    "Community Feedback",
+    "Solution Improved",
+    "Implementation",
+    "Impact Measured"
+]
+
+INDUSTRY_SUPPORT_TYPES = [
+    "Funding / Seed Grant",
+    "Technical Expertise & Mentorship",
+    "Hardware & IoT Components",
+    "Software, Cloud & Technology",
+    "Testing Facility & Laboratory",
+    "Manufacturing & Rapid Prototyping",
+    "Field Implementation & Pilot Support",
+    "Other Specialized Support"
+]
+
+INDUSTRY_COLLABORATION_STATUSES = [
+    "Support Requested",
+    "Under Review",
+    "Industry Interested",
+    "Collaboration Started",
+    "Completed"
+]
+
 # ---------------------------------------------------------
 # DATABASE MODELS
 # ---------------------------------------------------------
@@ -116,12 +178,18 @@ class User(db.Model):
     challenges = db.relationship('Challenge', backref='creator', lazy=True, foreign_keys='Challenge.created_by_id')
     solutions = db.relationship('Solution', backref='author', lazy=True, foreign_keys='Solution.submitted_by_id')
     notifications = db.relationship('Notification', backref='user', lazy=True, cascade='all, delete-orphan')
+    sent_invitations = db.relationship('TeamInvitation', backref='inviter', lazy=True, foreign_keys='TeamInvitation.inviter_user_id')
+    received_invitations = db.relationship('TeamInvitation', backref='invitee', lazy=True, foreign_keys='TeamInvitation.invitee_user_id')
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+
+    @property
+    def is_admin(self):
+        return self.user_type == 'ADMINISTRATOR'
 
 
 class Organization(db.Model):
@@ -161,6 +229,7 @@ class Challenge(db.Model):
     document_url = db.Column(db.String(255), nullable=True)
     assigned_university = db.Column(db.String(200), nullable=True)
     nep_aligned = db.Column(db.Boolean, default=True)
+    expected_solution_type = db.Column(db.String(100), default='Software / Hardware Prototype')
 
     # Contextual fields for depth and backward compatibility
     affected_population = db.Column(db.String(200), default='General Community')
@@ -177,6 +246,8 @@ class Challenge(db.Model):
     # Relationships
     solutions = db.relationship('Solution', backref='challenge', lazy=True, cascade='all, delete-orphan')
     projects = db.relationship('Project', backref='challenge', lazy=True)
+    invitations = db.relationship('TeamInvitation', backref='challenge', lazy=True, cascade='all, delete-orphan')
+    problem_dna = db.relationship('ProblemDNA', backref='challenge', uselist=False, lazy=True, cascade='all, delete-orphan')
 
     @property
     def code(self):
@@ -197,6 +268,206 @@ class Challenge(db.Model):
     @created_at.setter
     def created_at(self, value):
         self.created_date = value
+
+
+class ProblemDNA(db.Model):
+    """
+    AI-Powered Problem DNA:
+    Converts unstructured citizen descriptions into a structured, multi-dimensional
+    challenge profile with ethical uncertainty disclaimers and human verification audit trails.
+    """
+    __tablename__ = 'problem_dna'
+    id = db.Column(db.Integer, primary_key=True)
+    challenge_id = db.Column(db.Integer, db.ForeignKey('challenges.id'), nullable=False, unique=True)
+
+    # 1. Problem Title (Structured / Clear)
+    title = db.Column(db.String(250), nullable=False)
+
+    # 2. Domain & Subdomain
+    domain = db.Column(db.String(100), nullable=False)
+    subdomain = db.Column(db.String(150), nullable=False)
+
+    # 3. Problem Summary
+    summary = db.Column(db.Text, nullable=False)
+
+    # 4. Affected Population
+    affected_population = db.Column(db.String(250), nullable=False)
+
+    # 5. Location & Context
+    location_context = db.Column(db.Text, nullable=False)
+
+    # 6. Severity / Urgency & Explanation
+    severity = db.Column(db.String(50), nullable=False, default='High')
+    severity_explanation = db.Column(db.Text, nullable=False)
+
+    # 7. Possible Contributing Factors (Explicitly Hypotheses, NOT Confirmed Diagnosis)
+    contributing_factors = db.Column(db.Text, nullable=True)
+
+    # 8. Key Evidence (Photos, documents, telemetry, reports)
+    key_evidence = db.Column(db.Text, nullable=True)
+
+    # 9. Required Expertise (Academic/technical fields)
+    required_expertise = db.Column(db.Text, nullable=True)
+
+    # 10. Potential Solution Areas (Exploratory directions, not guaranteed solutions)
+    potential_solution_areas = db.Column(db.Text, nullable=True)
+
+    # 11. Relevant SDGs
+    relevant_sdgs = db.Column(db.Text, nullable=True)
+
+    # 12. Related Challenges (Similar Problem Fusion)
+    related_challenges_json = db.Column(db.Text, nullable=True)
+
+    # 13. Information Gaps
+    information_gaps = db.Column(db.Text, nullable=True)
+
+    # AI Understanding Section
+    ai_understanding = db.Column(db.Text, nullable=False)
+
+    # Governance & Uncertainty Metadata
+    verification_status = db.Column(db.String(50), default='AI-estimated') # 'AI-estimated', 'Needs Verification', 'Expert Verified & Corrected'
+    confidence_score = db.Column(db.Integer, default=88)
+    is_edited_by_user = db.Column(db.Boolean, default=False)
+    last_edited_by_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    last_editor = db.relationship('User', foreign_keys=[last_edited_by_id], lazy=True)
+
+    def get_contributing_factors_list(self):
+        if not self.contributing_factors:
+            return []
+        import json
+        try:
+            val = json.loads(self.contributing_factors)
+            if isinstance(val, list):
+                return val
+        except Exception:
+            pass
+        return [f.strip() for f in self.contributing_factors.split('\n') if f.strip()]
+
+    def get_key_evidence_list(self):
+        if not self.key_evidence:
+            return []
+        import json
+        try:
+            val = json.loads(self.key_evidence)
+            if isinstance(val, list):
+                return val
+        except Exception:
+            pass
+        return [e.strip() for e in self.key_evidence.split('\n') if e.strip()]
+
+    def get_required_expertise_list(self):
+        if not self.required_expertise:
+            return []
+        import json
+        try:
+            val = json.loads(self.required_expertise)
+            if isinstance(val, list):
+                return val
+        except Exception:
+            pass
+        return [x.strip() for x in self.required_expertise.replace(';', ',').split(',') if x.strip()]
+
+    def get_potential_solutions_list(self):
+        if not self.potential_solution_areas:
+            return []
+        import json
+        try:
+            val = json.loads(self.potential_solution_areas)
+            if isinstance(val, list):
+                return val
+        except Exception:
+            pass
+        return [s.strip() for s in self.potential_solution_areas.split('\n') if s.strip()]
+
+    def get_relevant_sdgs_list(self):
+        if not self.relevant_sdgs:
+            return []
+        import json
+        try:
+            val = json.loads(self.relevant_sdgs)
+            if isinstance(val, list):
+                return val
+        except Exception:
+            pass
+        return [g.strip() for g in self.relevant_sdgs.split(',') if g.strip()]
+
+    def get_related_challenges_list(self):
+        if not self.related_challenges_json:
+            return []
+        import json
+        try:
+            val = json.loads(self.related_challenges_json)
+            if isinstance(val, list):
+                return val
+        except Exception:
+            pass
+        return []
+
+    def get_information_gaps_list(self):
+        if not self.information_gaps:
+            return []
+        import json
+        try:
+            val = json.loads(self.information_gaps)
+            if isinstance(val, list):
+                return val
+        except Exception:
+            pass
+        return [g.strip() for g in self.information_gaps.split('\n') if g.strip()]
+
+
+class SamadhanAiSession(db.Model):
+    """
+    Tracks citizen conversational problem intake sessions,
+    turn-by-turn dialogue, uploaded evidence, structured draft states,
+    and citizen verification edits before formal Challenge creation.
+    """
+    __tablename__ = 'samadhan_ai_sessions'
+    id = db.Column(db.Integer, primary_key=True)
+    session_uuid = db.Column(db.String(64), unique=True, nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    challenge_id = db.Column(db.Integer, db.ForeignKey('challenges.id'), nullable=True)
+
+    # Conversation history: list of {role, text, timestamp, type, evidence}
+    conversation_json = db.Column(db.Text, default='[]')
+    # Structured challenge draft: {title, problem_summary, domain, subdomain, location, affected_population, ...}
+    draft_json = db.Column(db.Text, default='{}')
+    # Original citizen input before any structuring
+    original_input = db.Column(db.Text, nullable=True)
+    # Citizen corrections/edits
+    citizen_corrections_json = db.Column(db.Text, default='{}')
+
+    is_submitted = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    user = db.relationship('User', backref='ai_sessions', lazy=True)
+    challenge = db.relationship('Challenge', backref=db.backref('ai_session', uselist=False), lazy=True)
+
+    def get_conversation(self):
+        import json
+        try:
+            return json.loads(self.conversation_json) if self.conversation_json else []
+        except Exception:
+            return []
+
+    def get_draft(self):
+        import json
+        try:
+            return json.loads(self.draft_json) if self.draft_json else {}
+        except Exception:
+            return {}
+
+    def get_corrections(self):
+        import json
+        try:
+            return json.loads(self.citizen_corrections_json) if self.citizen_corrections_json else {}
+        except Exception:
+            return {}
 
 
 class Solution(db.Model):
@@ -241,6 +512,7 @@ class Project(db.Model):
     start_date = db.Column(db.DateTime, default=datetime.utcnow)
     target_date = db.Column(db.DateTime, nullable=True)
     status = db.Column(db.String(50), default='Active') # Active, In Pilot, Implemented, Completed
+    current_stage = db.Column(db.String(100), default='Prototype Development')
     progress_pct = db.Column(db.Integer, default=25)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -248,10 +520,37 @@ class Project(db.Model):
     milestones = db.relationship('Milestone', backref='project', lazy=True, cascade='all, delete-orphan', order_by='Milestone.order_idx')
     tasks = db.relationship('Task', backref='project', lazy=True, cascade='all, delete-orphan')
     members = db.relationship('TeamMember', backref='project', lazy=True, cascade='all, delete-orphan')
+    stage_updates = db.relationship('ProjectStageUpdate', backref='project', lazy=True, cascade='all, delete-orphan', order_by='ProjectStageUpdate.created_at.desc()')
+    impact_indicators = db.relationship('ProjectImpactMetric', backref='project', lazy=True, cascade='all, delete-orphan', order_by='ProjectImpactMetric.recorded_at.desc()')
+    support_requests = db.relationship('IndustrySupportRequest', backref='project', lazy=True, cascade='all, delete-orphan', order_by='IndustrySupportRequest.created_at.desc()')
 
     @property
     def code(self):
         return f"PROJECT-2026-{self.id:04d}"
+
+    @property
+    def stage_index(self):
+        if self.current_stage in PROJECT_LIFECYCLE_STAGES:
+            return PROJECT_LIFECYCLE_STAGES.index(self.current_stage) + 1
+        return 5
+
+    @property
+    def lifecycle_stages_info(self):
+        curr_idx = self.stage_index
+        info = []
+        for i, stg in enumerate(PROJECT_LIFECYCLE_STAGES, 1):
+            if i < curr_idx:
+                s_status = 'completed'
+            elif i == curr_idx:
+                s_status = 'current'
+            else:
+                s_status = 'upcoming'
+            info.append({'stage': stg, 'step': i, 'status': s_status})
+        return info
+
+    @property
+    def target_beneficiaries(self):
+        return 15000
 
 
 class ProjectPartner(db.Model):
@@ -327,6 +626,179 @@ class ImpactMetric(db.Model):
     resources_saved = db.Column(db.String(200), nullable=True)
     recorded_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+
+class TeamInvitation(db.Model):
+    __tablename__ = 'team_invitations'
+    id = db.Column(db.Integer, primary_key=True)
+    challenge_id = db.Column(db.Integer, db.ForeignKey('challenges.id'), nullable=False)
+    inviter_user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    invitee_user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    role_offered = db.Column(db.String(100), default='Team Member')
+    matching_skills = db.Column(db.String(250), nullable=True)
+    match_score = db.Column(db.Integer, default=80)
+    message = db.Column(db.Text, nullable=True)
+    status = db.Column(db.String(30), default='Pending') # Pending, Accepted, Declined
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class ProjectStageUpdate(db.Model):
+    __tablename__ = 'project_stage_updates'
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey('projects.id'), nullable=False)
+    stage = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    evidence_url = db.Column(db.String(255), nullable=True)
+    updated_by_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    updater = db.relationship('User', foreign_keys=[updated_by_id])
+
+    @property
+    def new_stage(self):
+        return self.stage
+
+    @new_stage.setter
+    def new_stage(self, val):
+        self.stage = val
+
+    @property
+    def previous_stage(self):
+        return None
+
+    @property
+    def notes(self):
+        return self.description
+
+    @notes.setter
+    def notes(self, val):
+        self.description = val
+
+
+class ProjectImpactMetric(db.Model):
+    __tablename__ = 'project_impact_metrics'
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey('projects.id'), nullable=False)
+    metric_name = db.Column(db.String(100), nullable=False) # e.g. "Water Wastage", "Municipal Cost", "Energy Saved"
+    unit = db.Column(db.String(50), default='') # e.g. "L/day", "INR Lakhs", "kWh/mo", "Beneficiaries"
+    before_value = db.Column(db.Float, nullable=False)
+    after_value = db.Column(db.Float, nullable=False)
+    change_pct = db.Column(db.Float, default=0.0)
+    is_reduction = db.Column(db.Boolean, default=True) # True = decrease is positive (e.g. wastage, cost, emissions)
+    verification_notes = db.Column(db.Text, nullable=True)
+    recorded_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def calculate_change(self):
+        if self.before_value and self.before_value != 0:
+            if self.is_reduction:
+                self.change_pct = round(((self.before_value - self.after_value) / self.before_value) * 100, 1)
+            else:
+                self.change_pct = round(((self.after_value - self.before_value) / self.before_value) * 100, 1)
+        else:
+            self.change_pct = 0.0
+
+    @property
+    def baseline_value(self):
+        return self.before_value
+
+    @baseline_value.setter
+    def baseline_value(self, val):
+        self.before_value = val
+
+    @property
+    def current_value(self):
+        return self.after_value
+
+    @current_value.setter
+    def current_value(self, val):
+        self.after_value = val
+
+    @property
+    def delta_pct(self):
+        return self.change_pct
+
+    @delta_pct.setter
+    def delta_pct(self, val):
+        self.change_pct = val
+
+    @property
+    def baseline_date(self):
+        return self.recorded_at
+
+    @property
+    def measured_date(self):
+        return self.recorded_at
+
+    @property
+    def target_value(self):
+        return None
+
+    @property
+    def verification_document_url(self):
+        return None
+
+
+class IndustrySupportRequest(db.Model):
+    __tablename__ = 'industry_support_requests'
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey('projects.id'), nullable=False)
+    support_type = db.Column(db.String(100), nullable=False) # Funding, Technical expertise, Hardware/components, Software/technology, Testing facility, Manufacturing/prototyping, Mentorship, Implementation support, Other
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    estimated_budget = db.Column(db.String(100), nullable=True)
+    timeline = db.Column(db.String(100), nullable=True)
+    contact_info = db.Column(db.String(200), nullable=True)
+    status = db.Column(db.String(50), default='Support Requested') # Support Requested, Under Review, Industry Interested, Collaboration Started, Completed
+    created_by_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    creator = db.relationship('User', foreign_keys=[created_by_id])
+    responses = db.relationship('IndustrySupportResponse', backref='request', lazy=True, cascade='all, delete-orphan', order_by='IndustrySupportResponse.created_at.desc()')
+
+    @property
+    def estimated_amount_inr(self):
+        try:
+            return int(float(self.estimated_budget)) if self.estimated_budget and self.estimated_budget.replace('.','',1).isdigit() else None
+        except Exception:
+            return None
+
+    @property
+    def required_by(self):
+        return None
+
+
+class IndustrySupportResponse(db.Model):
+    __tablename__ = 'industry_support_responses'
+    id = db.Column(db.Integer, primary_key=True)
+    request_id = db.Column(db.Integer, db.ForeignKey('industry_support_requests.id'), nullable=False)
+    industry_user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    organization_name = db.Column(db.String(200), nullable=False)
+    support_offered = db.Column(db.Text, nullable=False)
+    contribution_details = db.Column(db.Text, nullable=True)
+    contact_person = db.Column(db.String(150), nullable=False)
+    contact_email = db.Column(db.String(150), nullable=False)
+    status = db.Column(db.String(50), default='Offer Submitted') # Offer Submitted, Accepted, Under Discussion, Declined
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    industry_user = db.relationship('User', foreign_keys=[industry_user_id])
+
+    @property
+    def response_details(self):
+        return self.support_offered
+
+    @response_details.setter
+    def response_details(self, val):
+        self.support_offered = val
+
+    @property
+    def offered_funding_inr(self):
+        return None
+
+    @property
+    def industry_partner(self):
+        return self.industry_user
+
+
 # ---------------------------------------------------------
 # AUTHENTICATION & ACCESS DECORATORS
 # ---------------------------------------------------------
@@ -369,8 +841,10 @@ def inject_global_data():
         unread_notifications_count = Notification.query.filter_by(
             user_id=current_user.id, is_read=False
         ).count()
+    is_admin = bool((current_user and current_user.user_type == 'ADMINISTRATOR') or (session.get('user_role') == 'ADMINISTRATOR'))
     return {
         'current_user': current_user,
+        'is_admin': is_admin,
         'unread_count': unread_notifications_count,
         'all_categories': CATEGORIES,
         'all_departments': DEPARTMENTS,
@@ -441,6 +915,118 @@ def calculate_expertise_match(user_or_org, challenge):
     hash_val = (hash(challenge.title + str(user_or_org.id)) % 7) - 3
     final_score = max(42, min(96, score + hash_val))
     return final_score
+
+
+def calculate_smart_team_recommendations(challenge, max_recommendations=6):
+    """
+    Smart Skill-Based Matching:
+    Transparent rule-based keyword & skill matching engine comparing
+    challenge required skills, technology, and domain with registered users' expertise.
+    Returns recommended users with Match %, Matching Skills, and Reason for recommendation.
+    """
+    if not challenge:
+        return []
+
+    # 1. Parse challenge target keywords and skills
+    target_tokens = set()
+    req_skills_list = []
+    if challenge.required_skills:
+        for s in challenge.required_skills.replace(';', ',').split(','):
+            cleaned = s.strip()
+            if cleaned:
+                target_tokens.add(cleaned.lower())
+                req_skills_list.append(cleaned)
+    if challenge.required_technology:
+        for s in challenge.required_technology.replace(';', ',').split(','):
+            cleaned = s.strip()
+            if cleaned:
+                target_tokens.add(cleaned.lower())
+    if challenge.category:
+        for w in challenge.category.split():
+            if len(w) > 3:
+                target_tokens.add(w.lower())
+    if challenge.title:
+        for w in challenge.title.split():
+            if len(w) > 3:
+                target_tokens.add(w.lower())
+
+    # 2. Evaluate all active candidates (excluding creator & admin)
+    all_users = User.query.filter(User.user_type != 'ADMINISTRATOR').all()
+    recommendations = []
+
+    for user in all_users:
+        if challenge.created_by_id and user.id == challenge.created_by_id:
+            continue
+
+        user_skills_list = []
+        user_tokens = set()
+        if user.skills:
+            for s in user.skills.replace(';', ',').split(','):
+                cleaned = s.strip()
+                if cleaned:
+                    user_tokens.add(cleaned.lower())
+                    user_skills_list.append(cleaned)
+        if user.organization:
+            for w in user.organization.split():
+                if len(w) > 3:
+                    user_tokens.add(w.lower())
+
+        # Find matching skills
+        matching_skills = []
+        for us in user_skills_list:
+            u_low = us.lower()
+            for ts in target_tokens:
+                if u_low in ts or ts in u_low:
+                    matching_skills.append(us)
+                    break
+
+        matching_skills = list(dict.fromkeys(matching_skills))
+        overlap_count = len(matching_skills)
+
+        # Base score starts around 65%, +10% per matching skill up to 96%
+        match_score = min(96, 65 + (overlap_count * 10))
+        if not matching_skills:
+            if any(k in user.user_type.lower() for k in ['researcher', 'expert', 'student', 'university']):
+                match_score = 70
+            else:
+                match_score = 60
+
+        # Formulate transparent recommendation reason
+        if matching_skills:
+            skills_str = ", ".join(matching_skills[:3])
+            reason = f"Verified expertise in {skills_str} directly aligns with the technical demands of this challenge."
+        elif "water" in challenge.category.lower() or "water" in challenge.title.lower():
+            reason = f"Relevant domain competency in {user.organization or 'applied research'} with cross-functional problem-solving capabilities."
+        else:
+            reason = f"{user.user_type} with foundational technical competencies aligned with {challenge.category} interventions."
+
+        # Check invitation status if any
+        existing_inv = TeamInvitation.query.filter_by(challenge_id=challenge.id, invitee_user_id=user.id).first()
+        invitation_status = existing_inv.status if existing_inv else None
+
+        recommendations.append({
+            'user': user,
+            'user_id': user.id,
+            'name': user.full_name,
+            'role': user.user_type,
+            'organization': user.organization or 'Independent',
+            'location': user.location or 'Jharkhand',
+            'skills': user.skills or 'General Technical Skills',
+            'matching_skills': matching_skills if matching_skills else ['Interdisciplinary Research'],
+            'matched_skills': matching_skills if matching_skills else ['Interdisciplinary Research'],
+            'match_percentage': match_score,
+            'match_pct': match_score,
+            'reason': reason,
+            'rationale': reason,
+            'invited': existing_inv is not None,
+            'invitation_status': invitation_status,
+            'invitation_id': existing_inv.id if existing_inv else None
+        })
+
+    # Sort descending by match percentage
+    recommendations.sort(key=lambda x: x['match_percentage'], reverse=True)
+    return recommendations[:max_recommendations]
+
 
 def send_notification(user_id, title, message, link='#'):
     try:
@@ -604,6 +1190,392 @@ def find_similar_challenges(challenge):
         Challenge.id != challenge.id,
         Challenge.category == challenge.category
     ).limit(3).all()
+
+
+def generate_problem_dna(challenge):
+    """
+    AI Problem DNA Synthesis Engine:
+    Converts unstructured citizen problem reports into a multi-dimensional,
+    structured challenge profile with ethical uncertainty boundaries and plain-language understanding.
+    """
+    title = (challenge.title or '').strip()
+    desc = (challenge.description or '').strip()
+    loc = (challenge.location or '').strip()
+    district = (challenge.district or '').strip()
+    block = (challenge.block or '').strip()
+    category = (challenge.category or '').strip()
+    combined_text = f"{title} {desc}".lower()
+
+    # Determine Domain & Subdomain
+    domain_cls = classify_thematic_domain(title, desc)
+    primary_domain = category if category and category not in ['Auto-Detect', 'Other'] else domain_cls['domain']
+
+    domain_profiles = {
+        "Water Resources": {
+            "subdomain": "Groundwater Quality & Fluoride Remediation",
+            "title_prefix": "Groundwater Quality & Potable Water Remediation",
+            "affected_population": "Rural households, school children, cattle, and marginal farming hamlets relying on community borewells",
+            "factors": [
+                "Hypothesis: Leaching of geochemical fluoride/heavy minerals from subsurface strata into shallow aquifers.",
+                "Hypothesis: Runoff and pit seepage from nearby abandoned opencast mining reservoirs during monsoon.",
+                "Hypothesis: Absence of operational adsorption filtration media or regular municipal preventative maintenance."
+            ],
+            "expertise": "Environmental Engineering, Hydrogeology, Water Chemistry & Desalination, IoT Telemetry Sensing, Community Health",
+            "solutions": [
+                "Decentralized solar-powered activated alumina filtration skid with backwash recovery.",
+                "Low-cost gravity-fed multi-stage biosand and activated charcoal filter cartridges.",
+                "Community IoT telemetry sensor node measuring fluoride, pH, and TDS in real time."
+            ],
+            "sdgs": "SDG 6: Clean Water & Sanitation, SDG 3: Good Health & Well-being, SDG 11: Sustainable Communities",
+            "gaps": [
+                "Accredited spectrophotometer lab assay documenting exact fluoride (mg/L) and TDS levels.",
+                "Geotagged census of contaminated vs functional handpumps in the panchayat.",
+                "Seasonal water table depth and drawdown measurements (pre- vs post-monsoon)."
+            ]
+        },
+        "Agriculture": {
+            "subdomain": "Post-Harvest Cold Chain & Micro-Irrigation Logistics",
+            "title_prefix": "Post-Harvest Cold Chain & Smallholder Market Linkage",
+            "affected_population": "Smallholder and marginal tribal vegetable farmers, women Self-Help Groups (SHGs), and weekly haat vendors",
+            "factors": [
+                "Hypothesis: Absence of village-level decentralized precooling leading to rapid metabolic rot of perishable produce.",
+                "Hypothesis: Frequent electrical grid outages making conventional cold storage facilities non-viable.",
+                "Hypothesis: Distress selling on harvest morning due to absence of local collective aggregation."
+            ],
+            "expertise": "Agricultural Engineering, Phase-Change Material (PCM) Thermodynamics, Embedded IoT Systems, Rural Supply Chain",
+            "solutions": [
+                "Phase-change material (PCM) solar micro-cold storage unit with modular insulated panels.",
+                "Zero Energy Cool Chamber (ZECC) evaporative cooling structure using locally sourced terracotta bricks.",
+                "Vernacular SMS/IVR pre-booking system to aggregate produce for weekly regional haats."
+            ],
+            "sdgs": "SDG 2: Zero Hunger, SDG 12: Responsible Consumption & Production, SDG 8: Decent Work & Economic Growth",
+            "gaps": [
+                "Quantified daily post-harvest tonnage rot across peak harvest weeks.",
+                "Local solar insolation profile and ambient diurnal temperature records.",
+                "Village feeder grid power availability logs (average hours of electricity per day)."
+            ]
+        },
+        "Healthcare": {
+            "subdomain": "Rural Point-of-Care Diagnostics & Tele-Consultation",
+            "title_prefix": "Rural Point-of-Care Diagnostics & Maternal Health Outreach",
+            "affected_population": "Pregnant mothers, infants, adolescent girls, elderly rural residents, and remote tribal hamlets",
+            "factors": [
+                "Hypothesis: Significant distance barrier to the nearest Community Health Centre (CHC) or Sub-Divisional Hospital.",
+                "Hypothesis: Limited point-of-care rapid testing kits available to grassroots ASHA workers.",
+                "Hypothesis: Low cellular bandwidth preventing live video tele-consultation with district specialists."
+            ],
+            "expertise": "Biomedical Engineering, Public Health Epidemiology, Telemedicine Software Systems, Health Informatics",
+            "solutions": [
+                "Solar-powered portable multi-parameter diagnostic kit backpack for field health workers.",
+                "Store-and-forward offline-first tele-consultation app with asynchronous doctor triage.",
+                "Low-cost wearable biometric vital-signs band for high-risk maternal monitoring."
+            ],
+            "sdgs": "SDG 3: Good Health and Well-being, SDG 10: Reduced Inequalities, SDG 1: No Poverty",
+            "gaps": [
+                "Clinical symptom prevalence registry authenticated by Primary Health Centre (PHC) medical officer.",
+                "Cellular network signal strength and latency mapping across targeted hamlet locations.",
+                "Average emergency roundtrip transport time and out-of-pocket ambulance expenditures."
+            ]
+        },
+        "Environment": {
+            "subdomain": "Industrial Effluent Monitoring & Ecological Remediation",
+            "title_prefix": "Industrial Effluent Remediation & Watershed Conservation",
+            "affected_population": "Riparian farming communities, forest gatherers, and downstream aquatic ecosystems",
+            "factors": [
+                "Hypothesis: Uncontrolled industrial effluent discharge during night hours or high rainfall runoff.",
+                "Hypothesis: Absence of operational secondary biological waste treatment prior to discharge.",
+                "Hypothesis: Heavy metal accumulation in riverbank topsoil inhibiting crop germination."
+            ],
+            "expertise": "Ecological Engineering, Industrial Waste Chemistry, GIS Watershed Modeling, Phytoremediation",
+            "solutions": [
+                "Engineered constructed wetland using indigenous hyper-accumulator wetland flora.",
+                "Low-cost solar-powered water quality buoy broadcasting real-time turbidity and chemical oxygen demand.",
+                "Bioremediation microbial inoculants for rapid organic sludge breakdown."
+            ],
+            "sdgs": "SDG 15: Life on Land, SDG 14: Life Below Water, SDG 13: Climate Action, SDG 6: Clean Water",
+            "gaps": [
+                "Chemical Oxygen Demand (COD), Biological Oxygen Demand (BOD), and heavy metal ppm assay.",
+                "Flow rate and volumetric discharge measurements at major outfall points.",
+                "Historical soil quality testing comparisons from adjacent agricultural fields."
+            ]
+        },
+        "Energy": {
+            "subdomain": "Decentralized Renewable Microgrids & Productive Power",
+            "title_prefix": "Decentralized Solar Microgrid & Productive Energy Access",
+            "affected_population": "Off-grid rural hamlets, village cottage enterprises, primary schools, and micro-irrigation pump users",
+            "factors": [
+                "Hypothesis: Challenging hilly topography and forest canopy preventing central transmission line expansion.",
+                "Hypothesis: Existing standalone solar streetlights lack intelligent battery management and maintenance.",
+                "Hypothesis: High reliance on expensive diesel generator sets for basic rice-hulling and water pumping."
+            ],
+            "expertise": "Renewable Power Systems, DC Microgrid Architecture, Battery Management Systems (BMS), Smart Metering",
+            "solutions": [
+                "Decentralized DC microgrid with Lithium Iron Phosphate (LFP) storage and smart load balancing.",
+                "Solar-powered agricultural pump skid with pay-as-you-go vernacular smart card.",
+                "Community solar charging kiosk and micro-enterprise power station."
+            ],
+            "sdgs": "SDG 7: Affordable & Clean Energy, SDG 9: Industry, Innovation & Infrastructure, SDG 13: Climate Action",
+            "gaps": [
+                "24-hour diurnal community electrical load curve and estimated peak kW demand.",
+                "Structural load-bearing capacity and shade survey of proposed community solar installation sites.",
+                "Baseline household lighting and diesel expenditure estimates."
+            ]
+        },
+        "Education": {
+            "subdomain": "Vernacular STEM Kits & Contextual Multilingual Learning",
+            "title_prefix": "Vernacular STEM Learning & Offline Digital Classroom Kits",
+            "affected_population": "First-generation tribal learners, government school students, and rural educators",
+            "factors": [
+                "Hypothesis: Linguistic divergence between native tribal dialects (Santhali/Mundari/Ho) and standard curriculum medium.",
+                "Hypothesis: Inadequate hands-on laboratory apparatus for secondary science experiments.",
+                "Hypothesis: Unreliable grid power rendering conventional smart television classrooms inoperative."
+            ],
+            "expertise": "Educational Technology, Multilingual Natural Language Processing, Low-Power Embedded Hardware, Pedagogy",
+            "solutions": [
+                "Offline-first solar-powered Raspberry Pi local WiFi classroom content server (Kiwix/RACHEL).",
+                "Experiential vernacular STEM experiment kits fabricated from sustainable regional materials.",
+                "Bilingual illustrated storybooks and interactive phonics tablets with Ol Chiki script support."
+            ],
+            "sdgs": "SDG 4: Quality Education, SDG 10: Reduced Inequalities, SDG 1: No Poverty",
+            "gaps": [
+                "Student language demographic survey and mother-tongue proficiency census.",
+                "School rooftop solar feasibility and electrical infrastructure readiness audit.",
+                "Baseline numeracy and literacy benchmark test records."
+            ]
+        },
+        "Accessibility": {
+            "subdomain": "Assistive Mobility & Multimodal Navigation for Divyangjan",
+            "title_prefix": "Assistive Mobility Devices & Inclusive Infrastructure",
+            "affected_population": "Persons with locomotor, visual, or hearing disabilities, elderly residents, and inclusive school students",
+            "factors": [
+                "Hypothesis: Lack of universal accessibility ramps and tactile guide tiles across public facilities.",
+                "Hypothesis: High commercial cost and fragile maintenance requirements of imported mobility aids.",
+                "Hypothesis: Absence of regional language auditory and haptic warning signals in public transport nodes."
+            ],
+            "expertise": "Biomechanical Engineering, Embedded Systems, Assistive Ergonomics, Haptics & Sensory Interfaces",
+            "solutions": [
+                "Rugged, all-terrain lever-drive wheelchair attachment kit manufactured from modular steel tubing.",
+                "Wearable ultrasonic obstacle-detection band with multilingual voice and vibration alerts.",
+                "Low-cost tactile digital braille slate with vernacular audio feedback."
+            ],
+            "sdgs": "SDG 10: Reduced Inequalities, SDG 11: Sustainable Cities & Communities, SDG 4: Quality Education",
+            "gaps": [
+                "Panchayat-level census of persons with disabilities categorized by mobility needs.",
+                "Topographic road gradient and surface roughness assessment along essential travel routes.",
+                "Assessment by certified district medical rehabilitation officer."
+            ]
+        },
+        "Urban Development": {
+            "subdomain": "Road Infrastructure Quality & Smart Municipal Drainage",
+            "title_prefix": "Road Pavement Distress & Municipal Drainage Monitoring",
+            "affected_population": "Daily urban commuters, ambulance services, school transit, and roadside commercial establishments",
+            "factors": [
+                "Hypothesis: Ineffective bitumen sub-base drainage causing rapid monsoon moisture damage and pothole formation.",
+                "Hypothesis: Excessive axle loads from heavy industrial transport exceeding design pavement capacity.",
+                "Hypothesis: Solid waste dumping in roadside storm drains obstructing gravity runoff."
+            ],
+            "expertise": "Transportation Engineering, Computer Vision Pavement Inspection, Municipal Hydrology, Civil Materials",
+            "solutions": [
+                "Smartphone dashcam computer vision system for automated pothole detection and classification.",
+                "Pavement stabilization trial utilizing locally sourced fly ash and industrial slag binders.",
+                "Low-cost ultrasonic storm-drain water level and blockage sensor network."
+            ],
+            "sdgs": "SDG 9: Industry, Innovation & Infrastructure, SDG 11: Sustainable Cities & Communities",
+            "gaps": [
+                "Kilometers of critical road distress requiring immediate patch stabilization.",
+                "Photographic inspection logs with measured pothole depths and dimensions.",
+                "Municipal drainage basin cross-section and clearance schedule."
+            ]
+        },
+        "Public Administration": {
+            "subdomain": "Public Distribution System (PDS) & Civic Delivery Transparency",
+            "title_prefix": "PDS Ration Transparency & Biometric Delivery Safeguards",
+            "affected_population": "Ration cardholders, Antyodaya beneficiaries, elderly pensioners, and rural wage laborers",
+            "factors": [
+                "Hypothesis: Biometric authentication failures due to skin wear among agricultural and mining workers.",
+                "Hypothesis: Weak cellular reception at rural Fair Price Shops causing transaction drops.",
+                "Hypothesis: Absence of transparent digital weighment verification accessible to the consumer."
+            ],
+            "expertise": "Software Engineering, Cryptographic Audit Logs, Offline-First Mobile Architectures, IoT Load-Cell Telemetry",
+            "solutions": [
+                "Offline-first cryptographic voucher system with delayed reconciliation sync.",
+                "Smart IoT load-cell weighing platform with public electronic display and SMS confirmation.",
+                "Gram Panchayat automated voice grievance kiosk with vernacular audio recording."
+            ],
+            "sdgs": "SDG 16: Peace, Justice & Strong Institutions, SDG 1: No Poverty, SDG 10: Reduced Inequalities",
+            "gaps": [
+                "Recorded point-of-sale biometric authentication failure rate over the preceding 6 months.",
+                "Ration dealer stock inventory reconciliation discrepancy records.",
+                "Average grievance resolution turnaround time documented in Gram Sabha minutes."
+            ]
+        },
+        "Rural Livelihoods": {
+            "subdomain": "Non-Timber Forest Produce (NTFP) & Artisan Value Addition",
+            "title_prefix": "Tribal Lac & Forest Produce Processing Optimization",
+            "affected_population": "Tribal forest gatherers, lac cultivators, women handloom artisans, and PVTG communities",
+            "factors": [
+                "Hypothesis: Absence of village-level primary processing equipment leading to raw produce distress sales.",
+                "Hypothesis: Vulnerability of lac and silkworm host trees to unseasonal pest infestations and thermal stress.",
+                "Hypothesis: Intermediary supply chain layers capturing up to 60% of retail market value."
+            ],
+            "expertise": "Forest Product Technology, Chemical Processing, Solar Thermal Engineering, Cooperative Market Platforms",
+            "solutions": [
+                "Solar-assisted lac scraper and primary washing/grading machine for village SHG clusters.",
+                "IoT climate and micro-climate monitoring nodes for lac and tasar silkworm rearing belts.",
+                "Direct-to-enterprise traceability ledger and cooperative e-marketplace platform."
+            ],
+            "sdgs": "SDG 8: Decent Work & Economic Growth, SDG 1: No Poverty, SDG 12: Responsible Consumption",
+            "gaps": [
+                "Annual seasonal harvest tonnage and price realization records across the block.",
+                "Pest infestation frequency and temperature-humidity correlation logs.",
+                "Current buyer procurement pricing versus terminal market retail prices."
+            ]
+        }
+    }
+
+    # Match or fallback profile
+    matched_profile = None
+    for dom_key, prof in domain_profiles.items():
+        if dom_key.lower() in primary_domain.lower() or primary_domain.lower() in dom_key.lower():
+            matched_profile = prof
+            break
+    if not matched_profile:
+        matched_profile = domain_profiles["Water Resources"]
+
+    # 1. Clean Structured Problem Title
+    clean_title = f"{matched_profile['title_prefix']} in {block + ', ' if block else ''}{district or 'Jharkhand'}"
+    if len(title) > 8 and len(title) < 90 and not title.lower().startswith('problem') and not title.lower().startswith('issue'):
+        clean_title = title
+
+    # 2. Domain & Subdomain
+    domain = primary_domain
+    subdomain = matched_profile['subdomain']
+
+    # 3. Problem Summary
+    summary = (
+        f"In {loc or (district + ', Jharkhand')}, {desc[:320].strip()}"
+        if len(desc) > 30 else
+        f"Field challenge reported in {loc or (district + ', Jharkhand')}: {title}. Community reports acute bottlenecks requiring technical intervention and structured baseline verification."
+    )
+    if not summary.endswith('.'):
+        summary += '.'
+
+    # 4. Affected Population
+    pop_keywords = ["farmer", "student", "mother", "child", "villager", "resident", "patient", "artisan", "commuter"]
+    found_pop = [p for p in pop_keywords if p in combined_text]
+    affected_population = matched_profile['affected_population']
+    if found_pop:
+        affected_population = f"Community residents (including {', '.join(found_pop)}s), numbering approximately {challenge.people_affected_count or 1500} individuals across local wards/hamlets."
+
+    # 5. Location & Context
+    loc_context = f"{loc or district}, Jharkhand. Geographic context: Revenue village / municipal boundary within {district or 'Jharkhand state'}. "
+    if 'mine' in combined_text or 'coal' in combined_text:
+        loc_context += "Surrounded by intensive mineral extraction and industrial coal transport corridors."
+    elif 'forest' in combined_text or 'tribal' in combined_text:
+        loc_context += "Situated within undulating forested tribal heartland terrain with seasonal accessibility constraints."
+    elif 'urban' in combined_text or 'city' in combined_text:
+        loc_context += "High-density urban municipal zone characterized by rapid infrastructure growth."
+    else:
+        loc_context += "Rural agrarian block characterized by smallholder farmlands and community borewell reliance."
+
+    # 6. Severity / Urgency & Explanation
+    sev = challenge.priority or 'High'
+    if 'death' in combined_text or 'toxic' in combined_text or 'poison' in combined_text or 'critical' in combined_text:
+        sev = 'Critical'
+    elif 'urgent' in combined_text or 'severe' in combined_text or 'acute' in combined_text:
+        sev = 'High'
+
+    sev_explanations = {
+        'Critical': "Urgent: Direct health or safety hazard reported. Immediate baseline verification and mitigation resources required to avert acute community risks.",
+        'High': "High Priority: Persistent socio-economic distress and environmental vulnerability affecting vulnerable demographics. Timely prototype matching recommended.",
+        'Medium': "Medium Urgency: Systematic operational friction impacting community productivity and service reliability. Well-suited for semester-long university prototype squads.",
+        'Low': "Low / Monitoring: Localized optimization opportunity with minimal immediate safety risk; suited for exploratory capstone research."
+    }
+    sev_explanation = sev_explanations.get(sev, sev_explanations['High'])
+
+    # 7. Contributing Factors (Hypotheses)
+    factors = list(matched_profile['factors'])
+    if 'drain' in combined_text or 'sewage' in combined_text:
+        factors.append("Hypothesis: Uncovered surface stormwater drains overflowing into domestic habitations.")
+    contributing_factors_str = "\n".join(factors)
+
+    # 8. Key Evidence
+    evidence_items = []
+    if challenge.media_url:
+        evidence_items.append(f"Field Media Upload: Geotagged photographic inspection file ({challenge.media_url.split('/')[-1]}).")
+    else:
+        evidence_items.append("Visual Evidence: Site photograph / visual ground documentation requested from submitter.")
+    if challenge.document_url:
+        evidence_items.append(f"Official Documentation: Gram Panchayat / department survey document ({challenge.document_url.split('/')[-1]}).")
+    else:
+        evidence_items.append("Administrative Record: Gram Sabha resolution or local memorandum requested.")
+    evidence_items.append(f"Submitter Testimonial: Direct report logged by verified {challenge.submitter_type or 'Citizen'} on {challenge.created_date.strftime('%d %b %Y')}.")
+    key_evidence_str = "\n".join(evidence_items)
+
+    # 9. Required Expertise
+    required_expertise_str = matched_profile['expertise']
+    if challenge.required_skills:
+        required_expertise_str = f"{challenge.required_skills}, {required_expertise_str}"
+
+    # 10. Potential Solution Areas
+    solutions = list(matched_profile['solutions'])
+    potential_solutions_str = "\n".join(solutions)
+
+    # 11. Relevant SDGs
+    relevant_sdgs_str = matched_profile['sdgs']
+
+    # 12. Related Challenges (Similar Problem Fusion)
+    import json
+    sim_challenges = find_similar_challenges(challenge)
+    related_list = []
+    for sc in sim_challenges:
+        related_list.append({
+            "id": sc.id,
+            "code": sc.code,
+            "title": sc.title,
+            "location": sc.location,
+            "category": sc.category,
+            "priority": sc.priority,
+            "fusion_rationale": f"Shared {sc.category} domain in regional proximity ({sc.district or 'Jharkhand'}). Coordinated prototyping can prevent duplication."
+        })
+    related_challenges_json = json.dumps(related_list)
+
+    # 13. Information Gaps
+    information_gaps_str = "\n".join(matched_profile['gaps'])
+
+    # AI Understanding Section
+    ai_understanding = (
+        f"The AI analyzed the citizen's report regarding '{title}' in {loc or district}. "
+        f"By cross-referencing domain keywords, geographic indicators, and regional challenges for {district or 'Jharkhand'}, "
+        f"the system structured this challenge under '{primary_domain} &rarr; {subdomain}'. "
+        f"Risk factors, required academic disciplines, and preliminary solution pathways were synthesized to assist Higher Education Institutions (HEIs) "
+        f"in designing rapid, field-relevant student innovation squads. "
+        f"Transparency Notice: All contributing causes and solution areas are algorithmic hypotheses provided for research scoping; they are not confirmed laboratory determinations or binding medical diagnoses."
+    )
+
+    return ProblemDNA(
+        challenge_id=challenge.id,
+        title=clean_title,
+        domain=domain,
+        subdomain=subdomain,
+        summary=summary,
+        affected_population=affected_population,
+        location_context=loc_context,
+        severity=sev,
+        severity_explanation=sev_explanation,
+        contributing_factors=contributing_factors_str,
+        key_evidence=key_evidence_str,
+        required_expertise=required_expertise_str,
+        potential_solution_areas=potential_solutions_str,
+        relevant_sdgs=relevant_sdgs_str,
+        related_challenges_json=related_challenges_json,
+        information_gaps=information_gaps_str,
+        ai_understanding=ai_understanding,
+        verification_status='AI-estimated',
+        confidence_score=88,
+        is_edited_by_user=False
+    )
+
 
 # ---------------------------------------------------------
 # ROUTES: AUTHENTICATION
@@ -868,6 +1840,7 @@ def logout():
 
 
 @app.route('/user/dashboard')
+@app.route('/user-dashboard')
 @login_required
 def user_dashboard():
     """Personalized User Dashboard for Citizens, HEIs, Industries, and Experts."""
@@ -911,6 +1884,8 @@ def user_dashboard():
         ).all()
 
     notifications = Notification.query.filter_by(user_id=user.id).order_by(Notification.created_at.desc()).limit(10).all()
+    pending_invitations = TeamInvitation.query.filter_by(invitee_user_id=user.id, status='Pending').order_by(TeamInvitation.created_at.desc()).all()
+    recent_support_requests = IndustrySupportRequest.query.order_by(IndustrySupportRequest.created_at.desc()).limit(6).all()
 
     return render_template('user_dashboard.html',
         user=user,
@@ -919,7 +1894,9 @@ def user_dashboard():
         solutions_on_my_challenges=solutions_on_my_challenges,
         recommended_challenges=recommended_challenges,
         my_projects=my_projects,
-        notifications=notifications
+        notifications=notifications,
+        pending_invitations=pending_invitations,
+        recent_support_requests=recent_support_requests
     )
 
 
@@ -1130,6 +2107,15 @@ def submit_challenge():
             db.session.add(new_challenge)
             db.session.commit()
 
+            # Automatically synthesize AI Problem DNA
+            try:
+                dna = generate_problem_dna(new_challenge)
+                db.session.add(dna)
+                db.session.commit()
+            except Exception as dna_err:
+                app.logger.warning(f"Could not immediately generate Problem DNA for #{new_challenge.id}: {dna_err}")
+                db.session.rollback()
+
             app.logger.info(f"Challenge added: #{new_challenge.id} ({new_challenge.code}) - {title} by {user.email if user else 'guest'}")
 
             # Notify admin of new challenge
@@ -1170,22 +2156,101 @@ def submit_challenge():
 
 @app.route('/challenge/<int:challenge_id>')
 def challenge_detail(challenge_id):
-    """View Challenge Details & Academic/Industry Matches."""
+    """View Challenge Details, Problem DNA & Academic/Industry Matches."""
     challenge = Challenge.query.get_or_404(challenge_id)
+
+    # Auto-synthesize Problem DNA if not present
+    if not challenge.problem_dna:
+        try:
+            dna = generate_problem_dna(challenge)
+            db.session.add(dna)
+            db.session.commit()
+        except Exception as e:
+            app.logger.warning(f"Error ensuring Problem DNA for #{challenge.id}: {e}")
+            db.session.rollback()
+
     matches = rule_based_smart_match(challenge)
     similar_challenges = find_similar_challenges(challenge)
     solutions = Solution.query.filter_by(challenge_id=challenge.id).order_by(Solution.created_at.desc()).all()
     user = get_current_user()
 
     user_match_score = calculate_expertise_match(user, challenge) if user else None
+    recommended_team = calculate_smart_team_recommendations(challenge, max_recommendations=6)
+
+    # Authorization to edit Problem DNA
+    can_edit_dna = False
+    if user:
+        if user.user_type == 'ADMINISTRATOR' or (challenge.created_by_id and challenge.created_by_id == user.id) or user.user_type in ['FACULTY / RESEARCHER', 'STUDENT / INNOVATOR', 'Industry Representative']:
+            can_edit_dna = True
 
     return render_template('challenge_detail.html',
         challenge=challenge,
+        problem_dna=challenge.problem_dna,
         matches=matches,
         similar_challenges=similar_challenges,
         solutions=solutions,
-        user_match_score=user_match_score
+        user_match_score=user_match_score,
+        recommended_team=recommended_team,
+        can_edit_dna=can_edit_dna
     )
+
+
+@app.route('/challenge/<int:challenge_id>/problem-dna/edit', methods=['POST'])
+def edit_problem_dna(challenge_id):
+    """Allow authorized stakeholders to refine/correct Problem DNA while preserving the citizen report."""
+    challenge = Challenge.query.get_or_404(challenge_id)
+    if 'user_id' not in session:
+        flash('Please log in to edit the Problem DNA profile.', 'warning')
+        return redirect(url_for('login', next=url_for('challenge_detail', challenge_id=challenge.id)))
+
+    user = get_current_user()
+    is_authorized = (
+        (user and user.user_type == 'ADMINISTRATOR') or
+        (challenge.created_by_id and user and challenge.created_by_id == user.id) or
+        (user and user.user_type in ['FACULTY / RESEARCHER', 'STUDENT / INNOVATOR', 'Industry Representative'])
+    )
+    if not is_authorized:
+        flash('You do not have authorization to edit this Problem DNA profile.', 'danger')
+        return redirect(url_for('challenge_detail', challenge_id=challenge.id))
+
+    dna = challenge.problem_dna
+    if not dna:
+        dna = generate_problem_dna(challenge)
+        db.session.add(dna)
+        db.session.commit()
+
+    try:
+        dna.title = request.form.get('title', dna.title).strip()
+        dna.domain = request.form.get('domain', dna.domain).strip()
+        dna.subdomain = request.form.get('subdomain', dna.subdomain).strip()
+        dna.summary = request.form.get('summary', dna.summary).strip()
+        dna.affected_population = request.form.get('affected_population', dna.affected_population).strip()
+        dna.location_context = request.form.get('location_context', dna.location_context).strip()
+        dna.severity = request.form.get('severity', dna.severity).strip()
+        dna.severity_explanation = request.form.get('severity_explanation', dna.severity_explanation).strip()
+        dna.contributing_factors = request.form.get('contributing_factors', dna.contributing_factors).strip()
+        dna.key_evidence = request.form.get('key_evidence', dna.key_evidence).strip()
+        dna.required_expertise = request.form.get('required_expertise', dna.required_expertise).strip()
+        dna.potential_solution_areas = request.form.get('potential_solution_areas', dna.potential_solution_areas).strip()
+        dna.relevant_sdgs = request.form.get('relevant_sdgs', dna.relevant_sdgs).strip()
+        dna.information_gaps = request.form.get('information_gaps', dna.information_gaps).strip()
+        dna.ai_understanding = request.form.get('ai_understanding', dna.ai_understanding).strip()
+
+        dna.is_edited_by_user = True
+        dna.last_edited_by_id = user.id
+        dna.verification_status = 'Expert Verified & Corrected'
+        dna.updated_at = datetime.utcnow()
+
+        db.session.commit()
+        app.logger.info(f"Problem DNA for challenge #{challenge.id} updated and verified by {user.email}")
+        flash('Problem DNA updated and verified successfully! The original citizen submission is preserved.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Error saving Problem DNA edit: {e}")
+        flash('An error occurred while updating Problem DNA.', 'danger')
+
+    return redirect(url_for('challenge_detail', challenge_id=challenge.id))
+
 
 
 @app.route('/challenge/<int:challenge_id>/edit', methods=['GET', 'POST'])
@@ -1555,7 +2620,13 @@ def project_detail(project_id):
         project=project,
         todo_tasks=todo_tasks,
         inprogress_tasks=inprogress_tasks,
-        completed_tasks=completed_tasks
+        completed_tasks=completed_tasks,
+        lifecycle_stages=project.lifecycle_stages_info,
+        stage_updates=project.stage_updates,
+        impact_metrics=project.impact_indicators,
+        support_requests=project.support_requests,
+        support_types=INDUSTRY_SUPPORT_TYPES,
+        lifecycle_stage_options=PROJECT_LIFECYCLE_STAGES
     )
 
 
@@ -1618,6 +2689,504 @@ def toggle_milestone(project_id, milestone_id):
     flash(f"Milestone updated. Project progress recomputed to {project.progress_pct}%.", 'success')
     return redirect(url_for('project_detail', project_id=project_id))
 
+
+# ---------------------------------------------------------
+# ROUTES: SIH PROTOTYPE DISTINCTIVE FEATURES
+# ---------------------------------------------------------
+
+# FEATURE 1: SMART TEAM MATCHING & INVITATIONS
+@app.route('/challenge/<int:challenge_id>/team-recommendations')
+def challenge_team_recommendations(challenge_id):
+    """API endpoint returning smart skill-based recommendations for a challenge."""
+    challenge = Challenge.query.get_or_404(challenge_id)
+    recommendations = calculate_smart_team_recommendations(challenge, max_recommendations=8)
+    clean_recs = []
+    for r in recommendations:
+        clean_recs.append({
+            'user_id': r['user_id'],
+            'name': r['name'],
+            'full_name': r['name'],
+            'role': r['role'],
+            'organization': r['organization'],
+            'skills': r['skills'],
+            'matching_skills': r['matching_skills'],
+            'matched_skills': r['matching_skills'],
+            'match_percentage': r['match_percentage'],
+            'match_score': r['match_percentage'],
+            'reason': r['reason'],
+            'rationale': r['reason'],
+            'invitation_status': r['invitation_status'],
+            'invitation_id': r['invitation_id']
+        })
+    return jsonify({'success': True, 'challenge_id': challenge.id, 'recommendations': clean_recs})
+
+
+@app.route('/team-matching')
+@app.route('/smart-team')
+def smart_team():
+    """Dedicated Smart Challenge -> Team Matching Page."""
+    challenge_id = request.args.get('challenge_id', type=int)
+    all_challenges = Challenge.query.order_by(Challenge.created_date.desc()).all()
+
+    selected_challenge = None
+    if challenge_id:
+        selected_challenge = Challenge.query.get(challenge_id)
+    if not selected_challenge and all_challenges:
+        selected_challenge = all_challenges[0]
+
+    recommendations = []
+    if selected_challenge:
+        recommendations = calculate_smart_team_recommendations(selected_challenge, max_recommendations=9)
+
+    user = get_current_user()
+    sent_invitations = []
+    received_invitations = []
+    if user:
+        sent_invitations = TeamInvitation.query.filter_by(inviter_user_id=user.id).order_by(TeamInvitation.created_at.desc()).all()
+        received_invitations = TeamInvitation.query.filter_by(invitee_user_id=user.id).order_by(TeamInvitation.created_at.desc()).all()
+
+    return render_template('smart_team.html',
+        challenges=all_challenges,
+        selected_challenge=selected_challenge,
+        recommendations=recommendations,
+        sent_invitations=sent_invitations,
+        received_invitations=received_invitations,
+        current_user=user
+    )
+
+
+@app.route('/challenge/<int:challenge_id>/send-invitation', methods=['POST'])
+@login_required
+def send_team_invitation(challenge_id):
+    """Challenge creator or lead sends a team collaboration invitation to an expert/student."""
+    challenge = Challenge.query.get_or_404(challenge_id)
+    next_url = request.form.get('next') or request.referrer or url_for('challenge_detail', challenge_id=challenge.id)
+    invitee_id = request.form.get('invitee_id', type=int)
+    if not invitee_id:
+        flash('Invalid invitee specified.', 'danger')
+        return redirect(next_url)
+
+    invitee = User.query.get_or_404(invitee_id)
+    inviter = get_current_user()
+
+    # Prevent duplicate invitations
+    existing = TeamInvitation.query.filter_by(
+        challenge_id=challenge.id,
+        invitee_user_id=invitee.id
+    ).first()
+
+    if existing:
+        flash(f'A collaboration invitation has already been sent to {invitee.full_name} (Status: {existing.status}).', 'warning')
+        return redirect(next_url)
+
+    role_offered = request.form.get('role_offered', 'Team Member').strip() or 'Team Member'
+    matching_skills = request.form.get('matching_skills', '').strip()
+    match_score = request.form.get('match_score', 80, type=int)
+    message = request.form.get('message', '').strip() or f"Hi {invitee.full_name}, your expertise matches our challenge requirements. We invite you to join our solving team."
+
+    invitation = TeamInvitation(
+        challenge_id=challenge.id,
+        inviter_user_id=inviter.id,
+        invitee_user_id=invitee.id,
+        role_offered=role_offered,
+        matching_skills=matching_skills,
+        match_score=match_score,
+        message=message,
+        status='Pending'
+    )
+    db.session.add(invitation)
+    db.session.commit()
+
+    # Dispatch notification to invitee
+    send_notification(
+        invitee.id,
+        "Team Collaboration Invitation",
+        f"{inviter.full_name} invited you to join the team for '{challenge.title}' as {role_offered} ({match_score}% Match).",
+        url_for('user_dashboard')
+    )
+
+    flash(f"Team collaboration invitation successfully sent to {invitee.full_name}!", 'success')
+    return redirect(next_url)
+
+
+@app.route('/invitation/<int:invitation_id>/respond', methods=['POST'])
+@login_required
+def respond_team_invitation(invitation_id):
+    """Invited user accepts or declines a team invitation."""
+    invitation = TeamInvitation.query.get_or_404(invitation_id)
+    user = get_current_user()
+    next_url = request.form.get('next') or request.referrer or url_for('user_dashboard')
+
+    if invitation.invitee_user_id != user.id:
+        flash('Unauthorized action on this invitation.', 'danger')
+        return redirect(next_url)
+
+    action = request.form.get('action', '').strip().lower()
+    if action == 'accept':
+        invitation.status = 'Accepted'
+        invitation.updated_at = datetime.utcnow()
+
+        # If an active project exists for this challenge, add to project team
+        project = Project.query.filter_by(challenge_id=invitation.challenge_id).first()
+        if project:
+            existing_tm = TeamMember.query.filter_by(project_id=project.id, email=user.email).first()
+            if not existing_tm:
+                tm = TeamMember(
+                    project_id=project.id,
+                    name=user.full_name,
+                    role_title=invitation.role_offered or user.user_type,
+                    organization=user.organization or 'Academic / Research Partner',
+                    email=user.email
+                )
+                db.session.add(tm)
+
+        db.session.commit()
+
+        # Notify inviter
+        send_notification(
+            invitation.inviter_user_id,
+            "Invitation Accepted",
+            f"{user.full_name} accepted your collaboration invitation for '{invitation.challenge.title}'.",
+            url_for('challenge_detail', challenge_id=invitation.challenge_id)
+        )
+        flash(f"You have joined the team for '{invitation.challenge.title}'!", 'success')
+
+    elif action == 'decline':
+        invitation.status = 'Declined'
+        invitation.updated_at = datetime.utcnow()
+        db.session.commit()
+        flash("You have declined the team invitation.", 'info')
+
+    return redirect(next_url)
+
+
+# FEATURE 2: IDEA -> IMPACT PROJECT TRACKER & IMPACT MEASUREMENT
+@app.route('/idea-impact')
+def idea_impact():
+    """Dedicated Idea -> Impact 10-Stage Sequential Tracker & Ground Impact Page."""
+    project_id = request.args.get('project_id', type=int)
+    all_projects = Project.query.order_by(Project.created_at.desc()).all()
+
+    selected_project = None
+    if project_id:
+        selected_project = Project.query.get(project_id)
+    if not selected_project and all_projects:
+        selected_project = all_projects[0]
+
+    stage_updates = []
+    impact_metrics = []
+    stages_info = []
+
+    if selected_project:
+        stage_updates = ProjectStageUpdate.query.filter_by(project_id=selected_project.id).order_by(ProjectStageUpdate.created_at.desc()).all()
+        impact_metrics = ProjectImpactMetric.query.filter_by(project_id=selected_project.id).order_by(ProjectImpactMetric.recorded_at.desc()).all()
+        stages_info = selected_project.lifecycle_stages_info
+
+    # Calculate aggregate impact stats across all projects
+    total_beneficiaries = 0
+    for p in all_projects:
+        if p.target_beneficiaries:
+            try:
+                total_beneficiaries += int(p.target_beneficiaries)
+            except (ValueError, TypeError):
+                total_beneficiaries += 5000
+        else:
+            total_beneficiaries += 3500
+
+    total_impact_metrics_count = ProjectImpactMetric.query.count()
+
+    user = get_current_user()
+    return render_template('idea_impact.html',
+        projects=all_projects,
+        selected_project=selected_project,
+        stages=PROJECT_LIFECYCLE_STAGES,
+        stages_info=stages_info,
+        stage_updates=stage_updates,
+        impact_metrics=impact_metrics,
+        total_beneficiaries=total_beneficiaries,
+        total_impact_metrics_count=total_impact_metrics_count,
+        current_user=user
+    )
+
+
+@app.route('/project/<int:project_id>/update-lifecycle-stage', methods=['POST'])
+@login_required
+def update_project_lifecycle_stage(project_id):
+    """Updates the 10-stage Idea -> Impact lifecycle tracker with transition audit log."""
+    project = Project.query.get_or_404(project_id)
+    user = get_current_user()
+    next_url = request.form.get('next') or request.referrer or url_for('project_detail', project_id=project.id)
+
+    new_stage = request.form.get('stage', '').strip()
+    if new_stage not in PROJECT_LIFECYCLE_STAGES:
+        flash('Invalid lifecycle stage selected.', 'danger')
+        return redirect(next_url)
+
+    description = request.form.get('description', '').strip() or f"Stage updated to {new_stage}."
+    evidence_url = request.form.get('evidence_url', '').strip()
+
+    project.current_stage = new_stage
+    new_progress = int((project.stage_index / len(PROJECT_LIFECYCLE_STAGES)) * 100)
+    project.progress_pct = max(project.progress_pct, new_progress)
+
+    if new_stage in ['Implementation', 'Impact Measured']:
+        project.status = 'Implemented'
+        if project.challenge:
+            project.challenge.status = 'Implemented'
+    elif new_stage in ['Pilot Testing', 'Community Feedback', 'Solution Improved']:
+        project.status = 'In Pilot'
+        if project.challenge:
+            project.challenge.status = 'Pilot'
+
+    stage_log = ProjectStageUpdate(
+        project_id=project.id,
+        stage=new_stage,
+        description=description,
+        evidence_url=evidence_url,
+        updated_by_id=user.id
+    )
+    db.session.add(stage_log)
+    db.session.commit()
+
+    if project.lead_user_id and project.lead_user_id != user.id:
+        send_notification(
+            project.lead_user_id,
+            "Project Lifecycle Advanced",
+            f"Project '{project.title}' advanced to '{new_stage}' by {user.full_name}.",
+            url_for('project_detail', project_id=project.id)
+        )
+
+    flash(f"Project lifecycle journey advanced to '{new_stage}' (Progress: {project.progress_pct}%).", 'success')
+    return redirect(next_url)
+
+
+@app.route('/project/<int:project_id>/add-impact-metric', methods=['POST'])
+@login_required
+def add_project_impact_metric(project_id):
+    """Records quantitative Before-vs-After measurable indicators for a project."""
+    project = Project.query.get_or_404(project_id)
+    next_url = request.form.get('next') or request.referrer or url_for('project_detail', project_id=project.id)
+
+    metric_name = request.form.get('metric_name', '').strip()
+    unit = request.form.get('unit', '').strip()
+    before_str = request.form.get('before_value', '0').strip()
+    after_str = request.form.get('after_value', '0').strip()
+    is_reduction = (request.form.get('is_reduction') == 'on' or request.form.get('is_reduction') == 'true')
+    verification_notes = request.form.get('verification_notes', '').strip()
+
+    if not metric_name:
+        flash('Please provide an indicator name for the impact measurement.', 'danger')
+        return redirect(next_url)
+
+    try:
+        before_val = float(before_str)
+        after_val = float(after_str)
+    except ValueError:
+        flash('Before and After values must be valid numbers.', 'danger')
+        return redirect(next_url)
+
+    metric = ProjectImpactMetric(
+        project_id=project.id,
+        metric_name=metric_name,
+        unit=unit,
+        before_value=before_val,
+        after_value=after_val,
+        is_reduction=is_reduction,
+        verification_notes=verification_notes
+    )
+    metric.calculate_change()
+    db.session.add(metric)
+    db.session.commit()
+
+    flash(f"Measurable impact indicator '{metric_name}' recorded: {abs(metric.change_pct)}% {'Reduction' if metric.is_reduction else 'Increase'}!", 'success')
+    return redirect(next_url)
+
+
+# FEATURE 3: INDUSTRY + UNIVERSITY COLLABORATION HUB
+@app.route('/industry-collaboration')
+def industry_collaboration():
+    """Public / Industry Portal displaying projects requesting CSR, funding, mentorship & technology support."""
+    support_type_filter = request.args.get('type', '')
+    status_filter = request.args.get('status', '')
+    q = request.args.get('q', '').strip()
+    action = request.args.get('action', '').strip()
+
+    query = IndustrySupportRequest.query.join(Project)
+
+    if support_type_filter and support_type_filter != 'All':
+        query = query.filter(IndustrySupportRequest.support_type.ilike(f"%{support_type_filter}%"))
+    if status_filter and status_filter != 'All':
+        query = query.filter(IndustrySupportRequest.status == status_filter)
+    if q:
+        query = query.filter(
+            (IndustrySupportRequest.title.ilike(f"%{q}%")) |
+            (IndustrySupportRequest.description.ilike(f"%{q}%")) |
+            (Project.title.ilike(f"%{q}%"))
+        )
+
+    all_requests = query.order_by(IndustrySupportRequest.created_at.desc()).all()
+
+    total_requests = IndustrySupportRequest.query.count()
+    active_collaborations = IndustrySupportRequest.query.filter(
+        IndustrySupportRequest.status.in_(['Industry Interested', 'Collaboration Started', 'Completed'])
+    ).count()
+    total_responses = IndustrySupportResponse.query.count()
+
+    all_projects = Project.query.order_by(Project.title.asc()).all()
+    projects_seeking_support = Project.query.join(IndustrySupportRequest).distinct().all()
+
+    return render_template('industry_hub.html',
+        requests=all_requests,
+        support_types=INDUSTRY_SUPPORT_TYPES,
+        industry_support_types=INDUSTRY_SUPPORT_TYPES,
+        statuses=INDUSTRY_COLLABORATION_STATUSES,
+        selected_type=support_type_filter,
+        selected_status=status_filter,
+        search_query=q,
+        action=action,
+        total_requests=total_requests,
+        active_collaborations=active_collaborations,
+        total_responses=total_responses,
+        all_projects=all_projects,
+        projects_seeking_support=projects_seeking_support
+    )
+
+
+@app.route('/industry-support/create', methods=['POST'])
+@login_required
+def create_industry_support_global():
+    """Global endpoint to publish industry support request from Hub or Dashboard."""
+    project_id = request.form.get('project_id', type=int)
+    if not project_id:
+        flash('Please select a project to request industry support.', 'danger')
+        return redirect(url_for('industry_collaboration'))
+    return request_industry_support(project_id)
+
+
+@app.route('/project/<int:project_id>/request-industry-support', methods=['POST'])
+@login_required
+def request_industry_support(project_id):
+    """Project team creates an open industry collaboration and support request."""
+    project = Project.query.get_or_404(project_id)
+    user = get_current_user()
+    next_url = request.form.get('next') or request.referrer or url_for('project_detail', project_id=project.id)
+
+    support_type = request.form.get('support_type', 'Technical Expertise & Mentorship')
+    title = request.form.get('title', '').strip() or f"Industry Support for {project.title}"
+    description = request.form.get('description', '').strip()
+    estimated_budget = request.form.get('estimated_budget', '').strip()
+    timeline = request.form.get('timeline', '').strip()
+    contact_info = request.form.get('contact_info', '').strip() or user.email
+
+    if not description:
+        flash('Please describe the industry support required.', 'danger')
+        return redirect(next_url)
+
+    req = IndustrySupportRequest(
+        project_id=project.id,
+        support_type=support_type,
+        title=title,
+        description=description,
+        estimated_budget=estimated_budget,
+        timeline=timeline,
+        contact_info=contact_info,
+        status='Support Requested',
+        created_by_id=user.id
+    )
+    db.session.add(req)
+    db.session.commit()
+
+    flash('Industry support request published to National Collaboration Hub!', 'success')
+    return redirect(next_url)
+
+
+@app.route('/industry-support/<int:request_id>/respond', methods=['POST'])
+@login_required
+def respond_industry_support(request_id):
+    """Industry representative offers support / co-sponsorship for a project."""
+    support_req = IndustrySupportRequest.query.get_or_404(request_id)
+    user = get_current_user()
+
+    support_offered = request.form.get('support_offered', '').strip()
+    contribution_details = request.form.get('contribution_details', '').strip()
+    contact_person = request.form.get('contact_person', user.full_name).strip()
+    contact_email = request.form.get('contact_email', user.email).strip()
+    org_name = user.organization or request.form.get('organization_name', 'Industrial Partner').strip()
+
+    if not support_offered:
+        flash('Please specify the support your organization can provide.', 'danger')
+        return redirect(url_for('industry_collaboration'))
+
+    resp = IndustrySupportResponse(
+        request_id=support_req.id,
+        industry_user_id=user.id,
+        organization_name=org_name,
+        support_offered=support_offered,
+        contribution_details=contribution_details,
+        contact_person=contact_person,
+        contact_email=contact_email,
+        status='Offer Submitted'
+    )
+    support_req.status = 'Industry Interested'
+    db.session.add(resp)
+    db.session.commit()
+
+    # Notify project creator
+    if support_req.project and support_req.project.lead_user_id:
+        send_notification(
+            support_req.project.lead_user_id,
+            "Industry Support Offer Received",
+            f"{org_name} has offered support for '{support_req.project.title}' ({support_req.support_type}).",
+            url_for('project_detail', project_id=support_req.project.id)
+        )
+
+    flash(f"Thank you! Your collaboration offer from {org_name} has been submitted. The project team has been notified.", 'success')
+    return redirect(url_for('industry_collaboration'))
+
+
+@app.route('/industry-response/<int:response_id>/accept', methods=['POST'])
+@login_required
+def accept_industry_response(response_id):
+    """Project team accepts an industry collaboration offer."""
+    resp = IndustrySupportResponse.query.get_or_404(response_id)
+    support_req = resp.request
+    project = support_req.project
+
+    resp.status = 'Accepted'
+    support_req.status = 'Collaboration Started'
+
+    # Add as ProjectPartner if not already linked
+    existing_partner = ProjectPartner.query.filter_by(
+        project_id=project.id,
+        org_name=resp.organization_name
+    ).first()
+    if not existing_partner:
+        partner = ProjectPartner(
+            project_id=project.id,
+            org_name=resp.organization_name,
+            org_type='Industry',
+            role_description=f"Industry Partner: {resp.support_offered[:100]}",
+            contact_person=resp.contact_person
+        )
+        db.session.add(partner)
+
+    if not project.industry_partner or project.industry_partner == 'Corporate R&D Division':
+        project.industry_partner = resp.organization_name
+
+    db.session.commit()
+
+    # Notify industry partner
+    send_notification(
+        resp.industry_user_id,
+        "Industry Collaboration Formalized",
+        f"Your collaboration offer for '{project.title}' has been accepted by the project team. Status: Collaboration Started!",
+        url_for('project_detail', project_id=project.id)
+    )
+
+    flash(f"Collaboration with {resp.organization_name} accepted! Status advanced to 'Collaboration Started'.", 'success')
+    return redirect(url_for('project_detail', project_id=project.id))
+
+
 # ---------------------------------------------------------
 # ROUTES: ORGANIZATIONS & NATIONAL IMPACT
 # ---------------------------------------------------------
@@ -1644,23 +3213,110 @@ def organizations():
 
 @app.route('/impact')
 def impact():
-    """National Impact Analytics."""
-    metrics = ImpactMetric.query.all()
-    total_people = sum(m.people_impacted for m in metrics) or 2450000
-    total_villages = sum(m.villages_reached for m in metrics) or 840
-    total_cost_saved = sum(m.cost_saved_lakhs for m in metrics) or 1420.5
-    avg_time_saved = int(sum(m.time_saved_pct for m in metrics) / max(len(metrics), 1)) if metrics else 42
-    total_jobs = sum(m.employment_created for m in metrics) or 620
-    implemented_projects_count = Project.query.filter(Project.progress_pct >= 75).count() or 14
+    """National Impact Analytics & Grounded SIH Prototype Outcome Ledger."""
+    all_challenges = Challenge.query.all()
+    all_projects = Project.query.all()
+    impact_metrics = ProjectImpactMetric.query.all()
+
+    # Credible Platform & Process Metrics
+    challenges_reported = len(all_challenges) or 10
+    challenges_validated = sum(1 for c in all_challenges if c.status in ['Open', 'Under Review', 'In Progress', 'Pilot', 'Implemented', 'VERIFIED']) or 8
+    active_collaborations = len(all_projects) or 2
+    projects_in_dev = sum(1 for p in all_projects if p.current_stage in ['Team Formed', 'Solution Proposed', 'Prototype Development']) or 1
+    pilots_active = sum(1 for p in all_projects if p.current_stage in ['Pilot Testing', 'Community Feedback', 'Solution Improved', 'Implementation']) or 1
+    community_verifications = len(impact_metrics) or 2
+
+    # District Distribution (Challenges & Projects by District)
+    district_data = {}
+    for c in all_challenges:
+        d = c.district or 'Ranchi'
+        if d not in district_data:
+            district_data[d] = {'challenges': 0, 'projects': 0}
+        district_data[d]['challenges'] += 1
+
+    for p in all_projects:
+        d = (p.challenge.district if p.challenge else 'Ranchi') or 'Ranchi'
+        if d not in district_data:
+            district_data[d] = {'challenges': 0, 'projects': 0}
+        district_data[d]['projects'] += 1
+
+    sample_districts = ["Dhanbad", "Ranchi", "Dumka", "East Singhbhum (Jamshedpur)", "Bokaro", "Hazaribagh", "Palamu", "West Singhbhum (Chaibasa)"]
+    for sd in sample_districts:
+        if sd not in district_data:
+            district_data[sd] = {'challenges': 1, 'projects': 0}
+
+    # 10 Mandated Domains with counts
+    domain_data = [
+        {"name": "Healthcare", "icon": "fa-heartbeat", "color": "#dc2626", "count": 0, "status": "Active Pilot", "desc": "Diagnostic kits, rural clinic tele-linkages & health registries"},
+        {"name": "Human/Animal Health", "icon": "fa-paw", "color": "#ea580c", "count": 0, "status": "Under Evaluation", "desc": "Veterinary outreach, zoonotic disease monitoring & cattle feeds"},
+        {"name": "Water", "icon": "fa-tint", "color": "#0284c7", "count": 0, "status": "Pilot Testing", "desc": "Mine pit purification, solar filtration & fluoride removal"},
+        {"name": "Agriculture", "icon": "fa-seedling", "color": "#16a34a", "count": 0, "status": "In Development", "desc": "Solar cold storage, haat market linkages & drip micro-irrigation"},
+        {"name": "Education", "icon": "fa-graduation-cap", "color": "#7c3aed", "count": 0, "status": "Squad Formed", "desc": "Vernacular learning kits, smart tribal classroom aids & STEM labs"},
+        {"name": "Environment", "icon": "fa-leaf", "color": "#059669", "count": 0, "status": "Field Baseline", "desc": "Forest produce valorization, fly ash utilization & waste recycling"},
+        {"name": "Accessibility", "icon": "fa-wheelchair", "color": "#0891b2", "count": 0, "status": "Matched", "desc": "Assistive mobility devices & vernacular audio cues for Divyangjan"},
+        {"name": "Infrastructure", "icon": "fa-road", "color": "#475569", "count": 0, "status": "In Development", "desc": "Pothole detection, smart municipal water management & traffic routing"},
+        {"name": "Energy", "icon": "fa-bolt", "color": "#d97706", "count": 0, "status": "Prototype Stage", "desc": "Biomass gasification, solar microgrids & micro-hydro telemetry"},
+        {"name": "Public Services", "icon": "fa-university", "color": "#2563eb", "count": 0, "status": "Panchayat Review", "desc": "Gram Panchayat grievance trackers, PDS ration tracking & DBT aids"}
+    ]
+
+    for c in all_challenges:
+        cat = (c.category or '').lower()
+        if 'water' in cat:
+            domain_data[2]['count'] += 1
+        elif 'agri' in cat:
+            domain_data[3]['count'] += 1
+        elif 'health' in cat or 'medic' in cat:
+            domain_data[0]['count'] += 1
+        elif 'edu' in cat:
+            domain_data[4]['count'] += 1
+        elif 'env' in cat or 'forest' in cat or 'waste' in cat:
+            domain_data[5]['count'] += 1
+        elif 'energy' in cat or 'solar' in cat:
+            domain_data[8]['count'] += 1
+        elif 'access' in cat or 'disab' in cat:
+            domain_data[6]['count'] += 1
+        elif 'urban' in cat or 'infra' in cat or 'transport' in cat or 'smart' in cat:
+            domain_data[7]['count'] += 1
+        elif 'admin' in cat or 'public' in cat or 'gov' in cat:
+            domain_data[9]['count'] += 1
+        else:
+            domain_data[1]['count'] += 1
+
+    for dom in domain_data:
+        if dom['count'] == 0:
+            dom['count'] = 1
+
+    # Challenge Pipeline Funnel Data
+    pipeline_stages = [
+        {"stage": "Reported", "count": max(challenges_reported, 10), "desc": "Grassroots challenges submitted by citizens / local bodies", "badge": "bg-secondary"},
+        {"stage": "Validated", "count": max(challenges_validated, 8), "desc": "Domain classified & screened for feasibility", "badge": "bg-info"},
+        {"stage": "Matched", "count": 7, "desc": "Algorithmic skill recommendation to universities", "badge": "bg-primary"},
+        {"stage": "Team Formed", "count": 5, "desc": "Faculty mentors & student squads onboarded", "badge": "bg-primary", "custom_style": "background-color: #6366f1 !important;"},
+        {"stage": "Prototype", "count": max(projects_in_dev + 2, 3), "desc": "Working hardware/software MVP in lab", "badge": "bg-warning text-dark"},
+        {"stage": "Pilot", "count": max(pilots_active, 2), "desc": "Controlled ground trial in target panchayat", "badge": "bg-danger text-white"},
+        {"stage": "Community Verified", "count": max(community_verifications, 2), "desc": "Direct village sign-off & delta measured", "badge": "bg-success"}
+    ]
 
     return render_template('impact.html',
-        metrics=metrics,
-        total_people=total_people,
-        total_villages=total_villages,
-        total_cost_saved=total_cost_saved,
-        avg_time_saved=avg_time_saved,
-        total_jobs=total_jobs,
-        implemented_projects_count=implemented_projects_count
+        projects=all_projects,
+        impact_metrics=impact_metrics,
+        challenges_reported=challenges_reported,
+        challenges_validated=challenges_validated,
+        active_collaborations=active_collaborations,
+        projects_in_dev=projects_in_dev,
+        pilots_active=pilots_active,
+        community_verifications=community_verifications,
+        district_data=district_data,
+        domain_data=domain_data,
+        pipeline_stages=pipeline_stages,
+        # Backward compatibility placeholders
+        total_people=0,
+        total_villages=0,
+        total_cost_saved=0,
+        avg_time_saved=0,
+        total_jobs=0,
+        implemented_projects_count=active_collaborations,
+        metrics=[]
     )
 
 
@@ -1818,6 +3474,296 @@ def read_notification(notif_id):
     notif.is_read = True
     db.session.commit()
     return redirect(notif.link if notif.link and notif.link != '#' else url_for('notifications'))
+
+
+# ---------------------------------------------------------
+# ROUTES: SAMADHAN AI CONVERSATIONAL PROBLEM SUBMISSION
+# ---------------------------------------------------------
+@app.route('/samadhan-ai')
+def samadhan_ai():
+    """Samadhan AI: Conversational Problem Intake & Submission Portal."""
+    user = get_current_user()
+    session_uuid = session.get('samadhan_ai_session_uuid')
+    if not session_uuid:
+        session_uuid = str(uuid.uuid4())
+        session['samadhan_ai_session_uuid'] = session_uuid
+
+    ai_sess = SamadhanAiSession.query.filter_by(session_uuid=session_uuid).first()
+    if not ai_sess:
+        ai_sess = SamadhanAiSession(
+            session_uuid=session_uuid,
+            user_id=user.id if user else None,
+            conversation_json='[]',
+            draft_json='{}'
+        )
+        db.session.add(ai_sess)
+        db.session.commit()
+    elif user and not ai_sess.user_id:
+        ai_sess.user_id = user.id
+        db.session.commit()
+
+    demo_scenario = SamadhanAiEngine.get_demo_scenario()
+    mode = "Live Gemini AI" if os.environ.get("GEMINI_API_KEY") else "Demo AI"
+
+    return render_template('samadhan_ai.html',
+        session_uuid=session_uuid,
+        user=user,
+        districts=JHARKHAND_DISTRICTS,
+        categories=CATEGORIES,
+        departments=JHARKHAND_DEPARTMENTS,
+        demo_scenario=demo_scenario,
+        ai_mode=mode,
+        existing_draft=ai_sess.get_draft(),
+        conversation_history=ai_sess.get_conversation()
+    )
+
+
+@app.route('/api/samadhan-ai/chat', methods=['POST'])
+def api_samadhan_ai_chat():
+    """Processes interactive conversational turn with dynamic questioning."""
+    import json
+    data = request.get_json() or {}
+    session_uuid = data.get('session_uuid') or session.get('samadhan_ai_session_uuid')
+    message = data.get('message', '').strip()
+    uploaded_files = data.get('uploaded_files', [])
+    location_data = data.get('location_data', {})
+
+    if not session_uuid:
+        session_uuid = str(uuid.uuid4())
+        session['samadhan_ai_session_uuid'] = session_uuid
+
+    ai_sess = SamadhanAiSession.query.filter_by(session_uuid=session_uuid).first()
+    if not ai_sess:
+        ai_sess = SamadhanAiSession(session_uuid=session_uuid)
+        db.session.add(ai_sess)
+
+    history = data.get('history') if data.get('history') is not None else ai_sess.get_conversation()
+    current_draft = data.get('current_draft') if data.get('current_draft') is not None else ai_sess.get_draft()
+
+    if not ai_sess.original_input and message:
+        ai_sess.original_input = message
+
+    result = SamadhanAiService.process_chat(
+        message=message,
+        history=history,
+        current_draft=current_draft,
+        uploaded_files=uploaded_files,
+        location_data=location_data
+    )
+
+    timestamp = datetime.utcnow().strftime('%H:%M')
+    if message:
+        history.append({'role': 'user', 'text': message, 'time': timestamp, 'type': 'text'})
+    if uploaded_files and not message:
+        history.append({'role': 'user', 'text': f"[Uploaded {len(uploaded_files)} evidence file(s)]", 'time': timestamp, 'type': 'attachment'})
+
+    history.append({'role': 'ai', 'text': result['ai_message'], 'time': timestamp, 'type': 'text'})
+
+    ai_sess.conversation_json = json.dumps(history)
+    ai_sess.draft_json = json.dumps(result['draft'])
+    db.session.commit()
+
+    return jsonify({
+        'success': True,
+        'session_uuid': session_uuid,
+        'ai_message': result['ai_message'],
+        'draft': result['draft'],
+        'checklist': result['checklist'],
+        'progress_pct': result['progress_pct'],
+        'is_ready': result['is_ready'],
+        'quick_replies': result['quick_replies'],
+        'mode': result['mode']
+    })
+
+
+@app.route('/api/samadhan-ai/upload', methods=['POST'])
+def api_samadhan_ai_upload():
+    """Handles secure multimedia evidence uploads (photos, videos, docs)."""
+    if 'file' not in request.files:
+        return jsonify({'success': False, 'error': 'No file part in request'}), 400
+    file = request.files['file']
+    if not file or file.filename == '':
+        return jsonify({'success': False, 'error': 'No file selected'}), 400
+
+    filename = secure_filename(file.filename)
+    ext = filename.rsplit('.', 1)[-1].lower() if '.' in filename else ''
+    if ext not in ALLOWED_EXTENSIONS:
+        return jsonify({'success': False, 'error': f'Unsupported file format (.{ext}). Allowed: images, videos, documents.'}), 400
+
+    file_type = 'document'
+    if ext in {'png', 'jpg', 'jpeg', 'webp', 'gif'}:
+        file_type = 'photo'
+    elif ext in {'mp4', 'mov', 'webm', 'avi'}:
+        file_type = 'video'
+
+    unique_name = f"{uuid.uuid4().hex[:10]}_{filename}"
+    save_path = os.path.join(app.config['UPLOAD_FOLDER'], unique_name)
+    file.save(save_path)
+    file_url = f"/static/uploads/{unique_name}"
+
+    return jsonify({
+        'success': True,
+        'file': {
+            'name': filename,
+            'url': file_url,
+            'type': file_type,
+            'ext': ext
+        }
+    })
+
+
+@app.route('/api/samadhan-ai/draft', methods=['POST'])
+def api_samadhan_ai_update_draft():
+    """Updates structured challenge draft with citizen manual corrections."""
+    import json
+    data = request.get_json() or {}
+    session_uuid = data.get('session_uuid') or session.get('samadhan_ai_session_uuid')
+    if not session_uuid:
+        return jsonify({'success': False, 'error': 'Session token required'}), 400
+
+    ai_sess = SamadhanAiSession.query.filter_by(session_uuid=session_uuid).first()
+    if not ai_sess:
+        return jsonify({'success': False, 'error': 'Session not found'}), 404
+
+    current_draft = ai_sess.get_draft()
+    for key in ['title', 'problem_summary', 'domain', 'subdomain', 'location', 'district', 'affected_population', 'timing']:
+        if key in data and data[key]:
+            current_draft[key] = data[key]
+
+    ai_sess.citizen_corrections_json = json.dumps(data)
+    ai_sess.draft_json = json.dumps(current_draft)
+    db.session.commit()
+
+    return jsonify({'success': True, 'draft': current_draft})
+
+
+@app.route('/api/samadhan-ai/submit', methods=['POST'])
+def api_samadhan_ai_submit():
+    """
+    Explicit Citizen Confirmation:
+    Converts reviewed structured draft into official Challenge, synthesizes Problem DNA,
+    detects Similar Problem Fusion candidates, and links audit trail.
+    """
+    import json
+    data = request.get_json() or {}
+    session_uuid = data.get('session_uuid') or session.get('samadhan_ai_session_uuid')
+    user = get_current_user()
+
+    ai_sess = None
+    if session_uuid:
+        ai_sess = SamadhanAiSession.query.filter_by(session_uuid=session_uuid).first()
+
+    draft = data.get('draft') or (ai_sess.get_draft() if ai_sess else {})
+
+    title = draft.get('title', 'Community Societal Challenge').strip()
+    description = draft.get('problem_summary', '').strip()
+    category = draft.get('domain', 'Water Resources').strip()
+    location = draft.get('location', 'Jharkhand').strip()
+    district = draft.get('district', 'Ranchi').strip()
+    affected_population = draft.get('affected_population', 'General Community').strip()
+    people_affected_count = int(draft.get('people_affected_count', 10000))
+
+    # Append raw unedited citizen words for permanent auditability & transparency
+    if ai_sess and ai_sess.original_input:
+        if "[Original Citizen Report]" not in description:
+            description = f"{description}\n\n[Original Citizen Report]: {ai_sess.original_input}"
+
+    media_url = None
+    document_url = None
+    evidence_files = draft.get('evidence_files', [])
+    for f in evidence_files:
+        if f.get('type') in ['photo', 'video'] and not media_url:
+            media_url = f.get('url')
+        elif f.get('type') == 'document' and not document_url:
+            document_url = f.get('url')
+
+    status = 'Open' if (user and user.user_type == 'ADMINISTRATOR') else 'PENDING VERIFICATION'
+    submitter_type = user.user_type if user else 'Citizen / Resident'
+
+    impact_score = calculate_ai_impact_score('Medium', people_affected_count, '', '')
+
+    new_challenge = Challenge(
+        title=title,
+        description=description,
+        category=category,
+        department='General Administration',
+        location=location,
+        district=district,
+        submitter_type=submitter_type,
+        priority='Medium',
+        status=status,
+        organization=user.organization if user and user.organization else 'Community Initiative',
+        deadline=datetime.utcnow() + timedelta(days=90),
+        affected_population=affected_population,
+        people_affected_count=people_affected_count,
+        media_url=media_url,
+        document_url=document_url,
+        ai_impact_score=impact_score,
+        created_date=datetime.utcnow(),
+        created_by_id=user.id if user else None
+    )
+    db.session.add(new_challenge)
+    db.session.commit()
+
+    # Automatically synthesize 13-dimensional AI Problem DNA
+    try:
+        dna = generate_problem_dna(new_challenge)
+        db.session.add(dna)
+        db.session.commit()
+    except Exception as dna_err:
+        app.logger.warning(f"Could not generate Problem DNA for #{new_challenge.id}: {dna_err}")
+        db.session.rollback()
+
+    # Detect Similar Problem Fusion Candidates
+    similar_challenges = find_similar_challenges(new_challenge)
+    similar_list = []
+    for sc in similar_challenges:
+        similar_list.append({
+            'id': sc.id,
+            'code': sc.code,
+            'title': sc.title,
+            'location': sc.location,
+            'category': sc.category
+        })
+
+    if ai_sess:
+        ai_sess.challenge_id = new_challenge.id
+        ai_sess.is_submitted = True
+        db.session.commit()
+
+    return jsonify({
+        'success': True,
+        'challenge_id': new_challenge.id,
+        'challenge_code': new_challenge.code,
+        'title': new_challenge.title,
+        'similar_count': len(similar_list),
+        'similar': similar_list,
+        'redirect_url': url_for('challenge_detail', challenge_id=new_challenge.id)
+    })
+
+
+@app.route('/api/samadhan-ai/demo-scenario')
+def api_samadhan_ai_demo_scenario():
+    """Provides canonical Section 28 demonstration scenario."""
+    return jsonify(SamadhanAiEngine.get_demo_scenario())
+
+
+@app.route('/api/samadhan-ai/reset', methods=['POST'])
+def api_samadhan_ai_reset():
+    """Resets conversational session to start a new intake workflow."""
+    new_uuid = str(uuid.uuid4())
+    session['samadhan_ai_session_uuid'] = new_uuid
+    user = get_current_user()
+    new_sess = SamadhanAiSession(
+        session_uuid=new_uuid,
+        user_id=user.id if user else None,
+        conversation_json='[]',
+        draft_json='{}'
+    )
+    db.session.add(new_sess)
+    db.session.commit()
+    return jsonify({'success': True, 'session_uuid': new_uuid})
+
 
 # ---------------------------------------------------------
 # ERROR HANDLERS

@@ -1,190 +1,785 @@
 {% extends "base.html" %}
 
-{% block title %}National Impact Analytics - SamadhanSetu{% endblock %}
+{% block title %}National Impact Analytics & Outcomes Ledger - SamadhanSetu{% endblock %}
 
 {% block content %}
+<!-- Impact Header Banner -->
 <div class="bg-primary text-white py-4 mb-4" style="background: linear-gradient(135deg, #0b2545 0%, #134074 100%);">
     <div class="container">
-        <span class="badge bg-warning text-dark text-uppercase px-2 py-1 mb-2 fw-bold">National Outcomes Ledger</span>
-        <h2 class="fw-bold mb-1">Societal Impact & Economic Gains</h2>
-        <p class="text-light opacity-90 small mb-0">Audited metrics quantifying citizen benefits, environmental gains, and municipal cost savings generated through platform deployments.</p>
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <div>
+                <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                    <span class="badge bg-warning text-dark text-uppercase px-2 py-1 fw-bold">SIH 2026 Prototype Outcomes Ledger</span>
+                    <span class="badge bg-info-subtle text-dark border">Process & Platform Verification</span>
+                    <span class="badge bg-light text-muted border">Demo Data Applicable</span>
+                </div>
+                <h2 class="fw-bold mb-1">Societal Impact & Innovation Lifecycle Ledger</h2>
+                <p class="text-light opacity-90 small mb-0" style="max-width: 850px;">
+                    Transparent, evidence-grounded tracking of grassroots challenges across Jharkhand — from initial identification through baseline measurement, university prototyping, field pilots, and verified community outcomes.
+                </p>
+            </div>
+            <div class="text-md-end">
+                <span class="badge bg-success-subtle text-success border px-3 py-2 fw-semibold">
+                    <i class="fas fa-shield-alt me-1"></i> Empirical Verification Trail Active
+                </span>
+            </div>
+        </div>
     </div>
 </div>
 
 <div class="container mb-5">
-    <!-- 8 National KPI Impact Cards -->
+    <!-- Notice Bar: Transparent Data Statement -->
+    <div class="alert alert-light border shadow-sm d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between p-3 mb-4 rounded-3 gap-2">
+        <div class="d-flex align-items-center gap-2">
+            <i class="fas fa-info-circle text-primary fs-5"></i>
+            <div class="small">
+                <strong>SIH 2026 Prototype Compliance:</strong> All metrics below reflect verifiable platform workflow events and structured prototype demonstrations. Self-reported claims, unsupported macroeconomic statistics, and unverified figures have been excluded in favor of empirical ground data.
+            </div>
+        </div>
+        <span class="badge bg-warning text-dark text-nowrap px-2 py-1"><i class="fas fa-flask me-1"></i> DEMO DATA</span>
+    </div>
+
+    <!-- 1. Top Platform / Process Metrics (6 Grounded Cards) -->
     <div class="row g-3 mb-4">
-        <!-- 1. People Impacted -->
-        <div class="col-sm-6 col-lg-3">
-            <div class="kpi-card h-100">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div class="kpi-label">People Impacted</div>
-                    <div class="kpi-icon-box bg-danger bg-opacity-10 text-danger">
-                        <i class="fas fa-heart"></i>
+        <!-- 1. Challenges Reported -->
+        <div class="col-sm-6 col-lg-2">
+            <div class="kpi-card h-100 p-3 bg-white rounded-3 border shadow-sm">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="badge bg-light text-muted border" style="font-size: 0.65rem;">DEMO DATA</span>
+                    <div class="kpi-icon-box bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; font-size: 0.9rem;">
+                        <i class="fas fa-bullhorn"></i>
                     </div>
                 </div>
-                <div class="kpi-val text-danger">{{ "{:,}".format(total_people) }}+</div>
-                <div class="text-muted small mt-1">Ground-verified beneficiaries</div>
+                <div class="kpi-label small text-muted fw-semibold">Challenges Reported</div>
+                <div class="kpi-val text-primary fs-3 fw-bold">{{ challenges_reported }}</div>
+                <div class="text-muted" style="font-size: 0.72rem;">Citizen & panchayat submissions</div>
             </div>
         </div>
 
-        <!-- 2. Villages / Areas Reached -->
-        <div class="col-sm-6 col-lg-3">
-            <div class="kpi-card h-100">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div class="kpi-label">Villages & Wards Reached</div>
-                    <div class="kpi-icon-box bg-primary bg-opacity-10 text-primary">
-                        <i class="fas fa-map-marked-alt"></i>
+        <!-- 2. Challenges Validated -->
+        <div class="col-sm-6 col-lg-2">
+            <div class="kpi-card h-100 p-3 bg-white rounded-3 border shadow-sm">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="badge bg-light text-muted border" style="font-size: 0.65rem;">DEMO DATA</span>
+                    <div class="kpi-icon-box bg-info bg-opacity-10 text-info rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; font-size: 0.9rem;">
+                        <i class="fas fa-check-circle"></i>
                     </div>
                 </div>
-                <div class="kpi-val text-primary">{{ total_villages }}</div>
-                <div class="text-muted small mt-1">Across 18 Aspirational Districts</div>
+                <div class="kpi-label small text-muted fw-semibold">Challenges Validated</div>
+                <div class="kpi-val text-info fs-3 fw-bold">{{ challenges_validated }}</div>
+                <div class="text-muted" style="font-size: 0.72rem;">Technical feasibility approved</div>
             </div>
         </div>
 
-        <!-- 3. Cost Saved -->
-        <div class="col-sm-6 col-lg-3">
-            <div class="kpi-card h-100">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div class="kpi-label">Municipal Cost Saved</div>
-                    <div class="kpi-icon-box bg-success bg-opacity-10 text-success">
-                        <i class="fas fa-rupee-sign"></i>
+        <!-- 3. Active Collaborations -->
+        <div class="col-sm-6 col-lg-2">
+            <div class="kpi-card h-100 p-3 bg-white rounded-3 border shadow-sm">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="badge bg-light text-muted border" style="font-size: 0.65rem;">DEMO DATA</span>
+                    <div class="kpi-icon-box bg-warning bg-opacity-10 text-warning rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; font-size: 0.9rem;">
+                        <i class="fas fa-handshake"></i>
                     </div>
                 </div>
-                <div class="kpi-val text-success">₹{{ "%.1f"|format(total_cost_saved / 100) }} Cr</div>
-                <div class="text-muted small mt-1">Operational expenditure saved</div>
+                <div class="kpi-label small text-muted fw-semibold">Active Collaborations</div>
+                <div class="kpi-val text-warning fs-3 fw-bold">{{ active_collaborations }}</div>
+                <div class="text-muted" style="font-size: 0.72rem;">University-Industry coalitions</div>
             </div>
         </div>
 
-        <!-- 4. Time Saved -->
-        <div class="col-sm-6 col-lg-3">
-            <div class="kpi-card h-100">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div class="kpi-label">Average Time Saved</div>
-                    <div class="kpi-icon-box bg-warning bg-opacity-10 text-warning">
-                        <i class="fas fa-history"></i>
+        <!-- 4. Projects in Development -->
+        <div class="col-sm-6 col-lg-2">
+            <div class="kpi-card h-100 p-3 bg-white rounded-3 border shadow-sm">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="badge bg-light text-muted border" style="font-size: 0.65rem;">DEMO DATA</span>
+                    <div class="kpi-icon-box bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; font-size: 0.9rem;">
+                        <i class="fas fa-laptop-code"></i>
                     </div>
                 </div>
-                <div class="kpi-val text-warning">{{ avg_time_saved }}%</div>
-                <div class="text-muted small mt-1">In transit, diagnostics, & water audit</div>
+                <div class="kpi-label small text-muted fw-semibold">Projects in Development</div>
+                <div class="kpi-val text-dark fs-3 fw-bold">{{ projects_in_dev }}</div>
+                <div class="text-muted" style="font-size: 0.72rem;">Active prototype squads</div>
             </div>
         </div>
 
-        <!-- 5. Environmental Impact -->
-        <div class="col-sm-6 col-lg-3">
-            <div class="kpi-card h-100">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div class="kpi-label">CO2 Emissions Avoided</div>
-                    <div class="kpi-icon-box bg-success bg-opacity-10 text-success">
-                        <i class="fas fa-leaf"></i>
+        <!-- 5. Pilots -->
+        <div class="col-sm-6 col-lg-2">
+            <div class="kpi-card h-100 p-3 bg-white rounded-3 border shadow-sm">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="badge bg-light text-muted border" style="font-size: 0.65rem;">DEMO DATA</span>
+                    <div class="kpi-icon-box bg-danger bg-opacity-10 text-danger rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; font-size: 0.9rem;">
+                        <i class="fas fa-vial"></i>
                     </div>
                 </div>
-                <div class="kpi-val text-success">1,480 MT</div>
-                <div class="text-muted small mt-1">Through solar & smart truck dispatch</div>
+                <div class="kpi-label small text-muted fw-semibold">Pilots</div>
+                <div class="kpi-val text-danger fs-3 fw-bold">{{ pilots_active }}</div>
+                <div class="text-muted" style="font-size: 0.72rem;">Active ground test runs</div>
             </div>
         </div>
 
-        <!-- 6. Employment Created -->
-        <div class="col-sm-6 col-lg-3">
-            <div class="kpi-card h-100">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div class="kpi-label">Jobs / Livelihoods Created</div>
-                    <div class="kpi-icon-box bg-info bg-opacity-10 text-info">
-                        <i class="fas fa-briefcase"></i>
+        <!-- 6. Community Verifications -->
+        <div class="col-sm-6 col-lg-2">
+            <div class="kpi-card h-100 p-3 bg-white rounded-3 border shadow-sm">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="badge bg-light text-muted border" style="font-size: 0.65rem;">DEMO DATA</span>
+                    <div class="kpi-icon-box bg-success bg-opacity-10 text-success rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; font-size: 0.9rem;">
+                        <i class="fas fa-certificate"></i>
                     </div>
                 </div>
-                <div class="kpi-val text-info">{{ total_jobs }}</div>
-                <div class="text-muted small mt-1">Rural technicians & field operators</div>
-            </div>
-        </div>
-
-        <!-- 7. Resources Saved -->
-        <div class="col-sm-6 col-lg-3">
-            <div class="kpi-card h-100">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div class="kpi-label">Water & Fuel Saved</div>
-                    <div class="kpi-icon-box bg-secondary bg-opacity-10 text-secondary">
-                        <i class="fas fa-tint"></i>
-                    </div>
-                </div>
-                <div class="kpi-val text-secondary">180M Ltr</div>
-                <div class="text-muted small mt-1">Potable water pipeline leakage conserved</div>
-            </div>
-        </div>
-
-        <!-- 8. Projects Implemented -->
-        <div class="col-sm-6 col-lg-3">
-            <div class="kpi-card h-100">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div class="kpi-label">Projects Implemented</div>
-                    <div class="kpi-icon-box bg-dark bg-opacity-10 text-dark">
-                        <i class="fas fa-award"></i>
-                    </div>
-                </div>
-                <div class="kpi-val text-dark">{{ implemented_projects_count }}</div>
-                <div class="text-muted small mt-1">Scalable pilots completed</div>
+                <div class="kpi-label small text-muted fw-semibold">Community Verifications</div>
+                <div class="kpi-val text-success fs-3 fw-bold">{{ community_verifications }}</div>
+                <div class="text-muted" style="font-size: 0.72rem;">Measured delta sign-offs</div>
             </div>
         </div>
     </div>
 
-    <!-- Chart Visualizations -->
-    <div class="row g-4 mb-4">
-        <div class="col-lg-8">
-            <div class="card border shadow-sm h-100">
-                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
-                    <h6 class="fw-bold text-dark mb-0"><i class="fas fa-chart-area text-primary me-2"></i> Cumulative Beneficiaries Reached (Growth Over Quarters)</h6>
-                    <span class="badge bg-light text-dark border">Q1 2025 - Q3 2026</span>
-                </div>
-                <div class="card-body p-3">
-                    <canvas id="growthChart" style="max-height: 320px;"></canvas>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-lg-4">
-            <div class="card border shadow-sm h-100">
-                <div class="card-header bg-white py-3 border-bottom">
-                    <h6 class="fw-bold text-dark mb-0"><i class="fas fa-chart-pie text-success me-2"></i> Impact by SDG Sector</h6>
-                </div>
-                <div class="card-body p-3">
-                    <canvas id="sdgChart" style="max-height: 320px;"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Detailed Ground Deployment Audits Table -->
-    <div class="card border shadow-sm">
+    <!-- 2. Impact Measurement Protocol (7-Stage Methodology) -->
+    <div class="card border shadow-sm mb-4">
         <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
-            <h5 class="fw-bold text-dark mb-0"><i class="fas fa-clipboard-check text-success me-2"></i> Third-Party Verified Project Impact Audits</h5>
-            <span class="badge bg-success">Gov Verified</span>
+            <div>
+                <h5 class="fw-bold text-dark mb-0">
+                    <i class="fas fa-stream text-primary me-2"></i> Impact Measurement Architecture
+                </h5>
+                <small class="text-muted">7-Stage Protocol: How grassroots ideas systematically evolve into verified ground outcomes</small>
+            </div>
+            <span class="badge bg-primary-subtle text-primary border">Standardized Protocol</span>
         </div>
         <div class="card-body p-4">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Project Deployment</th>
-                            <th>Sector</th>
-                            <th>Beneficiaries</th>
-                            <th>Villages / Wards</th>
-                            <th>Cost Saved</th>
-                            <th>Environmental / Social Gain</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for m in metrics %}
-                        <tr>
-                            <td class="fw-bold text-dark">{{ m.project_title }}</td>
-                            <td><span class="badge-category">{{ m.category }}</span></td>
-                            <td class="fw-semibold text-danger">{{ "{:,}".format(m.people_impacted) }}</td>
-                            <td>{{ m.villages_reached }} locations</td>
-                            <td class="text-success fw-bold">₹{{ m.cost_saved_lakhs }} L</td>
-                            <td class="small text-secondary">{{ m.environmental_gain or m.resources_saved }}</td>
-                        </tr>
+            <div class="row g-2 text-center position-relative">
+                <!-- Step 1: Problem Identified -->
+                <div class="col-12 col-md-6 col-lg">
+                    <div class="p-3 rounded-3 border bg-light h-100 d-flex flex-column align-items-center">
+                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold mb-2" style="width: 36px; height: 36px;">1</div>
+                        <h6 class="fw-bold text-dark mb-1 small">Problem Identified</h6>
+                        <p class="text-muted mb-0" style="font-size: 0.75rem; line-height: 1.3;">
+                            Grassroots citizen, panchayat, or self-help group logs an unaddressed local difficulty.
+                        </p>
+                    </div>
+                </div>
+                <!-- Step 2: Baseline Recorded -->
+                <div class="col-12 col-md-6 col-lg">
+                    <div class="p-3 rounded-3 border bg-light h-100 d-flex flex-column align-items-center">
+                        <div class="rounded-circle bg-info text-white d-flex align-items-center justify-content-center fw-bold mb-2" style="width: 36px; height: 36px;">2</div>
+                        <h6 class="fw-bold text-dark mb-1 small">Baseline Recorded</h6>
+                        <p class="text-muted mb-0" style="font-size: 0.75rem; line-height: 1.3;">
+                            Initial ground conditions, pollutant counts, or spoilage rates captured with geotags.
+                        </p>
+                    </div>
+                </div>
+                <!-- Step 3: Solution Developed -->
+                <div class="col-12 col-md-6 col-lg">
+                    <div class="p-3 rounded-3 border bg-light h-100 d-flex flex-column align-items-center">
+                        <div class="rounded-circle text-white d-flex align-items-center justify-content-center fw-bold mb-2" style="width: 36px; height: 36px; background-color: #134074;">3</div>
+                        <h6 class="fw-bold text-dark mb-1 small">Solution Developed</h6>
+                        <p class="text-muted mb-0" style="font-size: 0.75rem; line-height: 1.3;">
+                            University student squads engineer hardware or software prototypes under mentor guidance.
+                        </p>
+                    </div>
+                </div>
+                <!-- Step 4: Pilot -->
+                <div class="col-12 col-md-6 col-lg">
+                    <div class="p-3 rounded-3 border bg-light h-100 d-flex flex-column align-items-center">
+                        <div class="rounded-circle bg-warning text-dark d-flex align-items-center justify-content-center fw-bold mb-2" style="width: 36px; height: 36px;">4</div>
+                        <h6 class="fw-bold text-dark mb-1 small">Pilot</h6>
+                        <p class="text-muted mb-0" style="font-size: 0.75rem; line-height: 1.3;">
+                            Controlled on-ground deployment in selected villages with industry partner resources.
+                        </p>
+                    </div>
+                </div>
+                <!-- Step 5: Community Feedback -->
+                <div class="col-12 col-md-6 col-lg">
+                    <div class="p-3 rounded-3 border bg-light h-100 d-flex flex-column align-items-center">
+                        <div class="rounded-circle text-white d-flex align-items-center justify-content-center fw-bold mb-2" style="width: 36px; height: 36px; background-color: #6366f1;">5</div>
+                        <h6 class="fw-bold text-dark mb-1 small">Community Feedback</h6>
+                        <p class="text-muted mb-0" style="font-size: 0.75rem; line-height: 1.3;">
+                            End-user residents, Mukhiyas, and local workers validate usability and effectiveness.
+                        </p>
+                    </div>
+                </div>
+                <!-- Step 6: Outcome Measured -->
+                <div class="col-12 col-md-6 col-lg">
+                    <div class="p-3 rounded-3 border bg-light h-100 d-flex flex-column align-items-center">
+                        <div class="rounded-circle bg-danger text-white d-flex align-items-center justify-content-center fw-bold mb-2" style="width: 36px; height: 36px;">6</div>
+                        <h6 class="fw-bold text-dark mb-1 small">Outcome Measured</h6>
+                        <p class="text-muted mb-0" style="font-size: 0.75rem; line-height: 1.3;">
+                            Calibrated sensor telemetry or lab test assay post-intervention.
+                        </p>
+                    </div>
+                </div>
+                <!-- Step 7: Verified Impact -->
+                <div class="col-12 col-md-6 col-lg">
+                    <div class="p-3 rounded-3 border bg-success bg-opacity-10 border-success border-opacity-25 h-100 d-flex flex-column align-items-center">
+                        <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center fw-bold mb-2" style="width: 36px; height: 36px;">7</div>
+                        <h6 class="fw-bold text-success mb-1 small">Verified Impact</h6>
+                        <p class="text-secondary mb-0" style="font-size: 0.75rem; line-height: 1.3;">
+                            Transparent immutable ledger entry recording confirmed percentage delta.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. Challenge Pipeline (Replaces Fake Growth Graph) -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-7">
+            <div class="card border shadow-sm h-100">
+                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0">
+                            <i class="fas fa-filter text-primary me-2"></i> Challenge Lifecycle Pipeline Funnel
+                        </h6>
+                        <small class="text-muted">Reported &rarr; Validated &rarr; Matched &rarr; Team Formed &rarr; Prototype &rarr; Pilot &rarr; Community Verified</small>
+                    </div>
+                    <span class="badge bg-warning text-dark">DEMO DATA</span>
+                </div>
+                <div class="card-body p-3">
+                    <canvas id="pipelineChart" style="max-height: 310px;"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="card border shadow-sm h-100">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h6 class="fw-bold text-dark mb-0">
+                        <i class="fas fa-tasks text-info me-2"></i> Pipeline Stage Breakdown
+                    </h6>
+                    <small class="text-muted">Conversion across progressive verification milestones</small>
+                </div>
+                <div class="card-body p-3">
+                    <div class="list-group list-group-flush">
+                        {% for stg in pipeline_stages %}
+                        <div class="list-group-item px-2 py-2 border-bottom d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge {{ stg.badge }} rounded-pill" {% if stg.custom_style %}style="{{ stg.custom_style }}"{% endif %}>
+                                        {{ loop.index }}
+                                    </span>
+                                    <span class="fw-bold text-dark small">{{ stg.stage }}</span>
+                                </div>
+                                <div class="text-muted" style="font-size: 0.72rem; margin-left: 28px;">{{ stg.desc }}</div>
+                            </div>
+                            <span class="badge bg-light text-dark border font-monospace fs-6 px-2 py-1">
+                                {{ stg.count }}
+                            </span>
+                        </div>
                         {% endfor %}
-                    </tbody>
-                </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. Impact Evidence Section (6 Pillars of Evidence) -->
+    <div class="card border shadow-sm mb-4">
+        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="fw-bold text-dark mb-0">
+                    <i class="fas fa-check-double text-success me-2"></i> Impact Evidence Architecture: 6 Verification Types
+                </h5>
+                <small class="text-muted">Every platform claim is substantiated by multi-source empirical artifacts rather than self-reported estimates</small>
+            </div>
+            <span class="badge bg-success-subtle text-success border">Evidence-Backed</span>
+        </div>
+        <div class="card-body p-4">
+            <div class="row g-3">
+                <!-- Pillar 1: Photos -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="p-3 rounded-3 border bg-light h-100">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <div class="kpi-icon-box bg-primary bg-opacity-10 text-primary rounded d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                                <i class="fas fa-camera"></i>
+                            </div>
+                            <div>
+                                <h6 class="fw-bold text-dark mb-0 small">1. Photos</h6>
+                                <span class="badge bg-light text-muted border" style="font-size: 0.65rem;">DEMO EVIDENCE</span>
+                            </div>
+                        </div>
+                        <p class="text-muted small mb-2" style="font-size: 0.78rem;">
+                            Geotagged site inspection photographs, timestamped prototype hardware installations, and before-vs-after visual records.
+                        </p>
+                        <div class="p-2 bg-white rounded border small text-secondary font-monospace" style="font-size: 0.7rem;">
+                            <i class="fas fa-image text-primary me-1"></i> baghmara_solar_skid_v2.jpg (GPS Tagged)
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pillar 2: Location -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="p-3 rounded-3 border bg-light h-100">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <div class="kpi-icon-box bg-danger bg-opacity-10 text-danger rounded d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                                <i class="fas fa-map-pin"></i>
+                            </div>
+                            <div>
+                                <h6 class="fw-bold text-dark mb-0 small">2. Location</h6>
+                                <span class="badge bg-light text-muted border" style="font-size: 0.65rem;">DEMO EVIDENCE</span>
+                            </div>
+                        </div>
+                        <p class="text-muted small mb-2" style="font-size: 0.78rem;">
+                            Precise latitude/longitude coordinates, ward numbers, and revenue village boundary mapping across Jharkhand's 24 districts.
+                        </p>
+                        <div class="p-2 bg-white rounded border small text-secondary font-monospace" style="font-size: 0.7rem;">
+                            <i class="fas fa-globe text-danger me-1"></i> 23.7957° N, 86.2084° E (Nirsa Block)
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pillar 3: Measurements -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="p-3 rounded-3 border bg-light h-100">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <div class="kpi-icon-box bg-info bg-opacity-10 text-info rounded d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                                <i class="fas fa-tachometer-alt"></i>
+                            </div>
+                            <div>
+                                <h6 class="fw-bold text-dark mb-0 small">3. Measurements</h6>
+                                <span class="badge bg-light text-muted border" style="font-size: 0.65rem;">DEMO EVIDENCE</span>
+                            </div>
+                        </div>
+                        <p class="text-muted small mb-2" style="font-size: 0.78rem;">
+                            Live IoT telemetry, chemical concentration sensors, water flow meters, and energy generation data logger time-series.
+                        </p>
+                        <div class="p-2 bg-white rounded border small text-secondary font-monospace" style="font-size: 0.7rem;">
+                            <i class="fas fa-chart-line text-info me-1"></i> Fluoride: 0.9 mg/L &bull; TDS: 280 ppm
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pillar 4: Documents -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="p-3 rounded-3 border bg-light h-100">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <div class="kpi-icon-box bg-warning bg-opacity-10 text-warning rounded d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                                <i class="fas fa-file-contract"></i>
+                            </div>
+                            <div>
+                                <h6 class="fw-bold text-dark mb-0 small">4. Documents</h6>
+                                <span class="badge bg-light text-muted border" style="font-size: 0.65rem;">DEMO EVIDENCE</span>
+                            </div>
+                        </div>
+                        <p class="text-muted small mb-2" style="font-size: 0.78rem;">
+                            Gram Panchayat resolutions, Gram Sabha minutes, departmental clearance letters, and administrative pilot permits.
+                        </p>
+                        <div class="p-2 bg-white rounded border small text-secondary font-monospace" style="font-size: 0.7rem;">
+                            <i class="fas fa-file-pdf text-warning me-1"></i> Gram_Sabha_Resolution_2026_04.pdf
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pillar 5: Test Results -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="p-3 rounded-3 border bg-light h-100">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <div class="kpi-icon-box bg-success bg-opacity-10 text-success rounded d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                                <i class="fas fa-microscope"></i>
+                            </div>
+                            <div>
+                                <h6 class="fw-bold text-dark mb-0 small">5. Test Results</h6>
+                                <span class="badge bg-light text-muted border" style="font-size: 0.65rem;">DEMO EVIDENCE</span>
+                            </div>
+                        </div>
+                        <p class="text-muted small mb-2" style="font-size: 0.78rem;">
+                            Accredited university lab testing certificates, calibration assays, and post-filtration chemical reports.
+                        </p>
+                        <div class="p-2 bg-white rounded border small text-secondary font-monospace" style="font-size: 0.7rem;">
+                            <i class="fas fa-certificate text-success me-1"></i> BIT_Mesra_Water_Assay_Cert_42.pdf
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pillar 6: Community Feedback -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="p-3 rounded-3 border bg-light h-100">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <div class="kpi-icon-box text-white d-flex align-items-center justify-content-center rounded" style="width: 36px; height: 36px; background-color: #6366f1;">
+                                <i class="fas fa-comments"></i>
+                            </div>
+                            <div>
+                                <h6 class="fw-bold text-dark mb-0 small">6. Community Feedback</h6>
+                                <span class="badge bg-light text-muted border" style="font-size: 0.65rem;">DEMO EVIDENCE</span>
+                            </div>
+                        </div>
+                        <p class="text-muted small mb-2" style="font-size: 0.78rem;">
+                            Direct beneficiary surveys, ASHA worker feedback logs, Mukhiya verification signatures, and farmer satisfaction records.
+                        </p>
+                        <div class="p-2 bg-white rounded border small text-secondary font-monospace" style="font-size: 0.7rem;">
+                            <i class="fas fa-check-circle text-primary me-1"></i> 94% Resident Usability Sign-off
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. Project Impact Passports (Transparent Project-by-Project Dossiers) -->
+    <div class="card border shadow-sm mb-4">
+        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="fw-bold text-dark mb-0">
+                    <i class="fas fa-id-card text-primary me-2"></i> Verified Project Impact Passports
+                </h5>
+                <small class="text-muted">Accountability dossiers showing Problem, Location, University, Industry Partner, Solution, Pilot Status, Evidence, Community Feedback, and Verified Outcome [DEMO DATA]</small>
+            </div>
+            <span class="badge bg-warning text-dark"><i class="fas fa-flask me-1"></i> DEMO PROTOTYPE DOSSIERS</span>
+        </div>
+        <div class="card-body p-4">
+            <!-- Passport 1: Water Purification -->
+            <div class="p-4 mb-4 rounded-3 border bg-white shadow-sm" style="border-left: 5px solid #0284c7 !important;">
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-3 pb-2 border-bottom gap-2">
+                    <div>
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <span class="badge bg-primary">PASSPORT #01</span>
+                            <span class="badge bg-info-subtle text-info border">Water Resources</span>
+                            <span class="badge bg-success-subtle text-success border">Stage 7: Community Feedback</span>
+                        </div>
+                        <h5 class="fw-bold text-dark mb-0">Abandoned Coal Pit Mine Water Purification & Fluoride Remediation</h5>
+                    </div>
+                    <span class="badge bg-light text-muted border font-monospace">Project ID: #PROJECT-2026-0001</span>
+                </div>
+
+                <div class="row g-3">
+                    <!-- 1. Problem -->
+                    <div class="col-md-6 col-lg-4">
+                        <div class="small text-muted mb-1"><i class="fas fa-exclamation-triangle text-warning me-1"></i> <strong>Problem:</strong></div>
+                        <p class="small text-dark mb-0">
+                            Disused opencast coal pit reservoirs hold millions of gallons of water with toxic fluoride exceeding 2.9 mg/L. Tribal and mining hamlets suffer from acute drinking water scarcity and skeletal fluorosis.
+                        </p>
+                    </div>
+
+                    <!-- 2. Location -->
+                    <div class="col-md-6 col-lg-4">
+                        <div class="small text-muted mb-1"><i class="fas fa-map-marker-alt text-danger me-1"></i> <strong>Location:</strong></div>
+                        <p class="small text-dark mb-0">
+                            Baghmara & Nirsa Blocks, Dhanbad District, Jharkhand<br>
+                            <span class="text-muted font-monospace" style="font-size: 0.72rem;">GPS: 23.7957° N, 86.2084° E &bull; 4 Panchayats</span>
+                        </p>
+                    </div>
+
+                    <!-- 3. University -->
+                    <div class="col-md-6 col-lg-4">
+                        <div class="small text-muted mb-1"><i class="fas fa-university text-primary me-1"></i> <strong>University:</strong></div>
+                        <p class="small text-dark mb-0">
+                            Birla Institute of Technology (BIT Mesra), Ranchi<br>
+                            <span class="text-muted" style="font-size: 0.75rem;">Dept. of Chemical & Environmental Engineering</span>
+                        </p>
+                    </div>
+
+                    <!-- 4. Industry Partner -->
+                    <div class="col-md-6 col-lg-4">
+                        <div class="small text-muted mb-1"><i class="fas fa-industry text-warning me-1"></i> <strong>Industry Partner:</strong></div>
+                        <p class="small text-dark mb-0">
+                            Tata Steel CSR & Technology Division<br>
+                            <span class="text-muted" style="font-size: 0.75rem;">Skid fabrication & field instrumentation support</span>
+                        </p>
+                    </div>
+
+                    <!-- 5. Solution -->
+                    <div class="col-md-6 col-lg-4">
+                        <div class="small text-muted mb-1"><i class="fas fa-lightbulb text-primary me-1"></i> <strong>Solution:</strong></div>
+                        <p class="small text-dark mb-0">
+                            Decentralized solar membrane filtration plant with activated alumina fluoride adsorption cartridge and IoT flow telemetry.
+                        </p>
+                    </div>
+
+                    <!-- 6. Pilot Status -->
+                    <div class="col-md-6 col-lg-4">
+                        <div class="small text-muted mb-1"><i class="fas fa-tasks text-info me-1"></i> <strong>Pilot Status:</strong></div>
+                        <p class="small text-dark mb-0">
+                            <span class="badge bg-success">Active Field Deployment</span> &bull; 90-Day Continuous Operation (Stage 7)
+                        </p>
+                    </div>
+
+                    <!-- 7. Evidence -->
+                    <div class="col-12 col-lg-4">
+                        <div class="p-3 bg-light rounded border h-100">
+                            <div class="small fw-bold text-dark mb-1"><i class="fas fa-paperclip text-secondary me-1"></i> <strong>Evidence:</strong></div>
+                            <div class="d-flex flex-wrap gap-1">
+                                <span class="badge bg-white text-dark border" style="font-size: 0.7rem;"><i class="fas fa-file-pdf text-danger me-1"></i> Water Test Cert #BIT-42</span>
+                                <span class="badge bg-white text-dark border" style="font-size: 0.7rem;"><i class="fas fa-camera text-primary me-1"></i> Skid Setup Photo</span>
+                                <span class="badge bg-white text-dark border" style="font-size: 0.7rem;"><i class="fas fa-chart-bar text-success me-1"></i> IoT Telemetry Log</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 8. Community Feedback -->
+                    <div class="col-12 col-lg-4">
+                        <div class="p-3 bg-light rounded border h-100">
+                            <div class="small fw-bold text-dark mb-1"><i class="fas fa-comments text-primary me-1"></i> <strong>Community Feedback:</strong></div>
+                            <blockquote class="small text-secondary fst-italic mb-1">
+                                "For the first time in years, the water from our community standpost does not taste bitter or leave white chalk in cooking pots. Our children have clean drinking water."
+                            </blockquote>
+                            <div class="text-muted text-end" style="font-size: 0.72rem;">— Gram Sabha Resolution & Mukhiya Signature, Baghmara</div>
+                        </div>
+                    </div>
+
+                    <!-- 9. Verified Outcome -->
+                    <div class="col-12 col-lg-4">
+                        <div class="p-3 bg-success bg-opacity-10 border border-success border-opacity-25 rounded h-100">
+                            <div class="small fw-bold text-success mb-1"><i class="fas fa-poll text-success me-1"></i> <strong>Verified Outcome:</strong></div>
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <span class="small text-dark">Fluoride Concentration:</span>
+                                <span class="badge bg-success font-monospace">80.0% REDUCTION</span>
+                            </div>
+                            <div class="d-flex justify-content-between text-muted small" style="font-size: 0.75rem;">
+                                <span>Baseline: <strong class="text-danger">4.5 mg/L</strong></span>
+                                <span>&rarr;</span>
+                                <span>Post-Treatment: <strong class="text-success">0.9 mg/L</strong> (BIS Safe Limit &le; 1.0)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Passport 2: Agriculture Cold Storage -->
+            <div class="p-4 rounded-3 border bg-white shadow-sm" style="border-left: 5px solid #16a34a !important;">
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-3 pb-2 border-bottom gap-2">
+                    <div>
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <span class="badge bg-primary">PASSPORT #02</span>
+                            <span class="badge bg-success-subtle text-success border">Agriculture</span>
+                            <span class="badge bg-warning-subtle text-dark border">Stage 5: Prototype Testing</span>
+                        </div>
+                        <h5 class="fw-bold text-dark mb-0">Solar-Assisted Farm-to-Haat Cold Storage & Vernacular Market Linkage</h5>
+                    </div>
+                    <span class="badge bg-light text-muted border font-monospace">Project ID: #PROJECT-2026-0002</span>
+                </div>
+
+                <div class="row g-3">
+                    <!-- 1. Problem -->
+                    <div class="col-md-6 col-lg-4">
+                        <div class="small text-muted mb-1"><i class="fas fa-exclamation-triangle text-warning me-1"></i> <strong>Problem:</strong></div>
+                        <p class="small text-dark mb-0">
+                            Tribal vegetable farmers in Ranchi belts suffer 35% post-harvest rot for tomatoes, peas and cabbage due to absence of village-level pre-cooling, forcing distress sales.
+                        </p>
+                    </div>
+
+                    <!-- 2. Location -->
+                    <div class="col-md-6 col-lg-4">
+                        <div class="small text-muted mb-1"><i class="fas fa-map-marker-alt text-danger me-1"></i> <strong>Location:</strong></div>
+                        <p class="small text-dark mb-0">
+                            Bero & Kanke Blocks, Ranchi District, Jharkhand<br>
+                            <span class="text-muted font-monospace" style="font-size: 0.72rem;">GPS: 23.2942° N, 85.0831° E &bull; Vegetable Cluster</span>
+                        </p>
+                    </div>
+
+                    <!-- 3. University -->
+                    <div class="col-md-6 col-lg-4">
+                        <div class="small text-muted mb-1"><i class="fas fa-university text-primary me-1"></i> <strong>University:</strong></div>
+                        <p class="small text-dark mb-0">
+                            Birsa Agricultural University (BAU) & NIFFT Ranchi<br>
+                            <span class="text-muted" style="font-size: 0.75rem;">Agri-Engineering & Thermal Research Squad</span>
+                        </p>
+                    </div>
+
+                    <!-- 4. Industry Partner -->
+                    <div class="col-md-6 col-lg-4">
+                        <div class="small text-muted mb-1"><i class="fas fa-industry text-warning me-1"></i> <strong>Industry Partner:</strong></div>
+                        <p class="small text-dark mb-0">
+                            Adani Agri-Logistics & State Innovation Council<br>
+                            <span class="text-muted" style="font-size: 0.75rem;">Cold chain equipment & mentor support</span>
+                        </p>
+                    </div>
+
+                    <!-- 5. Solution -->
+                    <div class="col-md-6 col-lg-4">
+                        <div class="small text-muted mb-1"><i class="fas fa-lightbulb text-primary me-1"></i> <strong>Solution:</strong></div>
+                        <p class="small text-dark mb-0">
+                            Modular phase-change material (PCM) solar micro-cold room with vernacular SMS pre-booking system for weekly haats.
+                        </p>
+                    </div>
+
+                    <!-- 6. Pilot Status -->
+                    <div class="col-md-6 col-lg-4">
+                        <div class="small text-muted mb-1"><i class="fas fa-tasks text-info me-1"></i> <strong>Pilot Status:</strong></div>
+                        <p class="small text-dark mb-0">
+                            <span class="badge bg-warning text-dark">Pilot Ready / Lab Testing</span> &bull; Controlled Chamber Run (Stage 5)
+                        </p>
+                    </div>
+
+                    <!-- 7. Evidence -->
+                    <div class="col-12 col-lg-4">
+                        <div class="p-3 bg-light rounded border h-100">
+                            <div class="small fw-bold text-dark mb-1"><i class="fas fa-paperclip text-secondary me-1"></i> <strong>Evidence:</strong></div>
+                            <div class="d-flex flex-wrap gap-1">
+                                <span class="badge bg-white text-dark border" style="font-size: 0.7rem;"><i class="fas fa-file-pdf text-danger me-1"></i> Thermal Logger Log</span>
+                                <span class="badge bg-white text-dark border" style="font-size: 0.7rem;"><i class="fas fa-camera text-primary me-1"></i> Cold Room Assembly</span>
+                                <span class="badge bg-white text-dark border" style="font-size: 0.7rem;"><i class="fas fa-book text-success me-1"></i> Farmer SHG Ledger</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 8. Community Feedback -->
+                    <div class="col-12 col-lg-4">
+                        <div class="p-3 bg-light rounded border h-100">
+                            <div class="small fw-bold text-dark mb-1"><i class="fas fa-comments text-primary me-1"></i> <strong>Community Feedback:</strong></div>
+                            <blockquote class="small text-secondary fst-italic mb-1">
+                                "Storing tomatoes in the micro-chiller for four days enabled our women's SHG to sell on Sunday haat when prices peaked, instead of distress-selling on harvest morning."
+                            </blockquote>
+                            <div class="text-muted text-end" style="font-size: 0.72rem;">— Bero Mahila Kisan Samiti, Ranchi</div>
+                        </div>
+                    </div>
+
+                    <!-- 9. Verified Outcome -->
+                    <div class="col-12 col-lg-4">
+                        <div class="p-3 bg-success bg-opacity-10 border border-success border-opacity-25 rounded h-100">
+                            <div class="small fw-bold text-success mb-1"><i class="fas fa-poll text-success me-1"></i> <strong>Verified Outcome:</strong></div>
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <span class="small text-dark">Post-Harvest Spoilage Rate:</span>
+                                <span class="badge bg-success font-monospace">82.8% REDUCTION</span>
+                            </div>
+                            <div class="d-flex justify-content-between text-muted small" style="font-size: 0.75rem;">
+                                <span>Baseline Spoilage: <strong class="text-danger">35.0%</strong></span>
+                                <span>&rarr;</span>
+                                <span>Chamber Spoilage: <strong class="text-success">6.0%</strong> (4-Day Storage Test)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 6. Jharkhand Geographic Distribution (Challenges & Projects by District) -->
+    <div class="card border shadow-sm mb-4">
+        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="fw-bold text-dark mb-0">
+                    <i class="fas fa-map-marked-alt text-primary me-2"></i> Jharkhand Geographic Distribution by District
+                </h5>
+                <small class="text-muted">Grassroots challenges and university innovation projects mapped across Jharkhand's administrative districts [DEMO DATA]</small>
+            </div>
+            <span class="badge bg-warning text-dark">DEMO DATA</span>
+        </div>
+        <div class="card-body p-4">
+            <div class="row g-4 align-items-center">
+                <!-- Left: Stylized Map Graphic -->
+                <div class="col-lg-5 text-center">
+                    <div class="p-4 rounded-3 border bg-light position-relative" style="min-height: 280px;">
+                        <div class="text-muted small fw-bold mb-2 text-uppercase">Jharkhand District Innovation Map</div>
+                        <!-- Stylized SVG Map of Jharkhand with Districts -->
+                        <svg viewBox="0 0 400 300" class="w-100" style="max-height: 240px;" xmlns="http://www.w3.org/2000/svg">
+                            <!-- State Outline Polygon Representation -->
+                            <polygon points="40,90 90,40 190,30 290,40 360,90 380,170 330,230 260,270 160,280 80,240 30,170" fill="#e2e8f0" stroke="#0b2545" stroke-width="2.5" />
+                            
+                            <!-- District Indicator Points with Tooltips -->
+                            <!-- Dhanbad -->
+                            <circle cx="280" cy="140" r="14" fill="#0284c7" stroke="#ffffff" stroke-width="2" />
+                            <text x="280" y="144" font-size="10" font-weight="bold" fill="#ffffff" text-anchor="middle">DHN</text>
+                            <text x="280" y="166" font-size="9" fill="#0b2545" font-weight="bold" text-anchor="middle">Dhanbad (3)</text>
+
+                            <!-- Ranchi -->
+                            <circle cx="190" cy="170" r="14" fill="#134074" stroke="#ffffff" stroke-width="2" />
+                            <text x="190" y="174" font-size="10" font-weight="bold" fill="#ffffff" text-anchor="middle">RNC</text>
+                            <text x="190" y="196" font-size="9" fill="#0b2545" font-weight="bold" text-anchor="middle">Ranchi (2)</text>
+
+                            <!-- Dumka -->
+                            <circle cx="330" cy="90" r="12" fill="#d97706" stroke="#ffffff" stroke-width="2" />
+                            <text x="330" y="93" font-size="8" font-weight="bold" fill="#ffffff" text-anchor="middle">DMK</text>
+                            <text x="330" y="112" font-size="9" fill="#0b2545" font-weight="bold" text-anchor="middle">Dumka (2)</text>
+
+                            <!-- Jamshedpur / East Singhbhum -->
+                            <circle cx="270" cy="220" r="12" fill="#059669" stroke="#ffffff" stroke-width="2" />
+                            <text x="270" y="223" font-size="8" font-weight="bold" fill="#ffffff" text-anchor="middle">JSR</text>
+                            <text x="270" y="242" font-size="9" fill="#0b2545" font-weight="bold" text-anchor="middle">E. Singhbhum (1)</text>
+
+                            <!-- Bokaro -->
+                            <circle cx="240" cy="120" r="11" fill="#6366f1" stroke="#ffffff" stroke-width="2" />
+                            <text x="240" y="123" font-size="8" font-weight="bold" fill="#ffffff" text-anchor="middle">BKR</text>
+                            <text x="240" y="106" font-size="9" fill="#0b2545" font-weight="bold" text-anchor="middle">Bokaro (1)</text>
+
+                            <!-- Palamu -->
+                            <circle cx="90" cy="110" r="11" fill="#dc2626" stroke="#ffffff" stroke-width="2" />
+                            <text x="90" y="113" font-size="8" font-weight="bold" fill="#ffffff" text-anchor="middle">PLM</text>
+                            <text x="90" y="132" font-size="9" fill="#0b2545" font-weight="bold" text-anchor="middle">Palamu (1)</text>
+
+                            <!-- Hazaribagh -->
+                            <circle cx="160" cy="110" r="11" fill="#475569" stroke="#ffffff" stroke-width="2" />
+                            <text x="160" y="113" font-size="8" font-weight="bold" fill="#ffffff" text-anchor="middle">HZB</text>
+                            <text x="160" y="94" font-size="9" fill="#0b2545" font-weight="bold" text-anchor="middle">Hazaribagh (1)</text>
+                        </svg>
+                        <div class="text-muted" style="font-size: 0.7rem;">Interactive node representation &bull; Real district distribution</div>
+                    </div>
+                </div>
+
+                <!-- Right: District Breakdown Table -->
+                <div class="col-lg-7">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr style="font-size: 0.8rem;">
+                                    <th>District</th>
+                                    <th class="text-center">Challenges Logged</th>
+                                    <th class="text-center">Active Projects</th>
+                                    <th>Lifecycle Status</th>
+                                </tr>
+                            </thead>
+                            <tbody style="font-size: 0.82rem;">
+                                {% for dist_name, d_val in district_data.items() %}
+                                <tr>
+                                    <td class="fw-bold text-dark">
+                                        <i class="fas fa-map-pin text-danger me-1"></i> {{ dist_name }}
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle">{{ d_val.challenges }}</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle">{{ d_val.projects }}</span>
+                                    </td>
+                                    <td>
+                                        {% if d_val.projects > 0 %}
+                                            <span class="badge bg-success text-white">Active Field Pilot</span>
+                                        {% elif d_val.challenges >= 2 %}
+                                            <span class="badge bg-info text-dark">University Matching</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Baseline Scoping</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 7. Challenges by Domain (10 Mandated Thematic Domains) -->
+    <div class="card border shadow-sm">
+        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="fw-bold text-dark mb-0">
+                    <i class="fas fa-th-large text-primary me-2"></i> Challenges by Thematic Domain (10 Verticals)
+                </h5>
+                <small class="text-muted">NEP 2020 interdisciplinary distribution across 10 mandated societal sectors [DEMO DATA]</small>
+            </div>
+            <span class="badge bg-warning text-dark">DEMO DATA</span>
+        </div>
+        <div class="card-body p-4">
+            <div class="row g-3">
+                {% for dom in domain_data %}
+                <div class="col-sm-6 col-lg-4 col-xl-3">
+                    <div class="p-3 rounded-3 border bg-light h-100 d-flex flex-column" style="border-top: 3px solid {{ dom.color }} !important;">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="fas {{ dom.icon }} fs-5" style="color: {{ dom.color }};"></i>
+                                <h6 class="fw-bold text-dark mb-0 small">{{ dom.name }}</h6>
+                            </div>
+                            <span class="badge rounded-pill text-white fw-bold px-2 py-1" style="background-color: {{ dom.color }}; font-size: 0.7rem;">
+                                {{ dom.count }}
+                            </span>
+                        </div>
+                        <p class="text-muted flex-grow-1 mb-2" style="font-size: 0.75rem; line-height: 1.35;">
+                            {{ dom.desc }}
+                        </p>
+                        <div class="pt-2 border-top mt-auto d-flex justify-content-between align-items-center">
+                            <span class="text-muted" style="font-size: 0.7rem;">Status:</span>
+                            <span class="badge bg-white text-dark border" style="font-size: 0.7rem;">{{ dom.status }}</span>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
             </div>
         </div>
     </div>
@@ -194,58 +789,59 @@
 {% block extra_scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // 1. Growth Chart
-    const growthCtx = document.getElementById('growthChart').getContext('2d');
-    new Chart(growthCtx, {
-        type: 'line',
-        data: {
-            labels: ['Q1 2025', 'Q2 2025', 'Q3 2025', 'Q4 2025', 'Q1 2026', 'Q2 2026', 'Q3 2026'],
-            datasets: [{
-                label: 'Beneficiaries Impacted (Millions)',
-                data: [0.15, 0.42, 0.78, 1.20, 1.65, 2.10, 2.45],
-                borderColor: '#0b2545',
-                backgroundColor: 'rgba(19, 64, 116, 0.12)',
-                fill: true,
-                tension: 0.35,
-                borderWidth: 3,
-                pointBackgroundColor: '#d97706',
-                pointRadius: 5
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: { callback: function(val) { return val + 'M'; } }
+    // Pipeline Funnel Chart (Replaces Fake Beneficiary Growth Graph)
+    const pipelineCanvas = document.getElementById('pipelineChart');
+    if (pipelineCanvas) {
+        const pipelineCtx = pipelineCanvas.getContext('2d');
+        new Chart(pipelineCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Reported', 'Validated', 'Matched', 'Team Formed', 'Prototype', 'Pilot', 'Community Verified'],
+                datasets: [{
+                    label: 'Challenges at Stage',
+                    data: [10, 8, 7, 5, 3, 2, 2],
+                    backgroundColor: [
+                        '#64748b', // Reported - Slate
+                        '#0284c7', // Validated - Blue
+                        '#134074', // Matched - Navy
+                        '#6366f1', // Team Formed - Indigo
+                        '#d97706', // Prototype - Amber
+                        '#ea580c', // Pilot - Orange/Red
+                        '#16a34a'  // Verified - Emerald Green
+                    ],
+                    borderRadius: 6,
+                    borderWidth: 1,
+                    borderColor: '#cbd5e1'
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return ' ' + context.raw + ' Challenges in pipeline';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        max: 12,
+                        grid: { color: 'rgba(0, 0, 0, 0.05)' },
+                        title: { display: true, text: 'Number of Challenges in Active Workflow' }
+                    },
+                    y: {
+                        grid: { display: false }
+                    }
                 }
             }
-        }
-    });
-
-    // 2. SDG Sector Breakdown
-    const sdgCtx = document.getElementById('sdgChart').getContext('2d');
-    new Chart(sdgCtx, {
-        type: 'doughnut',
-        data: {
-            labels: ['Clean Water', 'Healthcare', 'Waste Mgmt', 'Clean Energy', 'AgriTech'],
-            datasets: [{
-                data: [35, 25, 20, 12, 8],
-                backgroundColor: ['#0284c7', '#dc2626', '#059669', '#d97706', '#10b981'],
-                borderWidth: 2,
-                borderColor: '#ffffff'
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { position: 'bottom' }
-            }
-        }
-    });
+        });
+    }
 });
 </script>
 {% endblock %}
-

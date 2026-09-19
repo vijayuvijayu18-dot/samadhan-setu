@@ -14,7 +14,7 @@
             </ol>
         </nav>
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-start gap-3">
-            <div class="max-w-850">
+            <div style="max-width: 850px;">
                 <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
                     <span class="badge-category bg-white text-dark">{{ challenge.category }}</span>
                     <span class="badge badge-severity-{{ challenge.priority.lower() }} px-2 py-1 rounded">
@@ -35,19 +35,19 @@
                 </div>
             </div>
 
-            <!-- Admin Action Buttons Group -->
+            <!-- Action Buttons Group -->
             <div class="d-flex flex-wrap gap-2 align-items-center">
-                <a href="{{ url_for('edit_challenge', challenge_id=challenge.id) }}" class="btn btn-light shadow-sm fw-bold text-dark">
-                    <i class="fas fa-edit me-1"></i> Edit Challenge
-                </a>
+                {% if is_admin %}
                 <form method="POST" action="{{ url_for('delete_challenge', challenge_id=challenge.id) }}" onsubmit="return confirm('Are you sure you want to permanently delete this challenge from the database?');" class="d-inline">
                     <button type="submit" class="btn btn-outline-danger text-white border-white">
                         <i class="fas fa-trash-alt me-1"></i> Delete
                     </button>
                 </form>
+                {% else %}
                 <a href="{{ url_for('propose_solution', challenge_id=challenge.id) }}" class="btn btn-accent shadow-sm">
                     <i class="fas fa-lightbulb me-1"></i> Propose Solution
                 </a>
+                {% endif %}
                 <button type="button" class="btn btn-outline-light btn-copy-share" title="Share Challenge">
                     <i class="fas fa-share-alt me-1"></i> Share
                 </button>
@@ -58,70 +58,494 @@
 
 <div class="container mb-5">
     <div class="row g-4">
-        <!-- Left: Comprehensive Problem Statement & Solutions -->
+        <!-- Left: AI Problem DNA, Problem Statement & Solutions -->
         <div class="col-lg-8">
-            <!-- 1. Problem Statement Card -->
+
+            <!-- 1. AI-Powered Problem DNA Distinctive Card -->
+            <div class="card border shadow-sm mb-4" style="border-top: 4px solid #0b2545 !important;">
+                <div class="card-header bg-white py-3 border-bottom d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge text-white px-2 py-1" style="background: linear-gradient(135deg, #0b2545 0%, #134074 100%); font-size: 0.75rem;">
+                            <i class="fas fa-dna me-1 text-warning"></i> AI PROBLEM DNA
+                        </span>
+                        <h5 class="fw-bold text-dark mb-0">Structured Challenge Profile</h5>
+                        {% if problem_dna and problem_dna.is_edited_by_user %}
+                            <span class="badge bg-success-subtle text-success border">
+                                <i class="fas fa-user-check me-1"></i> Expert Verified & Corrected
+                            </span>
+                        {% else %}
+                            <span class="badge bg-warning-subtle text-dark border">
+                                <i class="fas fa-robot me-1 text-primary"></i> AI-estimated &bull; Needs Verification
+                            </span>
+                        {% endif %}
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        {% if can_edit_dna %}
+                        <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editProblemDnaModal">
+                            <i class="fas fa-edit me-1"></i> Edit Problem DNA
+                        </button>
+                        {% endif %}
+                        <span class="badge bg-light text-muted border font-monospace">{{ problem_dna.confidence_score if problem_dna else 88 }}% Confidence</span>
+                    </div>
+                </div>
+
+                <div class="card-body p-4">
+                    <!-- Ethical AI Guardrail Alert -->
+                    <div class="alert alert-warning-subtle border border-warning-subtle d-flex align-items-start gap-2 p-3 mb-4 rounded-3 small">
+                        <i class="fas fa-shield-alt text-warning fs-5 mt-1"></i>
+                        <div>
+                            <strong>Ethical AI Guardrail Notice:</strong> This Problem DNA profile is an algorithmic synthesis designed to convert unstructured citizen input into technical specifications for university research matching. Contributing factors and solution areas are labeled as <em>AI-estimated hypotheses</em> and require empirical field validation. The platform never generates confirmed medical diagnoses, legal conclusions, or unverified scientific facts.
+                        </div>
+                    </div>
+
+                    <!-- Tab Switcher: Structured Problem DNA vs Original Citizen Report -->
+                    <ul class="nav nav-pills mb-4 gap-2" id="dnaTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active fw-semibold" id="dna-structured-tab" data-bs-toggle="pill" data-bs-target="#dna-structured" type="button" role="tab">
+                                <i class="fas fa-sitemap me-1"></i> Structured Problem DNA Profile
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link fw-semibold text-secondary" id="dna-citizen-tab" data-bs-toggle="pill" data-bs-target="#dna-citizen" type="button" role="tab">
+                                <i class="fas fa-user-edit me-1"></i> Original Citizen Report (Preserved)
+                            </button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content" id="dnaTabsContent">
+                        <!-- TAB 1: Structured Problem DNA Profile -->
+                        <div class="tab-pane fade show active" id="dna-structured" role="tabpanel">
+
+                            <!-- Structured Title & Domain/Subdomain Header -->
+                            <div class="p-3 bg-light rounded-3 border mb-4">
+                                <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+                                    <span class="badge bg-primary text-white">{{ problem_dna.domain if problem_dna else challenge.category }}</span>
+                                    <i class="fas fa-chevron-right text-muted" style="font-size: 0.7rem;"></i>
+                                    <span class="badge bg-info-subtle text-info border fw-semibold">{{ problem_dna.subdomain if problem_dna else 'Grassroots Operational Engineering' }}</span>
+                                    <span class="badge bg-light text-muted border">Domain & Subdomain</span>
+                                </div>
+                                <h4 class="fw-bold text-dark mt-2 mb-1">
+                                    {{ problem_dna.title if problem_dna else challenge.title }}
+                                </h4>
+                                <div class="text-muted small">
+                                    <i class="fas fa-tag me-1 text-primary"></i> <strong>Problem Title:</strong> Clear, professionalized synthesis of grassroots citizen report
+                                </div>
+                            </div>
+
+                            <!-- "AI Understanding" Plain-Language Section -->
+                            <div class="p-3 rounded-3 border bg-white shadow-sm mb-4" style="border-left: 4px solid #134074 !important;">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <h6 class="fw-bold text-dark mb-0">
+                                        <i class="fas fa-brain text-primary me-2"></i> AI Understanding & Interpretation Rationale
+                                    </h6>
+                                    <span class="badge bg-light text-muted border" style="font-size: 0.68rem;">Plain-Language Rationale</span>
+                                </div>
+                                <p class="text-secondary small mb-0" style="line-height: 1.6;">
+                                    {{ problem_dna.ai_understanding if problem_dna else 'The system analyzed the citizen submission by cross-referencing domain keywords and local geographical context. The synthesized challenge is structured to guide university researchers in rapid prototyping.' }}
+                                </p>
+                            </div>
+
+                            <!-- Core Dimensions Grid -->
+                            <div class="row g-3 mb-4">
+                                <!-- Problem Summary -->
+                                <div class="col-12">
+                                    <div class="p-3 bg-light rounded-3 border h-100">
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <div class="small fw-bold text-dark"><i class="fas fa-file-alt text-primary me-1"></i> Problem Summary (What is happening)</div>
+                                            <span class="badge bg-light text-muted border" style="font-size: 0.68rem;">Core Issue</span>
+                                        </div>
+                                        <p class="small text-secondary mb-0" style="line-height: 1.55;">
+                                            {{ problem_dna.summary if problem_dna else challenge.description }}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <!-- Affected Population -->
+                                <div class="col-md-6">
+                                    <div class="p-3 bg-light rounded-3 border h-100">
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <div class="small fw-bold text-dark"><i class="fas fa-users text-danger me-1"></i> Affected Population</div>
+                                            <span class="badge bg-warning-subtle text-dark border" style="font-size: 0.65rem;">AI-estimated</span>
+                                        </div>
+                                        <p class="small text-secondary mb-0">
+                                            {{ problem_dna.affected_population if problem_dna else challenge.affected_population }}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <!-- Location & Context -->
+                                <div class="col-md-6">
+                                    <div class="p-3 bg-light rounded-3 border h-100">
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <div class="small fw-bold text-dark"><i class="fas fa-map-marked-alt text-danger me-1"></i> Location & Context</div>
+                                            <span class="badge bg-light text-muted border" style="font-size: 0.65rem;">Geospatial Context</span>
+                                        </div>
+                                        <p class="small text-secondary mb-0">
+                                            {{ problem_dna.location_context if problem_dna else challenge.location }}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <!-- Severity / Urgency with Explanation -->
+                                <div class="col-12">
+                                    <div class="p-3 rounded-3 border bg-light">
+                                        <div class="d-flex align-items-center justify-content-between mb-1">
+                                            <div class="small fw-bold text-dark">
+                                                <i class="fas fa-exclamation-triangle text-warning me-1"></i> Severity & Urgency Level
+                                            </div>
+                                            <span class="badge badge-severity-{{ (problem_dna.severity if problem_dna else challenge.priority)|lower }} px-2 py-1">
+                                                {{ problem_dna.severity if problem_dna else challenge.priority }} Priority
+                                            </span>
+                                        </div>
+                                        <p class="small text-secondary mb-0">
+                                            <strong>Technical Rationale:</strong> {{ problem_dna.severity_explanation if problem_dna else 'High societal priority requiring timely prototyping and community verification.' }}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <!-- Possible Contributing Factors (Hypotheses) -->
+                                <div class="col-md-6">
+                                    <div class="p-3 bg-light rounded-3 border h-100">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <div class="small fw-bold text-dark"><i class="fas fa-code-branch text-warning me-1"></i> Possible Contributing Factors</div>
+                                            <span class="badge bg-warning-subtle text-dark border" style="font-size: 0.65rem;">Hypotheses Only</span>
+                                        </div>
+                                        <ul class="list-unstyled mb-0 small text-secondary">
+                                            {% if problem_dna and problem_dna.get_contributing_factors_list() %}
+                                                {% for fac in problem_dna.get_contributing_factors_list() %}
+                                                <li class="mb-2 d-flex align-items-start gap-2">
+                                                    <i class="fas fa-question-circle text-warning mt-1" style="font-size: 0.75rem;"></i>
+                                                    <span>{{ fac }}</span>
+                                                </li>
+                                                {% endfor %}
+                                            {% else %}
+                                                <li class="text-muted">No contributing hypotheses recorded.</li>
+                                            {% endif %}
+                                        </ul>
+                                        <div class="mt-2 text-muted" style="font-size: 0.68rem;">
+                                            <em>Note: Factors represent analytical hypotheses for research scoping, not confirmed clinical or geological diagnoses.</em>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Key Evidence -->
+                                <div class="col-md-6">
+                                    <div class="p-3 bg-light rounded-3 border h-100">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <div class="small fw-bold text-dark"><i class="fas fa-paperclip text-primary me-1"></i> Key Evidence & Documentation</div>
+                                            <span class="badge bg-light text-muted border" style="font-size: 0.65rem;">Field Artifacts</span>
+                                        </div>
+                                        <ul class="list-unstyled mb-0 small text-secondary">
+                                            {% if problem_dna and problem_dna.get_key_evidence_list() %}
+                                                {% for ev in problem_dna.get_key_evidence_list() %}
+                                                <li class="mb-2 d-flex align-items-start gap-2">
+                                                    <i class="fas fa-check-circle text-success mt-1" style="font-size: 0.75rem;"></i>
+                                                    <span>{{ ev }}</span>
+                                                </li>
+                                                {% endfor %}
+                                            {% else %}
+                                                <li class="text-muted">Evidence upload requested from submitter.</li>
+                                            {% endif %}
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <!-- Required Expertise -->
+                                <div class="col-md-6">
+                                    <div class="p-3 bg-light rounded-3 border h-100">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <div class="small fw-bold text-dark"><i class="fas fa-user-graduate text-primary me-1"></i> Required Technical Expertise</div>
+                                            <span class="badge bg-primary-subtle text-primary border" style="font-size: 0.65rem;">Academic Disciplines</span>
+                                        </div>
+                                        <div class="d-flex flex-wrap gap-1">
+                                            {% if problem_dna and problem_dna.get_required_expertise_list() %}
+                                                {% for exp in problem_dna.get_required_expertise_list() %}
+                                                    <span class="badge bg-white text-dark border px-2 py-1" style="font-size: 0.72rem;">{{ exp }}</span>
+                                                {% endfor %}
+                                            {% else %}
+                                                <span class="badge bg-white text-dark border">Multidisciplinary Engineering</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Potential Solution Areas -->
+                                <div class="col-md-6">
+                                    <div class="p-3 bg-light rounded-3 border h-100">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <div class="small fw-bold text-dark"><i class="fas fa-compass text-info me-1"></i> Potential Solution Areas</div>
+                                            <span class="badge bg-info-subtle text-info border" style="font-size: 0.65rem;">Exploratory Directions</span>
+                                        </div>
+                                        <ul class="list-unstyled mb-0 small text-secondary">
+                                            {% if problem_dna and problem_dna.get_potential_solutions_list() %}
+                                                {% for sol_area in problem_dna.get_potential_solutions_list() %}
+                                                <li class="mb-2 d-flex align-items-start gap-2">
+                                                    <i class="fas fa-lightbulb text-info mt-1" style="font-size: 0.75rem;"></i>
+                                                    <span>{{ sol_area }}</span>
+                                                </li>
+                                                {% endfor %}
+                                            {% else %}
+                                                <li class="text-muted">Prototyping directions to be formulated by student squads.</li>
+                                            {% endif %}
+                                        </ul>
+                                        <div class="mt-2 text-muted" style="font-size: 0.68rem;">
+                                            <em>Directions suggest technical pathways and do not constitute guaranteed outcomes.</em>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Relevant SDGs -->
+                                <div class="col-md-6">
+                                    <div class="p-3 bg-light rounded-3 border h-100">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <div class="small fw-bold text-dark"><i class="fas fa-globe text-success me-1"></i> Relevant UN SDGs</div>
+                                            <span class="badge bg-success-subtle text-success border" style="font-size: 0.65rem;">Global Goals</span>
+                                        </div>
+                                        <div class="d-flex flex-wrap gap-1">
+                                            {% if problem_dna and problem_dna.get_relevant_sdgs_list() %}
+                                                {% for sdg in problem_dna.get_relevant_sdgs_list() %}
+                                                    <span class="badge bg-success text-white px-2 py-1" style="font-size: 0.72rem;">{{ sdg }}</span>
+                                                {% endfor %}
+                                            {% else %}
+                                                <span class="badge bg-success text-white">SDG 11: Sustainable Communities</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Information Gaps -->
+                                <div class="col-md-6">
+                                    <div class="p-3 bg-light rounded-3 border h-100">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <div class="small fw-bold text-dark"><i class="fas fa-search-plus text-danger me-1"></i> Information Gaps (Needs Verification)</div>
+                                            <span class="badge bg-danger-subtle text-danger border" style="font-size: 0.65rem;">Field Research Gaps</span>
+                                        </div>
+                                        <ul class="list-unstyled mb-0 small text-secondary">
+                                            {% if problem_dna and problem_dna.get_information_gaps_list() %}
+                                                {% for gap in problem_dna.get_information_gaps_list() %}
+                                                <li class="mb-1 d-flex align-items-start gap-2">
+                                                    <i class="fas fa-info-circle text-danger mt-1" style="font-size: 0.72rem;"></i>
+                                                    <span>{{ gap }}</span>
+                                                </li>
+                                                {% endfor %}
+                                            {% else %}
+                                                <li class="text-muted">Standard baseline ground verification required.</li>
+                                            {% endif %}
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Related Challenges (Similar Problem Fusion) -->
+                            <div class="p-3 bg-white rounded-3 border">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <div class="small fw-bold text-dark">
+                                        <i class="fas fa-object-group text-primary me-1"></i> Related Challenges (Similar Problem Fusion)
+                                    </div>
+                                    <span class="badge bg-primary-subtle text-primary border" style="font-size: 0.68rem;">Cross-Village Clustering</span>
+                                </div>
+                                <p class="text-muted small mb-2" style="font-size: 0.75rem;">
+                                    Similar Problem Fusion connects related grassroots difficulties across Jharkhand to prevent duplication of engineering prototypes and pool university research capacity.
+                                </p>
+                                <div class="row g-2">
+                                    {% if problem_dna and problem_dna.get_related_challenges_list() %}
+                                        {% for rc in problem_dna.get_related_challenges_list() %}
+                                        <div class="col-md-6">
+                                            <div class="p-2 rounded border bg-light small">
+                                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                                    <a href="{{ url_for('challenge_detail', challenge_id=rc.id) }}" class="fw-bold text-primary text-decoration-none">
+                                                        {{ rc.title }}
+                                                    </a>
+                                                    <span class="badge bg-secondary font-monospace" style="font-size: 0.65rem;">#{{ rc.id }}</span>
+                                                </div>
+                                                <div class="text-muted" style="font-size: 0.7rem;">
+                                                    <i class="fas fa-map-marker-alt text-danger me-1"></i> {{ rc.location }} &bull;
+                                                    <span class="badge badge-severity-{{ rc.priority|lower }}" style="font-size: 0.62rem;">{{ rc.priority }}</span>
+                                                </div>
+                                                <div class="text-secondary mt-1" style="font-size: 0.7rem;">
+                                                    <em>{{ rc.fusion_rationale }}</em>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    {% else %}
+                                        <div class="col-12 text-muted small">No other active challenges currently share this exact category cluster.</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- TAB 2: Original Citizen Report (Preserved & Immutable) -->
+                        <div class="tab-pane fade" id="dna-citizen" role="tabpanel">
+                            <div class="p-4 bg-light rounded-3 border">
+                                <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center pb-3 mb-3 border-bottom gap-2">
+                                    <div>
+                                        <span class="badge bg-success-subtle text-success border px-2 py-1 mb-1">
+                                            <i class="fas fa-lock me-1"></i> Original Citizen Report Preserved (Immutable)
+                                        </span>
+                                        <h5 class="fw-bold text-dark mb-0">{{ challenge.title }}</h5>
+                                    </div>
+                                    <div class="text-muted small">
+                                        <span>Submitted by: <strong>{{ challenge.submitter_type or 'Citizen / Resident' }}</strong></span><br>
+                                        <span>Date: <strong>{{ challenge.created_date.strftime('%d %b %Y, %I:%M %p') }}</strong></span>
+                                    </div>
+                                </div>
+
+                                <h6 class="fw-bold text-dark small mb-2"><i class="fas fa-quote-left text-primary me-1"></i> Citizen's Unstructured Problem Description:</h6>
+                                <div class="p-3 bg-white rounded border mb-3 text-secondary" style="line-height: 1.7; font-size: 0.95rem;">
+                                    {{ challenge.description }}
+                                </div>
+
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <div class="p-2 bg-white rounded border small">
+                                            <strong>Reported Location:</strong> {{ challenge.location }}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="p-2 bg-white rounded border small">
+                                            <strong>Reported District:</strong> {{ challenge.district or 'Ranchi' }}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {% if challenge.media_url or challenge.document_url %}
+                                <h6 class="fw-bold text-dark small mt-3 mb-2"><i class="fas fa-paperclip text-secondary me-1"></i> Original Attachments:</h6>
+                                <div class="d-flex flex-wrap gap-2">
+                                    {% if challenge.media_url %}
+                                        <a href="{{ challenge.media_url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-camera me-1"></i> Attached Ground Media
+                                        </a>
+                                    {% endif %}
+                                    {% if challenge.document_url %}
+                                        <a href="{{ challenge.document_url }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                            <i class="fas fa-file-pdf me-1"></i> Attached Report Document
+                                        </a>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Smart Skill-Based Team Matching Section (SIH Distinctive Feature 1) -->
             <div class="card border shadow-sm mb-4">
                 <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
-                    <h5 class="fw-bold text-dark mb-0"><i class="fas fa-align-left text-primary me-2"></i> Problem Statement & Background</h5>
-                    <span class="badge bg-light text-muted border">Challenge ID: #{{ challenge.id }}</span>
+                    <div>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-primary text-white text-uppercase" style="font-size: 0.7rem;">SIH Feature</span>
+                            <h5 class="fw-bold text-dark mb-0">
+                                <i class="fas fa-users-cog text-primary me-1"></i> Smart Skill-Based Team Matching
+                            </h5>
+                        </div>
+                        <small class="text-muted">Algorithm-recommended multidisciplinary innovators matched against this challenge's required skills</small>
+                    </div>
+                    <span class="badge bg-light text-dark border">{{ recommended_team_candidates|length if recommended_team_candidates is defined else recommended_team|length }} Recommended Innovators</span>
                 </div>
                 <div class="card-body p-4">
-                    <h6 class="fw-bold text-primary">Context & Problem Description</h6>
-                    <p class="text-secondary" style="line-height: 1.7;">
-                        {{ challenge.description }}
-                    </p>
-
-                    <h6 class="fw-bold text-primary mt-4">Why It Matters (Societal & Economic Impact)</h6>
-                    <p class="text-secondary" style="line-height: 1.7;">
-                        This bottleneck directly impacts <strong class="text-dark">{{ challenge.affected_population }}</strong> (approx. {{ "{:,}".format(challenge.people_affected_count) }} people). Addressing this issue will prevent resource wastage, enhance public safety/health, and provide scalable models for similar districts across India.
-                    </p>
-
-                    <div class="row g-3 my-2">
+                    {% set candidates_list = recommended_team_candidates if recommended_team_candidates is defined else recommended_team %}
+                    {% if candidates_list %}
+                    <div class="row g-3">
+                        {% for cand in candidates_list %}
                         <div class="col-md-6">
-                            <div class="p-3 rounded bg-light border">
-                                <span class="fw-bold text-dark small d-block mb-1"><i class="fas fa-history text-secondary me-1"></i> Existing Interventions</span>
-                                <p class="text-muted small mb-0">{{ challenge.existing_solutions or 'No systematic intervention currently documented.' }}</p>
+                            <div class="candidate-match-card">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div>
+                                        <h6 class="fw-bold text-dark mb-0">{{ cand.user.full_name }}</h6>
+                                        <small class="text-muted">{{ cand.user.user_type }} &bull; {{ cand.user.organization or 'Independent' }}</small>
+                                    </div>
+                                    <span class="badge {% if cand.match_pct >= 75 %}bg-success{% elif cand.match_pct >= 50 %}bg-primary{% else %}bg-secondary{% endif %} fw-bold px-2 py-1">
+                                        <i class="fas fa-bolt me-1"></i> {{ cand.match_pct }}% MATCH
+                                    </span>
+                                </div>
+                                <div class="small text-muted mb-2">
+                                    <i class="fas fa-map-marker-alt text-danger me-1"></i> {{ cand.user.location or 'Jharkhand' }}
+                                </div>
+                                <div class="mb-2">
+                                    <div class="small fw-bold text-dark mb-1">Matched Skills:</div>
+                                    {% if cand.matched_skills %}
+                                        {% for s in cand.matched_skills %}
+                                            <span class="skill-match-tag matched"><i class="fas fa-check-circle me-1"></i> {{ s }}</span>
+                                        {% endfor %}
+                                    {% else %}
+                                        <span class="text-muted small">Interdisciplinary alignment</span>
+                                    {% endif %}
+                                </div>
+                                <div class="p-2 rounded bg-light border small text-secondary mb-3 flex-grow-1">
+                                    <i class="fas fa-info-circle text-primary me-1"></i> <em>{{ cand.rationale }}</em>
+                                </div>
+                                <div class="pt-2 border-top mt-auto">
+                                    {% if cand.invited %}
+                                        <button class="btn btn-sm btn-light border text-muted w-100" disabled>
+                                            <i class="fas fa-envelope-check text-success me-1"></i> Invitation Sent ({{ cand.invitation_status }})
+                                        </button>
+                                    {% elif current_user %}
+                                        <button type="button" class="btn btn-sm btn-primary-gov w-100" data-bs-toggle="modal" data-bs-target="#inviteModal{{ cand.user.id }}">
+                                            <i class="fas fa-user-plus me-1"></i> Invite to Team
+                                        </button>
+                                    {% else %}
+                                        <a href="{{ url_for('login') }}" class="btn btn-sm btn-outline-primary w-100">
+                                            <i class="fas fa-sign-in-alt me-1"></i> Log In to Invite
+                                        </a>
+                                    {% endif %}
+                                </div>
                             </div>
                         </div>
-                        <div class="col-md-6">
-                            <div class="p-3 rounded bg-light border">
-                                <span class="fw-bold text-danger small d-block mb-1"><i class="fas fa-times-circle text-danger me-1"></i> Why Existing Solutions Fail</span>
-                                <p class="text-muted small mb-0">{{ challenge.shortcomings or 'High cost, lack of field automation, and irregular monitoring.' }}</p>
+
+                        <!-- Invitation Modal for this candidate -->
+                        {% if current_user and not cand.invited %}
+                        <div class="modal fade" id="inviteModal{{ cand.user.id }}" tabindex="-1" aria-labelledby="inviteModalLabel{{ cand.user.id }}" aria-hidden="true">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <form method="POST" action="{{ url_for('send_team_invitation', challenge_id=challenge.id) }}">
+                                        <input type="hidden" name="invitee_id" value="{{ cand.user.id }}">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title fw-bold" id="inviteModalLabel{{ cand.user.id }}">
+                                                <i class="fas fa-paper-plane text-primary me-2"></i> Send Team Collaboration Invite
+                                            </h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <div class="p-3 bg-light rounded border mb-3">
+                                                <div class="fw-bold text-dark">{{ cand.user.full_name }}</div>
+                                                <div class="text-muted small">{{ cand.user.user_type }} &bull; {{ cand.user.organization }}</div>
+                                                <div class="badge bg-success mt-1">{{ cand.match_pct }}% Skill Match</div>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label small fw-bold text-dark">Proposed Role in Innovation Squad *</label>
+                                                <select name="role_offered" class="form-select" required>
+                                                    <option value="Lead Technical Researcher" selected>Lead Technical Researcher</option>
+                                                    <option value="Hardware / IoT Specialist">Hardware / IoT Specialist</option>
+                                                    <option value="Software & AI Architect">Software & AI Architect</option>
+                                                    <option value="Domain Expert / Field Evaluator">Domain Expert / Field Evaluator</option>
+                                                    <option value="Industry Deployment Lead">Industry Deployment Lead</option>
+                                                    <option value="Community Liaison Specialist">Community Liaison Specialist</option>
+                                                </select>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label small fw-bold text-dark">Personalized Invitation Message</label>
+                                                <textarea name="invitation_message" class="form-control" rows="3" placeholder="Hello! We are assembling a multidisciplinary team to solve this challenge. Your expertise would be invaluable..."></textarea>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                                            <button type="submit" class="btn btn-primary-gov btn-sm">
+                                                <i class="fas fa-paper-plane me-1"></i> Send Official Invitation
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
                             </div>
                         </div>
-                    </div>
-
-                    <h6 class="fw-bold text-primary mt-4">Required Disciplines & Technical Skills</h6>
-                    <div class="mb-3">
-                        {% if challenge.required_skills %}
-                            {% for skill in challenge.required_skills.split(',') %}
-                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 me-1 mb-2">{{ skill.strip() }}</span>
-                            {% endfor %}
-                        {% else %}
-                            <span class="text-muted small">Interdisciplinary collaboration welcome</span>
                         {% endif %}
+                        {% endfor %}
                     </div>
-
-                    <h6 class="fw-bold text-primary mt-4">Expected Measurable Outcome</h6>
-                    <div class="p-3 rounded bg-success bg-opacity-10 border border-success border-opacity-25 text-success-emphasis mb-3">
-                        <i class="fas fa-bullseye text-success me-2"></i>
-                        {{ challenge.expected_outcome }}
-                    </div>
-
-                    {% if challenge.media_url or challenge.document_url %}
-                    <h6 class="fw-bold text-primary mt-4"><i class="fas fa-paperclip me-1"></i> Attached Ground Evidence & Documentation</h6>
-                    <div class="p-3 rounded bg-light border d-flex flex-wrap gap-3">
-                        {% if challenge.media_url %}
-                            <a href="{{ challenge.media_url }}" target="_blank" class="btn btn-sm btn-outline-primary">
-                                <i class="fas fa-camera me-1"></i> View Ground Photograph / Inspection Media
-                            </a>
-                        {% endif %}
-                        {% if challenge.document_url %}
-                            <a href="{{ challenge.document_url }}" target="_blank" class="btn btn-sm btn-outline-secondary">
-                                <i class="fas fa-file-pdf me-1"></i> View Field Survey / Lab Report PDF
-                            </a>
-                        {% endif %}
+                    {% else %}
+                    <div class="text-center py-3 text-muted">
+                        <i class="fas fa-users-slash fa-2x mb-2"></i>
+                        <p class="small mb-0">No candidate matches found yet. Make sure users have updated their skill tags in their profiles.</p>
                     </div>
                     {% endif %}
                 </div>
@@ -207,41 +631,6 @@
 
         <!-- Right: AI-Style Features & Rule-Based Matchmaking -->
         <div class="col-lg-4">
-            <!-- 1. AI Impact Score Box -->
-            <div class="ai-score-badge mb-4">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <span class="badge bg-warning text-dark fw-bold text-uppercase" style="font-size: 0.68rem;">Algorithmic Assessment</span>
-                        <h5 class="fw-bold mb-0 text-white mt-1">Potential Impact Score</h5>
-                        <small class="text-light opacity-75">Generated based on severity & scale</small>
-                    </div>
-                    <div class="ai-score-circle text-warning">
-                        {{ challenge.ai_impact_score }}
-                        <span style="font-size: 0.6rem; color: #cbd5e1;">/ 100</span>
-                    </div>
-                </div>
-
-                <hr class="border-secondary my-3 opacity-50">
-
-                <div class="small">
-                    <div class="d-flex justify-content-between mb-1">
-                        <span class="text-light opacity-90">Severity Factor:</span>
-                        <span class="fw-bold text-warning">{{ challenge.severity }} (High Weight)</span>
-                    </div>
-                    <div class="d-flex justify-content-between mb-1">
-                        <span class="text-light opacity-90">Population Reach:</span>
-                        <span class="fw-bold text-white">{{ "{:,}".format(challenge.people_affected_count) }} Beneficiaries</span>
-                    </div>
-                    <div class="d-flex justify-content-between">
-                        <span class="text-light opacity-90">Technical Feasibility:</span>
-                        <span class="fw-bold text-success">High (Multi-disciplinary)</span>
-                    </div>
-                </div>
-                <div class="mt-2 text-center" style="font-size: 0.68rem; color: #94a3b8;">
-                    * Platform-generated algorithmic estimate for prioritization
-                </div>
-            </div>
-
             <!-- NEP 2020 Institutional Allocation Framework -->
             <div class="p-3 mb-4 rounded-3 bg-light border">
                 <div class="d-flex align-items-center gap-2 mb-1">
@@ -327,7 +716,7 @@
                         </a>
                         <div class="d-flex justify-content-between text-muted small">
                             <span><i class="fas fa-map-marker-alt me-1"></i> {{ sc.location.split(',')[0] }}</span>
-                            <span class="badge bg-light text-dark border">{{ sc.ai_impact_score }}/100</span>
+                            <span class="badge badge-severity-{{ sc.priority.lower() }}">{{ sc.priority }}</span>
                         </div>
                     </div>
                     {% endfor %}
@@ -337,5 +726,125 @@
         </div>
     </div>
 </div>
-{% endblock %}
 
+<!-- Modal: Edit / Verify Problem DNA -->
+{% if can_edit_dna and problem_dna %}
+<div class="modal fade" id="editProblemDnaModal" tabindex="-1" aria-labelledby="editProblemDnaModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('edit_problem_dna', challenge_id=challenge.id) }}">
+                <div class="modal-header bg-light">
+                    <div>
+                        <h5 class="modal-title fw-bold text-dark" id="editProblemDnaModalLabel">
+                            <i class="fas fa-dna text-primary me-2"></i> Edit & Verify Problem DNA
+                        </h5>
+                        <small class="text-muted">Authorized refinement of AI-generated technical profile. The original citizen report will remain preserved.</small>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="alert alert-info-subtle border small d-flex align-items-center gap-2 mb-3">
+                        <i class="fas fa-info-circle text-primary fs-5"></i>
+                        <div>
+                            <strong>Human-in-the-Loop Verification:</strong> Saving changes will mark this profile as <em>"Expert Verified & Corrected"</em> with your stakeholder attribution.
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-dark">Structured Problem Title *</label>
+                        <input type="text" name="title" class="form-control" value="{{ problem_dna.title }}" required>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-dark">Domain *</label>
+                            <input type="text" name="domain" class="form-control" value="{{ problem_dna.domain }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-dark">Subdomain *</label>
+                            <input type="text" name="subdomain" class="form-control" value="{{ problem_dna.subdomain }}" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-dark">Problem Summary (What is happening) *</label>
+                        <textarea name="summary" class="form-control" rows="3" required>{{ problem_dna.summary }}</textarea>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-dark">Affected Population *</label>
+                            <input type="text" name="affected_population" class="form-control" value="{{ problem_dna.affected_population }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-dark">Location & Context *</label>
+                            <input type="text" name="location_context" class="form-control" value="{{ problem_dna.location_context }}" required>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold text-dark">Severity / Urgency *</label>
+                            <select name="severity" class="form-select" required>
+                                <option value="Critical" {% if problem_dna.severity == 'Critical' %}selected{% endif %}>Critical</option>
+                                <option value="High" {% if problem_dna.severity == 'High' %}selected{% endif %}>High</option>
+                                <option value="Medium" {% if problem_dna.severity == 'Medium' %}selected{% endif %}>Medium</option>
+                                <option value="Low" {% if problem_dna.severity == 'Low' %}selected{% endif %}>Low</option>
+                            </select>
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label small fw-bold text-dark">Severity Technical Explanation *</label>
+                            <input type="text" name="severity_explanation" class="form-control" value="{{ problem_dna.severity_explanation }}" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-dark">Possible Contributing Factors (Hypotheses, one per line)</label>
+                        <textarea name="contributing_factors" class="form-control" rows="3">{{ problem_dna.contributing_factors }}</textarea>
+                        <div class="text-muted" style="font-size: 0.72rem;">State as exploratory hypotheses; avoid unverified medical or legal declarations.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-dark">Key Evidence (One per line)</label>
+                        <textarea name="key_evidence" class="form-control" rows="3">{{ problem_dna.key_evidence }}</textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-dark">Required Academic & Technical Expertise (Comma-separated)</label>
+                        <input type="text" name="required_expertise" class="form-control" value="{{ problem_dna.required_expertise }}">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-dark">Potential Solution Areas (One per line)</label>
+                        <textarea name="potential_solution_areas" class="form-control" rows="3">{{ problem_dna.potential_solution_areas }}</textarea>
+                        <div class="text-muted" style="font-size: 0.72rem;">Exploratory engineering directions, not guaranteed solutions.</div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-dark">Relevant UN SDGs (Comma-separated)</label>
+                            <input type="text" name="relevant_sdgs" class="form-control" value="{{ problem_dna.relevant_sdgs }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-dark">Information Gaps (One per line)</label>
+                            <textarea name="information_gaps" class="form-control" rows="2">{{ problem_dna.information_gaps }}</textarea>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-dark">AI Understanding & Rationale *</label>
+                        <textarea name="ai_understanding" class="form-control" rows="3" required>{{ problem_dna.ai_understanding }}</textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary-gov btn-sm">
+                        <i class="fas fa-check-circle me-1"></i> Save & Verify Problem DNA
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

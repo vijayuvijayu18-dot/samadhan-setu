@@ -1,0 +1,1241 @@
+{% extends "base.html" %}
+
+{% block title %}Samadhan AI — Conversational Problem Intake & Submission{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+    <!-- 1. Samadhan AI Intro / Hero Header -->
+    <div class="card border-0 shadow-sm rounded-4 text-white mb-4 overflow-hidden" style="background: linear-gradient(135deg, #0b2545 0%, #134074 60%, #1d4ed8 100%);">
+        <div class="card-body p-4 p-md-5">
+            <div class="row align-items-center g-4">
+                <div class="col-lg-8">
+                    <div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
+                        <span class="badge bg-warning text-dark fw-bold px-3 py-1 text-uppercase" style="letter-spacing: 0.5px;">
+                            <i class="fas fa-brain me-1"></i> Civic AI Assistant
+                        </span>
+                        <span class="badge bg-white bg-opacity-20 text-white border border-white border-opacity-25 px-2 py-1">
+                            <i class="fas fa-shield-alt text-success me-1"></i> Ethical AI Guardrails Active
+                        </span>
+                        <span class="badge bg-info text-dark fw-bold px-2 py-1" id="aiModeBadge">
+                            <i class="fas fa-microchip me-1"></i> {{ ai_mode }}
+                        </span>
+                    </div>
+
+                    <h1 class="display-6 fw-bold text-white mb-2">Tell us your problem. We'll help structure it.</h1>
+                    <p class="lead text-light opacity-90 mb-3" style="font-size: 1.1rem; max-width: 680px;">
+                        You don't need to know how to write a formal problem statement. Just explain the problem in your own words.
+                    </p>
+                    <p class="text-white-50 small mb-4">
+                        <i class="fas fa-check-circle text-success me-1"></i> You can type, speak, upload evidence, or share your location.
+                    </p>
+
+                    <div class="d-flex flex-wrap gap-3">
+                        <a href="#conversationContainer" id="startReportingBtn" class="btn btn-warning text-dark fw-bold px-4 py-2 shadow-sm rounded-pill d-inline-flex align-items-center">
+                            <i class="fas fa-comment-dots me-2"></i> Start Reporting
+                        </a>
+                        <button type="button" id="loadDemoScenarioBtn" class="btn btn-outline-light px-3 py-2 rounded-pill d-inline-flex align-items-center">
+                            <i class="fas fa-vial me-2 text-warning"></i> Load Demo Scenario (Rural Water)
+                        </button>
+                    </div>
+                </div>
+
+                <div class="col-lg-4 text-center d-none d-lg-block">
+                    <div class="p-3 bg-white bg-opacity-10 rounded-4 border border-white border-opacity-10 backdrop-blur">
+                        <i class="fas fa-hands-helping fa-4x text-warning mb-3"></i>
+                        <h6 class="fw-bold text-white mb-1">Human-in-the-Loop Problem Intake</h6>
+                        <p class="text-light opacity-75 small mb-0">
+                            Citizen Explains &rarr; AI Structures &rarr; Citizen Confirms &rarr; Solvers Connect
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. Main Conversational & Draft Grid -->
+    <div class="row g-4" id="conversationContainer">
+
+        <!-- Left: Conversational Interface -->
+        <div class="col-lg-7 col-xl-8">
+            <div class="card border shadow-sm rounded-4 h-100 d-flex flex-column overflow-hidden bg-white">
+                <!-- Chat Header Bar -->
+                <div class="card-header bg-light border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="position-relative">
+                            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center shadow-sm" style="width: 44px; height: 44px; font-size: 1.2rem;">
+                                <i class="fas fa-robot"></i>
+                            </div>
+                            <span class="position-absolute bottom-0 end-0 p-1 bg-success border border-white rounded-circle" style="width: 12px; height: 12px;"></span>
+                        </div>
+                        <div>
+                            <div class="fw-bold text-dark d-flex align-items-center gap-2">
+                                <span>Samadhan AI</span>
+                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle small fw-normal">Conversational Civic Challenge Intake</span>
+                            </div>
+                            <small class="text-muted" id="aiStatusText">Ready &bull; Listening for your community report</small>
+                        </div>
+                    </div>
+
+                    <div class="d-flex align-items-center gap-2">
+                        <button type="button" id="resetConversationBtn" class="btn btn-sm btn-outline-secondary rounded-pill px-3" title="Start a new intake conversation">
+                            <i class="fas fa-redo me-1"></i> New Problem
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Chat Messages Scroll Area -->
+                <div class="card-body p-3 p-md-4 flex-grow-1 overflow-auto" id="chatMessageList" style="min-height: 420px; max-height: 540px; background-color: #f8fafc;">
+                    <!-- Initial Welcome Message from Samadhan AI -->
+                    <div class="d-flex gap-3 mb-3">
+                        <div class="flex-shrink-0 bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                            <i class="fas fa-robot"></i>
+                        </div>
+                        <div class="p-3 rounded-4 shadow-sm bg-white border text-dark" style="max-width: 85%;">
+                            <div class="d-flex align-items-center justify-content-between gap-3 mb-1">
+                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle" style="font-size: 0.7rem;">AI Assistant</span>
+                                <small class="text-muted" style="font-size: 0.7rem;">Just now</small>
+                            </div>
+                            <p class="mb-2" style="font-size: 0.95rem; line-height: 1.5;">
+                                👋 Namaste! I'm <strong>Samadhan AI</strong>.
+                            </p>
+                            <p class="mb-2 text-dark" style="font-size: 0.95rem; line-height: 1.5;">
+                                Tell me about a problem affecting your village, town, school, or community.
+                            </p>
+                            <p class="mb-0 text-secondary small">
+                                You don't need to write it formally. Just explain it naturally.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AI Processing Thinking Bubble (Hidden by default) -->
+                <div id="aiThinkingBubble" class="px-4 py-2 bg-light border-top d-none">
+                    <div class="d-flex align-items-center gap-2 text-muted small">
+                        <div class="spinner-grow spinner-grow-sm text-primary" role="status"></div>
+                        <span id="aiThinkingText">Samadhan AI is understanding your report...</span>
+                    </div>
+                </div>
+
+                <!-- Quick Replies Chip Row -->
+                <div id="quickRepliesContainer" class="px-3 pt-2 bg-light border-top d-flex flex-wrap gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill quick-chip" data-msg="There is a drinking-water problem in my village.">
+                        💧 There is a drinking-water problem in my village.
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill quick-chip" data-msg="Our road becomes unusable during rain.">
+                        🛣️ Our road becomes unusable during rain.
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill quick-chip" data-msg="Our school needs better sanitation facilities.">
+                        🏫 Our school needs better sanitation facilities.
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill quick-chip" data-msg="Farmers in our area are facing a crop problem.">
+                        🌾 Farmers in our area are facing a crop problem.
+                    </button>
+                </div>
+
+                <!-- Input & Action Bar -->
+                <div class="card-footer bg-white border-top p-3">
+                    <!-- Uploaded Evidence Tag Bar -->
+                    <div id="attachedFilesBar" class="d-flex flex-wrap gap-2 mb-2"></div>
+
+                    <form id="chatForm" class="d-flex align-items-end gap-2" onsubmit="return false;">
+                        <!-- Multimedia Attachment Dropdown -->
+                        <div class="dropdown">
+                            <button class="btn btn-outline-secondary rounded-circle" type="button" id="attachmentDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Attach Photos, Videos, or Documents" style="width: 44px; height: 44px;">
+                                <i class="fas fa-paperclip"></i>
+                            </button>
+                            <ul class="dropdown-menu shadow border-0" aria-labelledby="attachmentDropdown">
+                                <li>
+                                    <label class="dropdown-item py-2 cursor-pointer" for="imageFileInput">
+                                        <i class="fas fa-camera text-primary me-2"></i> Upload Photo (Evidence)
+                                    </label>
+                                </li>
+                                <li>
+                                    <label class="dropdown-item py-2 cursor-pointer" for="videoFileInput">
+                                        <i class="fas fa-video text-danger me-2"></i> Upload Video
+                                    </label>
+                                </li>
+                                <li>
+                                    <label class="dropdown-item py-2 cursor-pointer" for="docFileInput">
+                                        <i class="fas fa-file-alt text-success me-2"></i> Upload Document / Lab Report
+                                    </label>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <!-- Hidden File Inputs -->
+                        <input type="file" id="imageFileInput" class="d-none" accept="image/*" multiple>
+                        <input type="file" id="videoFileInput" class="d-none" accept="video/*">
+                        <input type="file" id="docFileInput" class="d-none" accept=".pdf,.docx,.txt,.csv">
+
+                        <!-- Geolocation Button -->
+                        <button type="button" id="locationBtn" class="btn btn-outline-secondary rounded-circle" title="Share Location (Device GPS or Jharkhand District)" style="width: 44px; height: 44px;">
+                            <i class="fas fa-map-marker-alt text-danger"></i>
+                        </button>
+
+                        <!-- Voice Input Microphone Button -->
+                        <button type="button" id="voiceBtn" class="btn btn-outline-primary rounded-circle position-relative" title="Speak your problem (Speech-to-Text)" style="width: 44px; height: 44px;">
+                            <i class="fas fa-microphone"></i>
+                            <span id="voicePulse" class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle d-none">
+                                <span class="visually-hidden">Recording</span>
+                            </span>
+                        </button>
+
+                        <!-- Text Input Area -->
+                        <div class="flex-grow-1 position-relative">
+                            <textarea id="messageInput" class="form-control rounded-4 py-2 px-3 shadow-none" rows="1" placeholder="Type your problem naturally or click 🎤 to speak..." style="resize: none; font-size: 0.95rem; max-height: 100px;"></textarea>
+                        </div>
+
+                        <!-- Send Button -->
+                        <button type="submit" id="sendBtn" class="btn btn-primary rounded-circle shadow-sm" style="width: 44px; height: 44px;" title="Send Message">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </form>
+                    <div class="d-flex justify-content-between align-items-center mt-2 px-1">
+                        <small class="text-muted" style="font-size: 0.75rem;">
+                            <i class="fas fa-lightbulb text-warning me-1"></i> <strong>Tip:</strong> You can say <em>'I don't know'</em> or <em>'skip'</em> for any question you are unsure about.
+                        </small>
+                        <small class="text-muted" style="font-size: 0.72rem;">
+                            Press <strong>Enter</strong> to send
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Real-Time Checklist & Structured Challenge Draft Card -->
+        <div class="col-lg-5 col-xl-4">
+            <!-- Information Collection Progress Checklist -->
+            <div class="card border shadow-sm rounded-4 mb-3 bg-white">
+                <div class="card-header bg-white border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold text-dark mb-0">
+                        <i class="fas fa-clipboard-check text-primary me-2"></i> Problem Dimensions
+                    </h6>
+                    <span id="progressPercentageBadge" class="badge bg-primary-subtle text-primary border border-primary-subtle">0% Complete</span>
+                </div>
+                <div class="card-body p-3">
+                    <div class="progress mb-3" style="height: 6px;">
+                        <div id="progressBar" class="progress-bar bg-primary progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+
+                    <ul class="list-unstyled mb-0 small" id="checklistItems">
+                        <li class="d-flex align-items-center gap-2 py-1 text-muted" id="check-problem_core">
+                            <i class="far fa-circle"></i> <span>Problem Description</span>
+                        </li>
+                        <li class="d-flex align-items-center gap-2 py-1 text-muted" id="check-domain_identified">
+                            <i class="far fa-circle"></i> <span>Thematic Domain & Sector</span>
+                        </li>
+                        <li class="d-flex align-items-center gap-2 py-1 text-muted" id="check-location_provided">
+                            <i class="far fa-circle"></i> <span>Affected Village / District</span>
+                        </li>
+                        <li class="d-flex align-items-center gap-2 py-1 text-muted" id="check-population_identified">
+                            <i class="far fa-circle"></i> <span>Affected Group & Scale</span>
+                        </li>
+                        <li class="d-flex align-items-center gap-2 py-1 text-muted" id="check-timeline_recorded">
+                            <i class="far fa-circle"></i> <span>Timeline & Recurrence</span>
+                        </li>
+                        <li class="d-flex align-items-center gap-2 py-1 text-muted" id="check-evidence_attached">
+                            <i class="far fa-circle"></i> <span>Supporting Photos / Evidence</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Structured Challenge Draft Preview Card -->
+            <div class="card border shadow-sm rounded-4 bg-white" id="challengeDraftCard">
+                <div class="card-header bg-white border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1" style="font-size: 0.68rem;">DRAFT PREVIEW</span>
+                        <h6 class="fw-bold text-dark mb-0 mt-1">Your Challenge Draft</h6>
+                    </div>
+                    <button type="button" id="editDraftModalBtn" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                        <i class="fas fa-edit me-1"></i> Edit Info
+                    </button>
+                </div>
+
+                <div class="card-body p-4" style="background: #fdfdfd;">
+                    <div id="draftEmptyState" class="text-center py-4 text-muted">
+                        <i class="fas fa-file-signature fa-3x text-secondary opacity-50 mb-3"></i>
+                        <p class="small mb-0">No problem has been described yet. Explain your situation in natural words.</p>
+                    </div>
+
+                    <div id="draftContentArea" class="d-none">
+                        <!-- Review Ready Banner -->
+                        <div id="draftReviewBanner" class="alert alert-success d-flex align-items-center gap-2 p-2 mb-3 d-none">
+                            <i class="fas fa-check-circle fs-5 text-success"></i>
+                            <div class="small fw-semibold">
+                                Ready for review! Check the structured draft below before submitting.
+                            </div>
+                        </div>
+
+                        <!-- Challenge Title -->
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label class="text-muted small fw-bold text-uppercase d-block mb-0" style="font-size: 0.68rem;">Challenge Title</label>
+                                <span id="draftTitleAttr"></span>
+                            </div>
+                            <h6 class="fw-bold text-dark mb-0" id="draftTitleDisplay">--</h6>
+                        </div>
+
+                        <!-- Domain & Location -->
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <label class="text-muted small fw-bold text-uppercase d-block mb-0" style="font-size: 0.68rem;">Domain</label>
+                                    <span id="draftDomainAttr"></span>
+                                </div>
+                                <span class="badge bg-primary text-white" id="draftDomainDisplay">--</span>
+                            </div>
+                            <div class="col-6">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <label class="text-muted small fw-bold text-uppercase d-block mb-0" style="font-size: 0.68rem;">Location</label>
+                                    <span id="draftLocationAttr"></span>
+                                </div>
+                                <span class="badge bg-light text-dark border" id="draftLocationDisplay">--</span>
+                            </div>
+                        </div>
+
+                        <!-- Subdomain -->
+                        <div class="mb-3">
+                            <label class="text-muted small fw-bold text-uppercase d-block" style="font-size: 0.68rem;">Focus Area</label>
+                            <div class="small fw-semibold text-secondary" id="draftSubdomainDisplay">--</div>
+                        </div>
+
+                        <!-- Affected Population -->
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label class="text-muted small fw-bold text-uppercase d-block mb-0" style="font-size: 0.68rem;">Affected Citizens</label>
+                                <span id="draftPopulationAttr"></span>
+                            </div>
+                            <div class="small text-dark" id="draftPopulationDisplay">--</div>
+                        </div>
+
+                        <!-- Citizen Summary -->
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label class="text-muted small fw-bold text-uppercase d-block mb-0" style="font-size: 0.68rem;">Citizen-Reported Summary</label>
+                                <span id="draftSummaryAttr"></span>
+                            </div>
+                            <div class="p-2 rounded bg-light border small text-dark" id="draftSummaryDisplay" style="line-height: 1.4;">
+                                --
+                            </div>
+                        </div>
+
+                        <!-- Timeline / Recurrence -->
+                        <div class="mb-3" id="draftTimingContainer">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label class="text-muted small fw-bold text-uppercase d-block mb-0" style="font-size: 0.68rem;">Timeline / Recurrence</label>
+                                <span id="draftTimingAttr"></span>
+                            </div>
+                            <div class="small text-dark" id="draftTimingDisplay">Not specified yet</div>
+                        </div>
+
+                        <!-- Evidence Summary -->
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label class="text-muted small fw-bold text-uppercase d-block mb-0" style="font-size: 0.68rem;">Evidence Attached</label>
+                                <span id="draftEvidenceAttr"></span>
+                            </div>
+                            <div class="small text-success fw-semibold" id="draftEvidenceDisplay">
+                                <i class="fas fa-check-circle me-1"></i> Physical evidence optional
+                            </div>
+                        </div>
+
+                        <!-- Information Gaps -->
+                        <div id="draftGapsContainer" class="p-2 rounded bg-info bg-opacity-10 border border-info-subtle mb-3 d-none">
+                            <div class="d-flex align-items-center gap-1 text-dark fw-bold small mb-1">
+                                <i class="fas fa-info-circle text-info"></i> Information Gaps (Can be field verified)
+                            </div>
+                            <ul class="mb-0 text-muted small ps-3" id="draftGapsList" style="font-size: 0.75rem;"></ul>
+                        </div>
+
+                        <!-- Ethical Guardrail: Needs Verification -->
+                        <div class="p-2 rounded bg-warning bg-opacity-10 border border-warning-subtle mb-3">
+                            <div class="d-flex align-items-center gap-1 text-dark fw-bold small mb-1">
+                                <i class="fas fa-exclamation-circle text-warning"></i> Needs Verification
+                            </div>
+                            <ul class="mb-0 text-muted small ps-3" id="draftNeedsVerificationList" style="font-size: 0.75rem;">
+                                <li>Specific ground-level measurements require technical validation.</li>
+                            </ul>
+                        </div>
+
+                        <!-- Explicit Confirmation & Submission Actions -->
+                        <div class="d-grid gap-2 mt-4 pt-2 border-top">
+                            <button type="button" id="confirmSubmitBtn" class="btn btn-success fw-bold py-2 shadow-sm d-flex align-items-center justify-content-center">
+                                <i class="fas fa-paper-plane me-2"></i> Confirm & Submit Challenge
+                            </button>
+                            <small class="text-center text-muted" style="font-size: 0.72rem;">
+                                By submitting, this problem will be reviewed and published to Jharkhand innovators.
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. Challenge Submission Success Card (Hidden until confirmed) -->
+    <div id="submissionSuccessCard" class="card border-0 shadow-lg rounded-4 overflow-hidden d-none my-4">
+        <div class="card-header text-white p-4 p-md-5" style="background: linear-gradient(135deg, #059669 0%, #10b981 100%);">
+            <div class="text-center">
+                <div class="bg-white text-success rounded-circle d-inline-flex align-items-center justify-content-center shadow mb-3" style="width: 72px; height: 72px; font-size: 2.2rem;">
+                    <i class="fas fa-check"></i>
+                </div>
+                <h2 class="fw-bold text-white mb-1">Challenge Submitted Successfully!</h2>
+                <p class="lead text-light opacity-90 mb-3" style="font-size: 1.15rem;">
+                    Your community challenge has been structured and recorded in the Samadhan Setu National Innovation Network.
+                </p>
+                <div class="d-inline-flex align-items-center gap-2 bg-white bg-opacity-20 border border-white border-opacity-25 rounded-pill px-4 py-2">
+                    <span class="text-white small">OFFICIAL CHALLENGE ID:</span>
+                    <strong class="text-white fs-5" id="successChallengeCode">CHL-2026-0012</strong>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-body p-4 p-md-5 bg-white">
+            <div class="row g-4 mb-4">
+                <div class="col-lg-6">
+                    <h5 class="fw-bold text-dark mb-3">Submitted Challenge Details</h5>
+                    <div class="p-3 bg-light rounded-3 border">
+                        <div class="mb-2">
+                            <span class="text-muted small d-block">Title:</span>
+                            <strong class="text-dark" id="successTitle">Water Filtration</strong>
+                        </div>
+                        <div class="mb-2">
+                            <span class="text-muted small d-block">Category:</span>
+                            <span class="badge bg-primary" id="successCategory">Water Resources</span>
+                        </div>
+                        <div class="mb-0">
+                            <span class="text-muted small d-block">Location:</span>
+                            <span class="text-dark" id="successLocation">Dumka, Jharkhand</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-6">
+                    <h5 class="fw-bold text-dark mb-3">What's Next? (Collaborative Pipeline)</h5>
+                    <div class="timeline-stepper small">
+                        <div class="d-flex align-items-start gap-2 mb-2">
+                            <i class="fas fa-check-circle text-success mt-1"></i>
+                            <div><strong>1. AI Problem DNA Synthesis:</strong> 13-dimensional scientific profile generated.</div>
+                        </div>
+                        <div class="d-flex align-items-start gap-2 mb-2">
+                            <i class="fas fa-clock text-warning mt-1"></i>
+                            <div><strong>2. Administrative Validation:</strong> Triage by Jharkhand department desk.</div>
+                        </div>
+                        <div class="d-flex align-items-start gap-2 mb-2">
+                            <i class="fas fa-object-group text-primary mt-1"></i>
+                            <div><strong>3. Similar Problem Fusion:</strong> <span id="successSimilarCount">3</span> related challenges detected for coordinated solving.</div>
+                        </div>
+                        <div class="d-flex align-items-start gap-2 mb-2">
+                            <i class="fas fa-users-cog text-info mt-1"></i>
+                            <div><strong>4. Smart Team Matching:</strong> Recommending university student & mentor squads.</div>
+                        </div>
+                        <div class="d-flex align-items-start gap-2">
+                            <i class="fas fa-handshake text-secondary mt-1"></i>
+                            <div><strong>5. Industry Hub:</strong> Corporate CSR testbed grant eligibility.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Similar Challenges Section -->
+            <div id="successSimilarContainer" class="mb-4">
+                <h6 class="fw-bold text-dark mb-2">
+                    <i class="fas fa-link text-primary me-2"></i> Similar Challenges in Jharkhand (Preventing Duplicate R&D)
+                </h6>
+                <div id="successSimilarList" class="row g-2"></div>
+            </div>
+
+            <div class="d-flex justify-content-center gap-3 pt-3 border-top">
+                <a href="#" id="viewChallengeBtn" class="btn btn-primary px-4 py-2 shadow-sm rounded-pill">
+                    <i class="fas fa-external-link-alt me-2"></i> View Challenge Page & Problem DNA
+                </a>
+                <button type="button" id="submitAnotherBtn" class="btn btn-outline-secondary px-4 py-2 rounded-pill">
+                    <i class="fas fa-plus me-2"></i> Report Another Problem
+                </button>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- 4. Modal: Edit Challenge Information Before Submission -->
+<div class="modal fade" id="editDraftModal" tabindex="-1" aria-labelledby="editDraftModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow rounded-4">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title fw-bold text-dark" id="editDraftModalLabel">
+                    <i class="fas fa-edit text-primary me-2"></i> Edit Challenge Information
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form id="editDraftForm">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-dark">Challenge Title</label>
+                        <input type="text" id="modalTitleInput" class="form-control" placeholder="Short and clear problem title">
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-dark">Thematic Domain</label>
+                            <select id="modalDomainSelect" class="form-select">
+                                {% for cat in categories %}
+                                <option value="{{ cat }}">{{ cat }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-dark">District</label>
+                            <select id="modalDistrictSelect" class="form-select">
+                                {% for d in districts %}
+                                <option value="{{ d }}">{{ d }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-dark">Location / Village / Area</label>
+                            <input type="text" id="modalLocationInput" class="form-control" placeholder="e.g. Dumka Village School">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-dark">Affected Population</label>
+                            <input type="text" id="modalPopulationInput" class="form-control" placeholder="e.g. 120 school students & villagers">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-dark">Problem Summary</label>
+                        <textarea id="modalSummaryInput" class="form-control" rows="4" placeholder="Detailed description of what is happening..."></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-dark">Timeline / Recurrence</label>
+                        <input type="text" id="modalTimingInput" class="form-control" placeholder="e.g. About two weeks ago, continuous">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" id="saveDraftModalBtn" class="btn btn-primary px-4">
+                    <i class="fas fa-save me-1"></i> Save Changes
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 5. Modal: Location Selector (GPS or Manual District) -->
+<div class="modal fade" id="locationModal" tabindex="-1" aria-labelledby="locationModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow rounded-4">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title fw-bold text-dark" id="locationModalLabel">
+                    <i class="fas fa-map-marker-alt text-danger me-2"></i> Set Location
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="mb-3 text-center">
+                    <button type="button" id="useDeviceGpsBtn" class="btn btn-outline-primary w-100 py-2 rounded-pill d-flex align-items-center justify-content-center">
+                        <i class="fas fa-crosshairs me-2"></i> Use Device GPS Location (With Permission)
+                    </button>
+                    <small class="text-muted mt-1 d-block" id="gpsStatusText">Location is never shared without your permission</small>
+                </div>
+
+                <div class="d-flex align-items-center my-3">
+                    <hr class="flex-grow-1">
+                    <span class="px-2 text-muted small">OR SELECT MANUALLY</span>
+                    <hr class="flex-grow-1">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-dark">District in Jharkhand</label>
+                    <select id="quickDistrictSelect" class="form-select">
+                        <option value="">Select District</option>
+                        {% for d in districts %}
+                        <option value="{{ d }}">{{ d }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-dark">Village, Town, or Landmark</label>
+                    <input type="text" id="quickVillageInput" class="form-control" placeholder="e.g. Village School, Tola, Block">
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" id="confirmLocationBtn" class="btn btn-primary px-4">Apply Location</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    let sessionUuid = "{{ session_uuid }}";
+    let currentDraft = {{ existing_draft|tojson if existing_draft else '{}' }};
+    let uploadedFiles = [];
+    let locationData = {};
+
+    const chatList = document.getElementById("chatMessageList");
+    const messageInput = document.getElementById("messageInput");
+    const sendBtn = document.getElementById("sendBtn");
+    const voiceBtn = document.getElementById("voiceBtn");
+    const voicePulse = document.getElementById("voicePulse");
+    const locationBtn = document.getElementById("locationBtn");
+    const aiThinkingBubble = document.getElementById("aiThinkingBubble");
+    const attachedFilesBar = document.getElementById("attachedFilesBar");
+    const quickRepliesContainer = document.getElementById("quickRepliesContainer");
+    const progressBar = document.getElementById("progressBar");
+    const progressBadge = document.getElementById("progressPercentageBadge");
+
+    const draftEmptyState = document.getElementById("draftEmptyState");
+    const draftContentArea = document.getElementById("draftContentArea");
+    const draftTitleDisplay = document.getElementById("draftTitleDisplay");
+    const draftDomainDisplay = document.getElementById("draftDomainDisplay");
+    const draftLocationDisplay = document.getElementById("draftLocationDisplay");
+    const draftSubdomainDisplay = document.getElementById("draftSubdomainDisplay");
+    const draftPopulationDisplay = document.getElementById("draftPopulationDisplay");
+    const draftSummaryDisplay = document.getElementById("draftSummaryDisplay");
+    const draftEvidenceDisplay = document.getElementById("draftEvidenceDisplay");
+    const draftNeedsVerificationList = document.getElementById("draftNeedsVerificationList");
+    const confirmSubmitBtn = document.getElementById("confirmSubmitBtn");
+
+    const editDraftModal = new bootstrap.Modal(document.getElementById("editDraftModal"));
+    const locationModal = new bootstrap.Modal(document.getElementById("locationModal"));
+
+    // Scroll chat to bottom
+    function scrollToBottom() {
+        chatList.scrollTop = chatList.scrollHeight;
+    }
+
+    // Append message to UI
+    function appendMessage(role, text, time, evidenceFiles) {
+        const msgDiv = document.createElement("div");
+        msgDiv.className = `d-flex gap-3 mb-3 ${role === 'user' ? 'justify-content-end' : ''}`;
+
+        const isUser = (role === 'user');
+        const iconHtml = isUser 
+            ? `<div class="flex-shrink-0 bg-success text-white rounded-circle d-flex align-items-center justify-content-center order-2" style="width: 36px; height: 36px;"><i class="fas fa-user"></i></div>`
+            : `<div class="flex-shrink-0 bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;"><i class="fas fa-robot"></i></div>`;
+
+        let evidenceHtml = '';
+        if (evidenceFiles && evidenceFiles.length > 0) {
+            evidenceHtml = `<div class="d-flex flex-wrap gap-1 mt-2">` + 
+                evidenceFiles.map(f => `<span class="badge bg-light text-dark border"><i class="fas fa-paperclip text-primary me-1"></i>${f.name}</span>`).join('') +
+                `</div>`;
+        }
+
+        const badgeHtml = isUser
+            ? `<span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size: 0.68rem;">Citizen Report</span>`
+            : `<span class="badge bg-primary-subtle text-primary border border-primary-subtle" style="font-size: 0.68rem;">AI Assistant</span>`;
+
+        msgDiv.innerHTML = `
+            ${!isUser ? iconHtml : ''}
+            <div class="p-3 rounded-4 shadow-sm ${isUser ? 'bg-primary text-white order-1' : 'bg-white border text-dark'}" style="max-width: 82%;">
+                <div class="d-flex align-items-center justify-content-between gap-3 mb-1">
+                    ${badgeHtml}
+                    <small class="${isUser ? 'text-white-50' : 'text-muted'}" style="font-size: 0.7rem;">${time || 'Now'}</small>
+                </div>
+                <div style="font-size: 0.95rem; line-height: 1.5; white-space: pre-wrap;">${escapeHtml(text)}</div>
+                ${evidenceHtml}
+            </div>
+            ${isUser ? iconHtml : ''}
+        `;
+
+        chatList.appendChild(msgDiv);
+        scrollToBottom();
+    }
+
+    function escapeHtml(text) {
+        if (!text) return '';
+        return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+
+    // Update Progress & Checklist
+    function updateChecklist(checklist, progressPct) {
+        if (!checklist) return;
+        progressBar.style.width = `${progressPct}%`;
+        progressBadge.innerText = `${progressPct}% Complete`;
+
+        for (const [key, done] of Object.entries(checklist)) {
+            const el = document.getElementById(`check-${key}`);
+            if (el) {
+                if (done) {
+                    el.className = "d-flex align-items-center gap-2 py-1 text-success fw-semibold";
+                    el.querySelector("i").className = "fas fa-check-circle text-success";
+                } else {
+                    el.className = "d-flex align-items-center gap-2 py-1 text-muted";
+                    el.querySelector("i").className = "far fa-circle";
+                }
+            }
+        }
+    }
+
+    // Update Quick Reply Chips
+    function updateQuickReplies(chips) {
+        quickRepliesContainer.innerHTML = '';
+        if (!chips || chips.length === 0) {
+            chips = ["I don't have that information", "Proceed without photos"];
+        }
+        chips.forEach(chipText => {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "btn btn-sm btn-outline-primary rounded-pill quick-chip";
+            btn.innerText = chipText;
+            btn.addEventListener("click", function() {
+                sendMessage(chipText);
+            });
+            quickRepliesContainer.appendChild(btn);
+        });
+    }
+
+    // Bind initial static quick chips
+    document.querySelectorAll(".quick-chip").forEach(btn => {
+        btn.addEventListener("click", function() {
+            const msg = this.getAttribute("data-msg") || this.innerText.trim();
+            sendMessage(msg);
+        });
+    });
+
+    function getAttributionBadge(attr) {
+        if (!attr) return '';
+        const lower = attr.toLowerCase();
+        if (lower.includes('citizen provided') || lower.includes('confirmed by citizen')) {
+            return `<span class="badge bg-success-subtle text-success border border-success-subtle py-1 px-2" style="font-size: 0.65rem;"><i class="fas fa-user-check me-1"></i>${escapeHtml(attr)}</span>`;
+        }
+        if (lower.includes('ai') || lower.includes('suggested') || lower.includes('classified')) {
+            return `<span class="badge bg-primary-subtle text-primary border border-primary-subtle py-1 px-2" style="font-size: 0.65rem;"><i class="fas fa-robot me-1"></i>${escapeHtml(attr)}</span>`;
+        }
+        if (lower.includes('verification') || lower.includes('field')) {
+            return `<span class="badge bg-warning-subtle text-warning border border-warning-subtle py-1 px-2" style="font-size: 0.65rem;"><i class="fas fa-clock me-1"></i>${escapeHtml(attr)}</span>`;
+        }
+        return `<span class="badge bg-secondary-subtle text-secondary border py-1 px-2" style="font-size: 0.65rem;">${escapeHtml(attr)}</span>`;
+    }
+
+    // Render Draft Preview Card
+    function renderDraftCard(draft, isReady) {
+        if (!draft || Object.keys(draft).length === 0 || (!draft.title && !draft.problem_summary && !draft.domain)) {
+            draftEmptyState.classList.remove("d-none");
+            draftContentArea.classList.add("d-none");
+            return;
+        }
+        currentDraft = draft;
+        draftEmptyState.classList.add("d-none");
+        draftContentArea.classList.remove("d-none");
+
+        const attrs = draft.source_attribution || {};
+
+        draftTitleDisplay.innerText = draft.title || "Community Societal Challenge";
+        const titleAttrEl = document.getElementById("draftTitleAttr");
+        if (titleAttrEl) titleAttrEl.innerHTML = getAttributionBadge(attrs.title || attrs.problem || "AI suggested");
+
+        draftDomainDisplay.innerText = draft.domain || "Thematic Area";
+        const domainAttrEl = document.getElementById("draftDomainAttr");
+        if (domainAttrEl) domainAttrEl.innerHTML = getAttributionBadge(attrs.domain || "AI classified");
+
+        draftLocationDisplay.innerText = draft.location || "Jharkhand (To be verified)";
+        const locAttrEl = document.getElementById("draftLocationAttr");
+        if (locAttrEl) locAttrEl.innerHTML = getAttributionBadge(attrs.location || (draft.location ? "Citizen provided" : "Needs verification"));
+
+        draftSubdomainDisplay.innerText = draft.subdomain || "Civic Need";
+
+        draftPopulationDisplay.innerText = draft.affected_population || "Community Residents (Pending verification)";
+        const popAttrEl = document.getElementById("draftPopulationAttr");
+        if (popAttrEl) popAttrEl.innerHTML = getAttributionBadge(attrs.affected_population || (draft.affected_population ? "Citizen provided" : "Needs verification"));
+
+        draftSummaryDisplay.innerText = draft.problem_summary || "Citizen description recorded.";
+        const sumAttrEl = document.getElementById("draftSummaryAttr");
+        if (sumAttrEl) sumAttrEl.innerHTML = getAttributionBadge(attrs.problem || "Citizen provided");
+
+        // Timeline
+        const timingContainer = document.getElementById("draftTimingContainer");
+        const timingDisplay = document.getElementById("draftTimingDisplay");
+        const timingAttr = document.getElementById("draftTimingAttr");
+        if (draft.timing) {
+            timingDisplay.innerText = draft.timing;
+            if (timingAttr) timingAttr.innerHTML = getAttributionBadge(attrs.timing || "Citizen provided");
+            timingContainer.classList.remove("d-none");
+        } else {
+            timingDisplay.innerText = "To be noted during field survey";
+            if (timingAttr) timingAttr.innerHTML = getAttributionBadge("Needs verification");
+            timingContainer.classList.remove("d-none");
+        }
+
+        // Evidence
+        const evidenceAttrEl = document.getElementById("draftEvidenceAttr");
+        if (draft.evidence_summary) {
+            draftEvidenceDisplay.innerHTML = `<i class="fas fa-check-circle text-success me-1"></i> ${escapeHtml(draft.evidence_summary)}`;
+            if (evidenceAttrEl) evidenceAttrEl.innerHTML = getAttributionBadge(attrs.evidence || "Citizen provided");
+        } else if (draft.evidence_declined) {
+            draftEvidenceDisplay.innerHTML = `<i class="fas fa-info-circle text-secondary me-1"></i> Citizen opted to proceed without photos`;
+            if (evidenceAttrEl) evidenceAttrEl.innerHTML = getAttributionBadge("Confirmed by citizen");
+        } else {
+            draftEvidenceDisplay.innerHTML = `<i class="fas fa-info-circle text-secondary me-1"></i> Optional (can be verified in field)`;
+            if (evidenceAttrEl) evidenceAttrEl.innerHTML = getAttributionBadge("Optional");
+        }
+
+        // Information Gaps
+        const gapsContainer = document.getElementById("draftGapsContainer");
+        const gapsList = document.getElementById("draftGapsList");
+        if (gapsContainer && gapsList) {
+            if (draft.information_gaps && draft.information_gaps.length > 0) {
+                gapsContainer.classList.remove("d-none");
+                gapsList.innerHTML = draft.information_gaps.map(g => `<li>${escapeHtml(g)}</li>`).join('');
+            } else {
+                gapsContainer.classList.add("d-none");
+            }
+        }
+
+        // Ethical Guardrail: Needs Verification
+        if (draft.needs_verification && draft.needs_verification.length > 0) {
+            draftNeedsVerificationList.innerHTML = draft.needs_verification.map(item => `<li>${escapeHtml(item)}</li>`).join('');
+        }
+
+        // Review Banner
+        const reviewBanner = document.getElementById("draftReviewBanner");
+        if (reviewBanner) {
+            if (isReady || draft.is_ready) {
+                reviewBanner.classList.remove("d-none");
+            } else {
+                reviewBanner.classList.add("d-none");
+            }
+        }
+    }
+
+    // Send chat message
+    async function sendMessage(text) {
+        const msg = text || messageInput.value.trim();
+        if (!msg && uploadedFiles.length === 0) return;
+
+        const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        appendMessage('user', msg, timeStr, [...uploadedFiles]);
+        messageInput.value = '';
+        messageInput.style.height = 'auto';
+
+        // Clear attached files bar
+        const filesToSend = [...uploadedFiles];
+        uploadedFiles = [];
+        attachedFilesBar.innerHTML = '';
+
+        // Show AI thinking indicator
+        aiThinkingBubble.classList.remove("d-none");
+
+        try {
+            const resp = await fetch("/api/samadhan-ai/chat", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    session_uuid: sessionUuid,
+                    message: msg,
+                    uploaded_files: filesToSend,
+                    location_data: locationData,
+                    current_draft: currentDraft
+                })
+            });
+            const data = await resp.json();
+            aiThinkingBubble.classList.add("d-none");
+
+            if (data.success) {
+                appendMessage('ai', data.ai_message, new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+                updateChecklist(data.checklist, data.progress_pct);
+                updateQuickReplies(data.quick_replies);
+                renderDraftCard(data.draft, data.is_ready);
+
+                if (data.is_ready) {
+                    confirmSubmitBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+            } else {
+                appendMessage('ai', "I apologize, Samadhan AI is temporarily unavailable. You may continue with manual submission or try again.", timeStr);
+            }
+        } catch (err) {
+            aiThinkingBubble.classList.add("d-none");
+            appendMessage('ai', "Network error encountered. Your report progress has been saved. Please try sending again.", timeStr);
+        }
+    }
+
+    // Event Listeners for Chat Form
+    sendBtn.addEventListener("click", () => sendMessage());
+    messageInput.addEventListener("keydown", function(e) {
+        if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
+    });
+
+    // Quick chip clicks
+    document.querySelectorAll(".quick-chip").forEach(chip => {
+        chip.addEventListener("click", function() {
+            sendMessage(this.getAttribute("data-msg"));
+        });
+    });
+
+    // HTML5 Web Speech API Voice Input
+    let recognition = null;
+    let isRecording = false;
+
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognition = new SpeechRec();
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = 'en-IN';
+
+        recognition.onstart = function() {
+            isRecording = true;
+            voicePulse.classList.remove("d-none");
+            voiceBtn.classList.add("btn-danger");
+            voiceBtn.classList.remove("btn-outline-primary");
+            messageInput.placeholder = "Listening... Speak your problem clearly...";
+        };
+
+        recognition.onresult = function(event) {
+            const transcript = event.results[0][0].transcript;
+            messageInput.value = transcript;
+            sendMessage(transcript);
+        };
+
+        recognition.onerror = function(event) {
+            console.warn("Speech recognition error:", event.error);
+            stopVoice();
+        };
+
+        recognition.onend = function() {
+            stopVoice();
+        };
+
+        function stopVoice() {
+            isRecording = false;
+            voicePulse.classList.add("d-none");
+            voiceBtn.classList.remove("btn-danger");
+            voiceBtn.classList.add("btn-outline-primary");
+            messageInput.placeholder = "Type your problem naturally or click 🎤 to speak...";
+        }
+
+        voiceBtn.addEventListener("click", function() {
+            if (isRecording) {
+                recognition.stop();
+            } else {
+                recognition.start();
+            }
+        });
+    } else {
+        voiceBtn.addEventListener("click", function() {
+            alert("Voice speech recognition is not supported on this browser. Please type your problem or use Google Chrome/Edge.");
+        });
+    }
+
+    // File Upload Handler
+    async function handleFileUpload(fileInput, type) {
+        const files = fileInput.files;
+        if (!files || files.length === 0) return;
+
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            const formData = new FormData();
+            formData.append("file", file);
+
+            try {
+                const resp = await fetch("/api/samadhan-ai/upload", {
+                    method: "POST",
+                    body: formData
+                });
+                const res = await resp.json();
+                if (res.success) {
+                    uploadedFiles.push(res.file);
+                    renderAttachedFilesBar();
+                } else {
+                    alert("Upload error: " + (res.error || "Could not upload file"));
+                }
+            } catch (err) {
+                alert("Upload failed: " + err.message);
+            }
+        }
+        fileInput.value = '';
+    }
+
+    document.getElementById("imageFileInput").addEventListener("change", function() { handleFileUpload(this, "photo"); });
+    document.getElementById("videoFileInput").addEventListener("change", function() { handleFileUpload(this, "video"); });
+    document.getElementById("docFileInput").addEventListener("change", function() { handleFileUpload(this, "document"); });
+
+    function renderAttachedFilesBar() {
+        attachedFilesBar.innerHTML = '';
+        uploadedFiles.forEach((f, idx) => {
+            const badge = document.createElement("span");
+            badge.className = "badge bg-primary text-white d-flex align-items-center gap-1 p-2";
+            badge.innerHTML = `<i class="fas fa-paperclip"></i> ${f.name} <button type="button" class="btn-close btn-close-white ms-1" style="font-size: 0.6rem;"></button>`;
+            badge.querySelector(".btn-close").addEventListener("click", function() {
+                uploadedFiles.splice(idx, 1);
+                renderAttachedFilesBar();
+            });
+            attachedFilesBar.appendChild(badge);
+        });
+    }
+
+    // Location Modal Triggers
+    locationBtn.addEventListener("click", function() {
+        locationModal.show();
+    });
+
+    document.getElementById("useDeviceGpsBtn").addEventListener("click", function() {
+        const statusText = document.getElementById("gpsStatusText");
+        if (!navigator.geolocation) {
+            statusText.innerText = "Geolocation not supported by your browser.";
+            return;
+        }
+        statusText.innerText = "Requesting device GPS coordinates...";
+        navigator.geolocation.getCurrentPosition(
+            function(pos) {
+                const lat = pos.coords.latitude.toFixed(4);
+                const lng = pos.coords.longitude.toFixed(4);
+                locationData = {
+                    location: `GPS Coordinates (${lat}, ${lng}), Jharkhand`,
+                    district: "Ranchi",
+                    lat: lat,
+                    lng: lng
+                };
+                statusText.innerText = `Location captured: ${lat}, ${lng}`;
+                document.getElementById("quickVillageInput").value = `GPS (${lat}, ${lng})`;
+                setTimeout(() => {
+                    locationModal.hide();
+                    sendMessage(`My location is at coordinates (${lat}, ${lng}) in Jharkhand.`);
+                }, 800);
+            },
+            function(err) {
+                statusText.innerText = "Permission denied or unavailable. Please select district manually.";
+            }
+        );
+    });
+
+    document.getElementById("confirmLocationBtn").addEventListener("click", function() {
+        const dist = document.getElementById("quickDistrictSelect").value;
+        const village = document.getElementById("quickVillageInput").value.trim();
+        if (!dist && !village) {
+            alert("Please select a district or enter a village name.");
+            return;
+        }
+        const fullLoc = village ? `${village}, ${dist || 'Jharkhand'}` : `${dist}, Jharkhand`;
+        locationData = {
+            location: fullLoc,
+            district: dist || "Ranchi"
+        };
+        locationModal.hide();
+        sendMessage(`The problem is located in ${fullLoc}.`);
+    });
+
+    // Edit Draft Modal
+    document.getElementById("editDraftModalBtn").addEventListener("click", function() {
+        if (!currentDraft) return;
+        document.getElementById("modalTitleInput").value = currentDraft.title || '';
+        document.getElementById("modalDomainSelect").value = currentDraft.domain || 'Water Resources';
+        document.getElementById("modalDistrictSelect").value = currentDraft.district || 'Ranchi';
+        document.getElementById("modalLocationInput").value = currentDraft.location || '';
+        document.getElementById("modalPopulationInput").value = currentDraft.affected_population || '';
+        document.getElementById("modalSummaryInput").value = currentDraft.problem_summary || '';
+        document.getElementById("modalTimingInput").value = currentDraft.timing || '';
+        editDraftModal.show();
+    });
+
+    document.getElementById("saveDraftModalBtn").addEventListener("click", async function() {
+        const updated = {
+            session_uuid: sessionUuid,
+            title: document.getElementById("modalTitleInput").value.trim(),
+            domain: document.getElementById("modalDomainSelect").value,
+            district: document.getElementById("modalDistrictSelect").value,
+            location: document.getElementById("modalLocationInput").value.trim(),
+            affected_population: document.getElementById("modalPopulationInput").value.trim(),
+            problem_summary: document.getElementById("modalSummaryInput").value.trim(),
+            timing: document.getElementById("modalTimingInput").value.trim()
+        };
+
+        try {
+            const resp = await fetch("/api/samadhan-ai/draft", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(updated)
+            });
+            const data = await resp.json();
+            if (data.success) {
+                renderDraftCard(data.draft);
+                editDraftModal.hide();
+            }
+        } catch (e) {
+            alert("Could not update draft: " + e.message);
+        }
+    });
+
+    // Reset conversation button
+    document.getElementById("resetConversationBtn").addEventListener("click", async function() {
+        if (!confirm("Start a new problem report? Current unsaved draft will be reset.")) return;
+        try {
+            const resp = await fetch("/api/samadhan-ai/reset", { method: "POST" });
+            const data = await resp.json();
+            if (data.success) {
+                sessionUuid = data.session_uuid;
+                window.location.reload();
+            }
+        } catch (e) {
+            window.location.reload();
+        }
+    });
+
+    // Section 28: Load Demo Scenario
+    document.getElementById("loadDemoScenarioBtn").addEventListener("click", async function() {
+        this.disabled = true;
+        this.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span> Loading Demo...`;
+
+        try {
+            const resp = await fetch("/api/samadhan-ai/demo-scenario");
+            const demo = await resp.json();
+
+            // Clear chat and populate dialogue step-by-step
+            chatList.innerHTML = '';
+            for (let i = 0; i < demo.dialogue.length; i++) {
+                const turn = demo.dialogue[i];
+                appendMessage(turn.role, turn.text, `10:${10 + i}`);
+            }
+
+            // Populate draft
+            renderDraftCard({
+                title: demo.title,
+                domain: demo.domain,
+                subdomain: demo.subdomain,
+                location: demo.location,
+                district: "Dumka",
+                affected_population: demo.affected_population,
+                problem_summary: demo.problem_summary,
+                timing: "About two weeks ago, continuous",
+                evidence_summary: demo.evidence,
+                needs_verification: [demo.needs_verification],
+                source_attribution: {
+                    title: "AI suggested",
+                    domain: "AI classified",
+                    location: "Citizen provided",
+                    affected_population: "Citizen provided",
+                    problem: "Citizen provided",
+                    timing: "Citizen provided",
+                    evidence: "Citizen provided"
+                },
+                information_gaps: []
+            }, true);
+
+            updateChecklist({
+                problem_core: true,
+                domain_identified: true,
+                location_provided: true,
+                population_identified: true,
+                timeline_recorded: true,
+                evidence_attached: true
+            }, 100);
+
+            // Update session on backend
+            await fetch("/api/samadhan-ai/draft", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    session_uuid: sessionUuid,
+                    title: demo.title,
+                    domain: demo.domain,
+                    subdomain: demo.subdomain,
+                    location: demo.location,
+                    district: "Dumka",
+                    affected_population: demo.affected_population,
+                    problem_summary: demo.problem_summary,
+                    timing: "About two weeks ago, continuous"
+                })
+            });
+
+            this.innerHTML = `<i class="fas fa-check text-success me-1"></i> Demo Scenario Loaded`;
+            confirmSubmitBtn.scrollIntoView({ behavior: 'smooth' });
+        } catch (e) {
+            alert("Could not load demo scenario: " + e.message);
+            this.disabled = false;
+            this.innerHTML = `<i class="fas fa-vial me-2 text-warning"></i> Load Demo Scenario (Rural Water)`;
+        }
+    });
+
+    // Explicit Confirmation & Submission
+    confirmSubmitBtn.addEventListener("click", async function() {
+        if (!currentDraft || !currentDraft.title) {
+            alert("Please provide the basic details of the problem before submitting.");
+            return;
+        }
+
+        if (!confirm("Are you ready to submit this challenge to the Samadhan Setu network?")) return;
+
+        confirmSubmitBtn.disabled = true;
+        confirmSubmitBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span> Submitting to SamadhanSetu...`;
+
+        try {
+            const resp = await fetch("/api/samadhan-ai/submit", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    session_uuid: sessionUuid,
+                    draft: currentDraft
+                })
+            });
+            const data = await resp.json();
+
+            if (data.success) {
+                // Hide conversation & draft, show success card
+                document.getElementById("conversationContainer").classList.add("d-none");
+                const successCard = document.getElementById("submissionSuccessCard");
+                successCard.classList.remove("d-none");
+
+                document.getElementById("successChallengeCode").innerText = data.challenge_code;
+                document.getElementById("successTitle").innerText = data.title;
+                document.getElementById("successCategory").innerText = currentDraft.domain || "Thematic Domain";
+                document.getElementById("successLocation").innerText = currentDraft.location || "Jharkhand";
+                document.getElementById("viewChallengeBtn").href = data.redirect_url;
+                document.getElementById("successSimilarCount").innerText = data.similar_count || 0;
+
+                const similarListEl = document.getElementById("successSimilarList");
+                similarListEl.innerHTML = '';
+                if (data.similar && data.similar.length > 0) {
+                    data.similar.forEach(sim => {
+                        const col = document.createElement("div");
+                        col.className = "col-md-6";
+                        col.innerHTML = `
+                            <div class="p-2 border rounded bg-light small">
+                                <div class="fw-bold text-dark text-truncate">${sim.title}</div>
+                                <div class="text-muted" style="font-size: 0.75rem;">
+                                    <span class="badge bg-secondary-subtle text-secondary me-1">${sim.code}</span>
+                                    <span><i class="fas fa-map-marker-alt me-1"></i>${sim.location}</span>
+                                </div>
+                            </div>
+                        `;
+                        similarListEl.appendChild(col);
+                    });
+                } else {
+                    document.getElementById("successSimilarContainer").classList.add("d-none");
+                }
+
+                successCard.scrollIntoView({ behavior: 'smooth' });
+            } else {
+                alert("Submission failed: " + (data.error || "Please try again"));
+                confirmSubmitBtn.disabled = false;
+                confirmSubmitBtn.innerHTML = `<i class="fas fa-paper-plane me-2"></i> Confirm & Submit Challenge`;
+            }
+        } catch (err) {
+            alert("Submission error: " + err.message);
+            confirmSubmitBtn.disabled = false;
+            confirmSubmitBtn.innerHTML = `<i class="fas fa-paper-plane me-2"></i> Confirm & Submit Challenge`;
+        }
+    });
+
+    document.getElementById("submitAnotherBtn").addEventListener("click", function() {
+        window.location.reload();
+    });
+
+    if (currentDraft && Object.keys(currentDraft).length > 0 && (currentDraft.title || currentDraft.problem_summary)) {
+        renderDraftCard(currentDraft, false);
+    }
+});
+</script>
+{% endblock %}

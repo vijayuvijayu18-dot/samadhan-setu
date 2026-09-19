@@ -25,7 +25,16 @@
                 </div>
             </div>
 
-            <div class="d-flex gap-2">
+            <div class="d-flex flex-wrap gap-2">
+                <button type="button" class="btn btn-outline-light shadow-sm" data-bs-toggle="modal" data-bs-target="#updateStageModal">
+                    <i class="fas fa-route me-1"></i> Update Stage
+                </button>
+                <button type="button" class="btn btn-outline-light shadow-sm" data-bs-toggle="modal" data-bs-target="#addImpactModal">
+                    <i class="fas fa-chart-line me-1"></i> Record Impact
+                </button>
+                <button type="button" class="btn btn-warning text-dark fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#requestSupportModal">
+                    <i class="fas fa-handshake me-1"></i> Request Support
+                </button>
                 <button type="button" class="btn btn-accent shadow-sm" data-bs-toggle="modal" data-bs-target="#addTaskModal">
                     <i class="fas fa-plus me-1"></i> Add Task
                 </button>
@@ -38,6 +47,352 @@
 </div>
 
 <div class="container mb-5">
+    <!-- Idea -> Impact 10-Stage Project Lifecycle Stepper (SIH Distinctive Feature 2) -->
+    <div class="card border shadow-sm mb-4 bg-white">
+        <div class="card-header bg-white py-3 border-bottom d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
+            <div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-warning text-dark text-uppercase fw-bold" style="font-size: 0.7rem;">SIH Feature</span>
+                    <h5 class="fw-bold text-dark mb-0">
+                        <i class="fas fa-route text-primary me-1"></i> Idea &rarr; Impact 10-Stage Project Lifecycle Tracker
+                    </h5>
+                </div>
+                <small class="text-muted">Rigorous sequential innovation pipeline from grassroots submission to measured societal transformation</small>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-primary px-3 py-2 fs-6">
+                    <i class="fas fa-flag-checkered me-1"></i> Active: {{ project.current_stage }}
+                </span>
+                <button type="button" class="btn btn-sm btn-primary-gov" data-bs-toggle="modal" data-bs-target="#updateStageModal">
+                    <i class="fas fa-step-forward me-1"></i> Advance Stage
+                </button>
+            </div>
+        </div>
+        <div class="card-body p-4">
+            <div class="lifecycle-stepper-container mb-4">
+                <div class="lifecycle-stepper">
+                    {% for item in stages_info %}
+                    <div class="lifecycle-step {% if item.completed %}completed{% elif item.current %}active{% endif %}">
+                        <div class="lifecycle-step-circle">
+                            {% if item.completed %}
+                                <i class="fas fa-check"></i>
+                            {% else %}
+                                {{ item.index }}
+                            {% endif %}
+                        </div>
+                        <div class="lifecycle-step-label">
+                            {{ item.stage }}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Stage Transition History Accordion / Log -->
+            <div class="border rounded bg-light p-3">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="fw-bold text-dark mb-0 small">
+                        <i class="fas fa-history text-secondary me-1"></i> Lifecycle Transition History & Field Evidence Log ({{ stage_updates|length }})
+                    </h6>
+                    <span class="badge bg-white text-muted border small">Auditable Governance Trail</span>
+                </div>
+                {% if stage_updates %}
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover align-middle mb-0 bg-white border">
+                        <thead class="table-light small">
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>Stage Transition</th>
+                                <th>Updated By</th>
+                                <th>Transition Notes</th>
+                                <th>Evidence Link</th>
+                            </tr>
+                        </thead>
+                        <tbody class="small">
+                            {% for su in stage_updates %}
+                            <tr>
+                                <td class="text-muted">{{ su.created_at.strftime('%d %b %Y %H:%M') }}</td>
+                                <td>
+                                    <span class="text-muted">{{ su.previous_stage or 'Start' }}</span>
+                                    <i class="fas fa-arrow-right mx-1 text-primary small"></i>
+                                    <strong class="text-dark">{{ su.new_stage }}</strong>
+                                </td>
+                                <td>{{ su.updater.full_name if su.updater else 'Lead Innovator' }}</td>
+                                <td class="text-secondary">{{ su.notes or 'Stage milestone verified.' }}</td>
+                                <td>
+                                    {% if su.evidence_url %}
+                                        <a href="{{ su.evidence_url }}" target="_blank" class="badge bg-primary-subtle text-primary border text-decoration-none">
+                                            <i class="fas fa-external-link-alt me-1"></i> View Evidence
+                                        </a>
+                                    {% else %}
+                                        <span class="text-muted small">&mdash;</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted small mb-0">Project initiated at stage: <strong>{{ project.current_stage }}</strong>. Click "Advance Stage" above as prototype testing progresses.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Before-vs-After Impact Measurement Cards (SIH Distinctive Feature 2 Continued) -->
+    <div class="card border shadow-sm mb-4 bg-white">
+        <div class="card-header bg-white py-3 border-bottom d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
+            <div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-success text-white text-uppercase fw-bold" style="font-size: 0.7rem;">SIH Feature</span>
+                    <h5 class="fw-bold text-dark mb-0">
+                        <i class="fas fa-chart-line text-success me-1"></i> Before-vs-After Impact Metrics & Ground Validation
+                    </h5>
+                </div>
+                <small class="text-muted">Rigorous quantitative baseline versus current field results with automatic percentage shift calculations</small>
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#addImpactModal">
+                <i class="fas fa-plus-circle me-1"></i> Record Impact Metric
+            </button>
+        </div>
+        <div class="card-body p-4">
+            {% if impact_metrics %}
+            <div class="row g-3">
+                {% for im in impact_metrics %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="impact-delta-card h-100 d-flex flex-column">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h6 class="fw-bold text-dark mb-0">{{ im.metric_name }}</h6>
+                            {% if im.delta_pct is not none %}
+                                <span class="badge {% if im.delta_pct >= 0 %}bg-success{% else %}bg-danger{% endif %} fw-bold px-2 py-1">
+                                    <i class="fas {% if im.delta_pct >= 0 %}fa-arrow-up{% else %}fa-arrow-down{% endif %} me-1"></i>
+                                    {{ "%.1f"|format(im.delta_pct) }}%
+                                </span>
+                            {% endif %}
+                        </div>
+                        <div class="text-muted small mb-3">Unit: <span class="badge bg-light text-dark border">{{ im.unit }}</span></div>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <div class="metric-box metric-box-before">
+                                    <div class="small text-danger fw-bold text-uppercase" style="font-size: 0.68rem;">Before (Baseline)</div>
+                                    <div class="metric-val text-danger">{{ im.baseline_value }}</div>
+                                    <div class="small text-muted" style="font-size: 0.7rem;">
+                                        {{ im.baseline_date.strftime('%d %b %Y') if im.baseline_date else 'Initial' }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="metric-box metric-box-after">
+                                    <div class="small text-success fw-bold text-uppercase" style="font-size: 0.68rem;">After (Current)</div>
+                                    <div class="metric-val text-success">{{ im.current_value }}</div>
+                                    <div class="small text-muted" style="font-size: 0.7rem;">
+                                        {{ im.measured_date.strftime('%d %b %Y') if im.measured_date else 'Latest' }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {% if im.target_value %}
+                        <div class="small text-muted mb-2">
+                            <i class="fas fa-bullseye text-primary me-1"></i> Target: <strong>{{ im.target_value }} {{ im.unit }}</strong>
+                        </div>
+                        {% endif %}
+
+                        {% if im.verification_notes %}
+                        <div class="p-2 rounded bg-light border small text-secondary mb-3 flex-grow-1">
+                            <i class="fas fa-check-circle text-success me-1"></i> {{ im.verification_notes }}
+                        </div>
+                        {% endif %}
+
+                        {% if im.verification_document_url %}
+                        <div class="pt-2 border-top mt-auto">
+                            <a href="{{ im.verification_document_url }}" target="_blank" class="btn btn-sm btn-outline-secondary w-100">
+                                <i class="fas fa-file-pdf me-1"></i> View Lab Report / Evidence
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <i class="fas fa-tachometer-alt text-muted fa-2x mb-2"></i>
+                <h6 class="fw-bold text-dark">No Ground Impact Metrics Logged Yet</h6>
+                <p class="text-muted small mb-3">Record baseline metrics prior to solution rollout to quantify improvements in water quality, energy savings, literacy, or crop yield.</p>
+                <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#addImpactModal">
+                    <i class="fas fa-plus me-1"></i> Record First Baseline Metric
+                </button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Industry + University Collaboration Hub on Project (SIH Distinctive Feature 3) -->
+    <div class="card border shadow-sm mb-4 bg-white">
+        <div class="card-header bg-white py-3 border-bottom d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
+            <div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-warning text-dark text-uppercase fw-bold" style="font-size: 0.7rem;">SIH Feature</span>
+                    <h5 class="fw-bold text-dark mb-0">
+                        <i class="fas fa-handshake text-primary me-1"></i> Industry & Corporate Collaboration Requests
+                    </h5>
+                </div>
+                <small class="text-muted">Corporate CSR funding, hardware sponsorship, specialized R&D testing labs, and enterprise mentorship</small>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{{ url_for('industry_collaboration') }}" class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-globe me-1"></i> View National Industry Hub
+                </a>
+                <button type="button" class="btn btn-sm btn-warning text-dark fw-bold" data-bs-toggle="modal" data-bs-target="#requestSupportModal">
+                    <i class="fas fa-plus-circle me-1"></i> Request Industry Support
+                </button>
+            </div>
+        </div>
+        <div class="card-body p-4">
+            {% if support_requests %}
+            <div class="row g-3">
+                {% for req in support_requests %}
+                <div class="col-lg-6">
+                    <div class="support-card h-100 d-flex flex-column">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <span class="badge bg-primary text-white">
+                                <i class="fas fa-tag me-1"></i> {{ req.support_type }}
+                            </span>
+                            <span class="badge {% if req.status == 'OPEN' %}bg-success{% elif req.status == 'MATCHED' %}bg-info text-dark{% else %}bg-secondary{% endif %}">
+                                {{ req.status }}
+                            </span>
+                        </div>
+                        <h6 class="fw-bold text-dark mb-1">{{ req.support_type }} Request</h6>
+                        <p class="text-secondary small mb-2 flex-grow-1">{{ req.description }}</p>
+                        
+                        <div class="row g-2 small text-muted mb-3">
+                            <div class="col-6">
+                                <div><strong>Estimated Value:</strong></div>
+                                <div class="text-dark font-monospace fw-bold">
+                                    {% if req.estimated_amount_inr %}
+                                        ₹{{ "{:,}".format(req.estimated_amount_inr) }}
+                                    {% else %}
+                                        In-kind Support
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div><strong>Timeline:</strong></div>
+                                <div class="text-dark">{{ req.required_by.strftime('%d %b %Y') if req.required_by else 'Immediate' }}</div>
+                            </div>
+                        </div>
+
+                        <!-- Responses/Offers Section -->
+                        <div class="border rounded bg-light p-2 mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="fw-bold text-dark small">Corporate Offers Received ({{ req.responses|length }})</span>
+                            </div>
+                            {% if req.responses %}
+                                {% for resp in req.responses %}
+                                <div class="p-2 mb-2 bg-white rounded border small">
+                                    <div class="d-flex justify-content-between align-items-start mb-1">
+                                        <strong class="text-primary">{{ resp.industry_partner.full_name }} ({{ resp.industry_partner.organization }})</strong>
+                                        <span class="badge {% if resp.status == 'ACCEPTED' %}bg-success{% else %}bg-warning text-dark{% endif %}">
+                                            {{ resp.status }}
+                                        </span>
+                                    </div>
+                                    <p class="text-secondary mb-1">{{ resp.response_details }}</p>
+                                    {% if resp.offered_funding_inr %}
+                                    <div class="font-monospace text-success fw-bold mb-1">Pledged: ₹{{ "{:,}".format(resp.offered_funding_inr) }}</div>
+                                    {% endif %}
+                                    {% if resp.status == 'OFFERED' %}
+                                    <form method="POST" action="{{ url_for('accept_industry_response', response_id=resp.id) }}">
+                                        <button type="submit" class="btn btn-xs btn-sm btn-outline-success py-0 px-2 mt-1">
+                                            <i class="fas fa-check me-1"></i> Accept Partnership Offer
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="text-muted small">No corporate offers submitted yet.</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="pt-2 border-top mt-auto">
+                            {% if current_user %}
+                            <button type="button" class="btn btn-sm btn-accent w-100" data-bs-toggle="modal" data-bs-target="#respondSupportModal{{ req.id }}">
+                                <i class="fas fa-hand-holding-heart me-1"></i> Submit Industry Collaboration Offer
+                            </button>
+                            {% else %}
+                            <a href="{{ url_for('login') }}" class="btn btn-sm btn-outline-primary w-100">
+                                <i class="fas fa-sign-in-alt me-1"></i> Log In to Submit Offer
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modal for responding to this support request -->
+                {% if current_user %}
+                <div class="modal fade" id="respondSupportModal{{ req.id }}" tabindex="-1" aria-labelledby="respondSupportModalLabel{{ req.id }}" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <form method="POST" action="{{ url_for('respond_industry_support', request_id=req.id) }}">
+                                <div class="modal-header">
+                                    <h5 class="modal-title fw-bold" id="respondSupportModalLabel{{ req.id }}">
+                                        <i class="fas fa-handshake text-primary me-2"></i> Submit Industry Collaboration Offer
+                                    </h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="p-3 bg-light rounded border mb-3">
+                                        <div class="fw-bold text-dark">{{ req.support_type }} for {{ project.title }}</div>
+                                        <div class="text-muted small">{{ req.description }}</div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label small fw-bold text-dark">Collaboration / Support Proposal *</label>
+                                        <textarea name="response_details" class="form-control" rows="3" placeholder="Describe your proposed support (e.g., CSR grant, hardware sensors, testing facility access, expert advisory)..." required></textarea>
+                                    </div>
+                                    <div class="row g-3">
+                                        <div class="col-6">
+                                            <label class="form-label small fw-bold text-dark">Offered Funding (₹ INR)</label>
+                                            <input type="number" name="offered_funding_inr" class="form-control" placeholder="e.g. 150000">
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label small fw-bold text-dark">Corporate Contact Person</label>
+                                            <input type="text" name="contact_person" class="form-control" value="{{ current_user.full_name }}" placeholder="Name">
+                                        </div>
+                                    </div>
+                                    <div class="mt-3">
+                                        <label class="form-label small fw-bold text-dark">Corporate Contact Email</label>
+                                        <input type="email" name="contact_email" class="form-control" value="{{ current_user.email }}" placeholder="email@company.com">
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                                    <button type="submit" class="btn btn-primary-gov btn-sm">
+                                        <i class="fas fa-paper-plane me-1"></i> Submit Partnership Offer
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <i class="fas fa-industry text-muted fa-2x mb-2"></i>
+                <h6 class="fw-bold text-dark">No Industry Support Requests Active Yet</h6>
+                <p class="text-muted small mb-3">Seek corporate CSR funding, lab testing apparatus, field validation testbeds, or expert technical mentorship from verified industry partners.</p>
+                <button type="button" class="btn btn-sm btn-warning text-dark fw-bold" data-bs-toggle="modal" data-bs-target="#requestSupportModal">
+                    <i class="fas fa-plus me-1"></i> Create Industry Support Request
+                </button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
     <!-- Progress Indicator Bar -->
     <div class="card border shadow-sm p-4 mb-4 bg-white">
         <div class="d-flex justify-content-between align-items-center mb-2">
@@ -344,6 +699,174 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-primary-gov btn-sm">Add Task to Board</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Advance Lifecycle Stage -->
+<div class="modal fade" id="updateStageModal" tabindex="-1" aria-labelledby="updateStageModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('update_project_lifecycle_stage', project_id=project.id) }}">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold" id="updateStageModalLabel">
+                        <i class="fas fa-route text-primary me-2"></i> Advance Project Lifecycle Stage
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="p-3 bg-light rounded border mb-3">
+                        <div class="small text-muted">Current Active Stage:</div>
+                        <div class="fw-bold text-dark fs-6">{{ project.current_stage }}</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-dark">Target Lifecycle Stage *</label>
+                        <select name="new_stage" class="form-select" required>
+                            {% for stage in lifecycle_stages %}
+                            <option value="{{ stage }}" {% if stage == project.current_stage %}selected{% endif %}>
+                                {{ loop.index }}. {{ stage }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text small">Sequential pipeline ensures auditable quality control from ideation to ground measurement.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-dark">Transition Notes & Summary *</label>
+                        <textarea name="notes" class="form-control" rows="3" placeholder="Describe the milestone achieved that justifies advancing to this stage (e.g. Field trials completed across 3 Panchayats with zero sensor failures)..." required></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-dark">Ground Evidence Link / Test Report URL</label>
+                        <input type="url" name="evidence_url" class="form-control" placeholder="https://drive.google.com/... or https://laboratory-report.pdf">
+                        <div class="form-text small">Optional link to lab certificate, field survey data, or media report.</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary-gov btn-sm">
+                        <i class="fas fa-check-circle me-1"></i> Confirm Stage Transition
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Record Impact Metric -->
+<div class="modal fade" id="addImpactModal" tabindex="-1" aria-labelledby="addImpactModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('add_project_impact_metric', project_id=project.id) }}">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold" id="addImpactModalLabel">
+                        <i class="fas fa-chart-line text-success me-2"></i> Record Before-vs-After Ground Impact Metric
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-8">
+                            <label class="form-label small fw-bold text-dark">Metric Name *</label>
+                            <input type="text" name="metric_name" class="form-control" placeholder="e.g. Groundwater Fluoride Concentration or Daily Potable Water Yield" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold text-dark">Unit of Measurement *</label>
+                            <input type="text" name="unit" class="form-control" placeholder="e.g. ppm, Litres/day, % saved" required>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <div class="p-3 bg-danger bg-opacity-10 border border-danger border-opacity-25 rounded">
+                                <label class="form-label small fw-bold text-danger">Baseline (Before Intervention) *</label>
+                                <input type="number" step="any" name="baseline_value" class="form-control mb-2" placeholder="e.g. 4.8" required>
+                                <label class="form-label small text-muted">Baseline Measurement Date</label>
+                                <input type="date" name="baseline_date" class="form-control">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="p-3 bg-success bg-opacity-10 border border-success border-opacity-25 rounded">
+                                <label class="form-label small fw-bold text-success">Current (After Intervention) *</label>
+                                <input type="number" step="any" name="current_value" class="form-control mb-2" placeholder="e.g. 1.1" required>
+                                <label class="form-label small text-muted">Measurement / Verification Date</label>
+                                <input type="date" name="measured_date" class="form-control">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-dark">Target Value (Desired Goal)</label>
+                            <input type="number" step="any" name="target_value" class="form-control" placeholder="e.g. 1.0">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-dark">Lab Report / Evidence URL</label>
+                            <input type="url" name="verification_document_url" class="form-control" placeholder="https://...">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-dark">Verification Methodology & Ground Notes</label>
+                        <textarea name="verification_notes" class="form-control" rows="2" placeholder="e.g. Verified via spectrophotometric ground testing by BIT Mesra Environmental Laboratory..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success btn-sm">
+                        <i class="fas fa-save me-1"></i> Save Impact Metric
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Request Industry Support -->
+<div class="modal fade" id="requestSupportModal" tabindex="-1" aria-labelledby="requestSupportModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('request_industry_support', project_id=project.id) }}">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold" id="requestSupportModalLabel">
+                        <i class="fas fa-handshake text-primary me-2"></i> Request Corporate / Industry Support
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-dark">Category of Support Needed *</label>
+                        <select name="support_type" class="form-select" required>
+                            {% for st in industry_support_types %}
+                            <option value="{{ st }}">{{ st }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-dark">Detailed Requirements *</label>
+                        <textarea name="description" class="form-control" rows="3" placeholder="Detail the exact technical specification, quantity, components, or advisory expertise required..." required></textarea>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-bold text-dark">Estimated Value (₹ INR)</label>
+                            <input type="number" name="estimated_amount_inr" class="form-control" placeholder="e.g. 200000">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-bold text-dark">Required By Date</label>
+                            <input type="date" name="required_by" class="form-control">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary-gov btn-sm">
+                        <i class="fas fa-paper-plane me-1"></i> Post to Industry Hub
+                    </button>
                 </div>
             </form>
         </div>

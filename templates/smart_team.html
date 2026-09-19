@@ -1,0 +1,395 @@
+{% extends "base.html" %}
+
+{% block title %}Smart Challenge → Team Matching Engine - SamadhanSetu{% endblock %}
+
+{% block content %}
+<!-- Hero Banner -->
+<div class="bg-primary text-white py-4 mb-4" style="background: linear-gradient(135deg, #0b2545 0%, #1e3a8a 50%, #0f172a 100%);">
+    <div class="container">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <span class="badge bg-warning text-dark text-uppercase px-2 py-1 fw-bold">SIH 2026 Core Feature 1</span>
+                    <span class="badge bg-info text-dark">NEP 2020 Multidisciplinary Squads</span>
+                </div>
+                <h2 class="fw-bold mb-1 text-white"><i class="fas fa-users-cog text-warning me-2"></i> Smart Challenge → Team Matching Engine</h2>
+                <p class="text-light opacity-90 small mb-0">
+                    Transparent rule-based keyword & skill matching engine connecting student innovators, faculty researchers, and industry specialists with grassroots societal challenges.
+                </p>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{{ url_for('challenges') }}" class="btn btn-outline-light shadow-sm">
+                    <i class="fas fa-bullhorn me-1"></i> Browse Challenges
+                </a>
+                {% if not is_admin %}
+                <a href="{{ url_for('submit_challenge') }}" class="btn btn-accent shadow-sm">
+                    <i class="fas fa-plus-circle me-1"></i> Submit Challenge
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container mb-5">
+    <!-- Challenge Selection Bar -->
+    <div class="card border shadow-sm mb-4 bg-white">
+        <div class="card-body p-3">
+            <form method="GET" action="{{ url_for('smart_team') }}" class="row g-2 align-items-center">
+                <div class="col-md-9">
+                    <label class="form-label small fw-bold text-dark mb-1">
+                        <i class="fas fa-bullhorn text-primary me-1"></i> Select Grassroots Societal Challenge to Assemble Team:
+                    </label>
+                    <select name="challenge_id" class="form-select" onchange="this.form.submit()">
+                        {% for ch in challenges %}
+                        <option value="{{ ch.id }}" {% if selected_challenge and selected_challenge.id == ch.id %}selected{% endif %}>
+                            [{{ ch.code }}] {{ ch.title }} ({{ ch.category }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary-gov w-100">
+                        <i class="fas fa-search me-1"></i> Compute Matches
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if selected_challenge %}
+    <!-- Active Challenge Summary Card -->
+    <div class="card border shadow-sm mb-4 bg-white" style="border-left: 4px solid #134074 !important;">
+        <div class="card-body p-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-2">
+                <div>
+                    <span class="badge bg-light text-dark border font-monospace me-1">{{ selected_challenge.code }}</span>
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle me-1">{{ selected_challenge.category }}</span>
+                    <span class="badge {% if selected_challenge.status == 'Verified' %}bg-success{% else %}bg-secondary{% endif %} text-white">{{ selected_challenge.status }}</span>
+                </div>
+                <a href="{{ url_for('challenge_detail', challenge_id=selected_challenge.id) }}" class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-external-link-alt me-1"></i> View Full Challenge Page
+                </a>
+            </div>
+
+            <h4 class="fw-bold text-dark mb-2">{{ selected_challenge.title }}</h4>
+            <p class="text-secondary small mb-3">{{ selected_challenge.description[:320] }}{% if selected_challenge.description|length > 320 %}...{% endif %}</p>
+
+            <div class="row g-3 pt-3 border-top">
+                <div class="col-md-6">
+                    <span class="text-muted small d-block mb-1"><i class="fas fa-tools text-primary me-1"></i> Required Technical Skills & Competencies:</span>
+                    <div class="d-flex flex-wrap gap-1">
+                        {% if selected_challenge.required_skills %}
+                            {% for skill in selected_challenge.required_skills.split(',') %}
+                            <span class="badge bg-primary text-white px-2 py-1">{{ skill.strip() }}</span>
+                            {% endfor %}
+                        {% else %}
+                            <span class="badge bg-light text-dark border">General Problem Solving</span>
+                            <span class="badge bg-light text-dark border">Interdisciplinary Engineering</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <span class="text-muted small d-block mb-1"><i class="fas fa-microchip text-success me-1"></i> Expected Solution Architecture:</span>
+                    <span class="badge bg-light text-dark border px-2 py-1">
+                        {{ selected_challenge.expected_solution_type or 'Hardware + Software + Field Implementation' }}
+                    </span>
+                    <div class="text-muted small mt-1">
+                        <i class="fas fa-map-marker-alt me-1 text-danger"></i> {{ selected_challenge.district or 'Jharkhand' }}
+                        &bull; Origin: {{ selected_challenge.creator.full_name if selected_challenge.creator else 'Citizen Innovator' }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recommendations Section -->
+    <div class="card border shadow-sm mb-5 bg-white">
+        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="fw-bold text-dark mb-0">
+                    <i class="fas fa-user-check text-success me-2"></i> Algorithmic Team Recommendations
+                </h5>
+                <small class="text-muted">Top scored students, faculty, and industry specialists ranked by domain relevance and skill overlap</small>
+            </div>
+            <span class="badge bg-primary rounded-pill">{{ recommendations|length }} Candidates Evaluated</span>
+        </div>
+        <div class="card-body p-4">
+            {% if recommendations %}
+            <div class="row g-4">
+                {% for rec in recommendations %}
+                <div class="col-lg-4 col-md-6">
+                    <div class="card h-100 border shadow-sm candidate-match-card transition hover-shadow">
+                        <div class="card-body p-3 d-flex flex-column">
+                            <!-- Header: Name & Match Badge -->
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="rounded-circle bg-primary text-white fw-bold d-flex align-items-center justify-content-center" style="width: 42px; height: 42px; font-size: 15px;">
+                                        {{ rec.name[:2].upper() }}
+                                    </div>
+                                    <div>
+                                        <h6 class="fw-bold text-dark mb-0">{{ rec.name }}</h6>
+                                        <span class="badge bg-light text-dark border" style="font-size: 11px;">{{ rec.role }}</span>
+                                    </div>
+                                </div>
+                                <span class="badge {% if rec.match_percentage >= 85 %}bg-success{% elif rec.match_percentage >= 70 %}bg-primary{% else %}bg-secondary{% endif %} fs-6 px-2 py-1">
+                                    <i class="fas fa-bolt me-1 text-warning"></i> {{ rec.match_percentage }}% Match
+                                </span>
+                            </div>
+
+                            <!-- Organization & Location -->
+                            <div class="small text-muted mb-2">
+                                <div><i class="fas fa-university text-secondary me-1"></i> {{ rec.organization }}</div>
+                                <div><i class="fas fa-map-marker-alt text-danger me-1"></i> {{ rec.location }}</div>
+                            </div>
+
+                            <!-- Matched Skills -->
+                            <div class="mb-2">
+                                <span class="text-muted small fw-bold d-block mb-1">Matched Skills:</span>
+                                <div class="d-flex flex-wrap gap-1">
+                                    {% for ms in rec.matching_skills %}
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1" style="font-size: 11px;">
+                                        <i class="fas fa-check-circle me-1"></i>{{ ms }}
+                                    </span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                            <!-- All Skills -->
+                            <div class="mb-3">
+                                <span class="text-muted small fw-bold d-block mb-1">Other Capabilities:</span>
+                                <div class="d-flex flex-wrap gap-1">
+                                    {% for sk in rec.skills.split(',') %}
+                                        {% if sk.strip() not in rec.matching_skills %}
+                                        <span class="badge bg-light text-dark border" style="font-size: 10px;">{{ sk.strip() }}</span>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                            <!-- Technical Match Rationale -->
+                            <div class="p-2 bg-light rounded border small text-secondary mb-3 mt-auto" style="border-left: 3px solid #134074 !important; font-size: 12px; line-height: 1.5;">
+                                <span class="fw-bold text-dark d-block mb-1"><i class="fas fa-brain text-primary me-1"></i> Match Rationale:</span>
+                                {{ rec.reason }}
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="pt-2 border-top">
+                                {% if rec.invitation_status == 'Accepted' %}
+                                    <span class="btn btn-sm btn-success w-100 disabled">
+                                        <i class="fas fa-check-circle me-1"></i> Team Member (Accepted)
+                                    </span>
+                                {% elif rec.invitation_status == 'Pending' %}
+                                    <span class="btn btn-sm btn-warning text-dark w-100 disabled">
+                                        <i class="fas fa-clock me-1"></i> Invitation Sent (Pending)
+                                    </span>
+                                {% elif rec.invitation_status == 'Declined' %}
+                                    <span class="btn btn-sm btn-outline-secondary w-100 disabled">
+                                        <i class="fas fa-times-circle me-1"></i> Invitation Declined
+                                    </span>
+                                {% else %}
+                                    {% if current_user %}
+                                    <button type="button" class="btn btn-sm btn-primary-gov w-100" data-bs-toggle="modal" data-bs-target="#inviteModal{{ rec.user_id }}">
+                                        <i class="fas fa-paper-plane me-1"></i> Invite to Team
+                                    </button>
+                                    {% else %}
+                                    <a href="{{ url_for('login') }}" class="btn btn-sm btn-outline-primary w-100">
+                                        <i class="fas fa-sign-in-alt me-1"></i> Sign In to Invite
+                                    </a>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Invitation Modal for Candidate -->
+                {% if current_user %}
+                <div class="modal fade" id="inviteModal{{ rec.user_id }}" tabindex="-1" aria-labelledby="inviteModalLabel{{ rec.user_id }}" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <form method="POST" action="{{ url_for('send_team_invitation', challenge_id=selected_challenge.id) }}">
+                                <input type="hidden" name="invitee_id" value="{{ rec.user_id }}">
+                                <input type="hidden" name="match_score" value="{{ rec.match_percentage }}">
+                                <input type="hidden" name="matching_skills" value="{{ rec.matching_skills|join(', ') }}">
+                                <input type="hidden" name="next" value="{{ url_for('smart_team', challenge_id=selected_challenge.id) }}">
+
+                                <div class="modal-header">
+                                    <h5 class="modal-title fw-bold" id="inviteModalLabel{{ rec.user_id }}">
+                                        <i class="fas fa-user-plus text-primary me-2"></i> Invite {{ rec.name }} to Team
+                                    </h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="p-3 bg-light rounded border mb-3">
+                                        <div class="fw-bold text-dark">{{ selected_challenge.title }}</div>
+                                        <div class="text-muted small">Match Score: {{ rec.match_percentage }}% | Matching Skills: {{ rec.matching_skills|join(', ') }}</div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label small fw-bold text-dark">Assigned Role in Solving Squad *</label>
+                                        <input type="text" name="role_offered" class="form-control" value="{% if 'Student' in rec.role %}Technical Lead & Prototyper{% elif 'Researcher' in rec.role %}Domain Research Expert{% elif 'Industry' in rec.role %}Industry Technical Mentor{% else %}Squad Member{% endif %}" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label small fw-bold text-dark">Personalized Invitation Message</label>
+                                        <textarea name="message" class="form-control" rows="3" placeholder="Explain why their specific skillset is crucial for solving this challenge...">Hi {{ rec.name }}, we would like you to join our solving squad for '{{ selected_challenge.title }}' given your verified competencies in {{ rec.matching_skills|join(', ') }}.</textarea>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                                    <button type="submit" class="btn btn-primary-gov btn-sm">
+                                        <i class="fas fa-paper-plane me-1"></i> Send Collaboration Invitation
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-user-friends text-muted fa-3x mb-3"></i>
+                <h5 class="fw-bold text-dark">No Candidates Available Yet</h5>
+                <p class="text-muted small">Innovators registering with relevant skillsets will automatically appear here.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Active Invitations Management -->
+    {% if current_user %}
+    <div class="card border shadow-sm mb-4 bg-white">
+        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+            <h5 class="fw-bold text-dark mb-0">
+                <i class="fas fa-envelope-open-text text-primary me-2"></i> Active Collaboration Invitations
+            </h5>
+            <div>
+                <span class="badge bg-info text-dark me-1">{{ received_invitations|length }} Received</span>
+                <span class="badge bg-secondary text-white">{{ sent_invitations|length }} Sent</span>
+            </div>
+        </div>
+        <div class="card-body p-4">
+            <ul class="nav nav-pills mb-3" id="invitationTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active fw-bold btn-sm" id="received-tab" data-bs-toggle="pill" data-bs-target="#receivedContent" type="button" role="tab">
+                        <i class="fas fa-inbox me-1"></i> Invitations Received by You ({{ received_invitations|length }})
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-bold btn-sm" id="sent-tab" data-bs-toggle="pill" data-bs-target="#sentContent" type="button" role="tab">
+                        <i class="fas fa-paper-plane me-1"></i> Invitations Sent by You ({{ sent_invitations|length }})
+                    </button>
+                </li>
+            </ul>
+
+            <div class="tab-content" id="invitationTabsContent">
+                <!-- Received Invitations -->
+                <div class="tab-pane fade show active" id="receivedContent" role="tabpanel">
+                    {% if received_invitations %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light small text-uppercase">
+                                <tr>
+                                    <th>Challenge</th>
+                                    <th>Role Offered</th>
+                                    <th>Invited By</th>
+                                    <th>Match %</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for inv in received_invitations %}
+                                <tr>
+                                    <td>
+                                        <a href="{{ url_for('challenge_detail', challenge_id=inv.challenge.id) }}" class="fw-bold text-dark text-decoration-none">
+                                            {{ inv.challenge.title }}
+                                        </a>
+                                        <div class="text-muted small font-monospace">{{ inv.challenge.code }}</div>
+                                    </td>
+                                    <td><span class="badge bg-light text-dark border">{{ inv.role_offered }}</span></td>
+                                    <td>{{ inv.inviter.full_name if inv.inviter else 'Team Lead' }}</td>
+                                    <td><span class="badge bg-success-subtle text-success border">{{ inv.match_score }}%</span></td>
+                                    <td>
+                                        <span class="badge {% if inv.status == 'Accepted' %}bg-success{% elif inv.status == 'Pending' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+                                            {{ inv.status }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if inv.status == 'Pending' %}
+                                        <div class="d-flex gap-1">
+                                            <form method="POST" action="{{ url_for('respond_team_invitation', invitation_id=inv.id) }}">
+                                                <input type="hidden" name="action" value="accept">
+                                                <input type="hidden" name="next" value="{{ request.full_path }}">
+                                                <button type="submit" class="btn btn-sm btn-success">
+                                                    <i class="fas fa-check me-1"></i> Accept
+                                                </button>
+                                            </form>
+                                            <form method="POST" action="{{ url_for('respond_team_invitation', invitation_id=inv.id) }}">
+                                                <input type="hidden" name="action" value="decline">
+                                                <input type="hidden" name="next" value="{{ request.full_path }}">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                    <i class="fas fa-times me-1"></i> Decline
+                                                </button>
+                                            </form>
+                                        </div>
+                                        {% else %}
+                                        <span class="text-muted small">Completed</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted small py-3 mb-0 text-center">You have no received team invitations at this moment.</p>
+                    {% endif %}
+                </div>
+
+                <!-- Sent Invitations -->
+                <div class="tab-pane fade" id="sentContent" role="tabpanel">
+                    {% if sent_invitations %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light small text-uppercase">
+                                <tr>
+                                    <th>Invitee Name</th>
+                                    <th>Challenge</th>
+                                    <th>Role Offered</th>
+                                    <th>Match %</th>
+                                    <th>Sent Date</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for inv in sent_invitations %}
+                                <tr>
+                                    <td class="fw-bold">{{ inv.invitee.full_name if inv.invitee else 'User' }}</td>
+                                    <td>{{ inv.challenge.title[:40] }}...</td>
+                                    <td><span class="badge bg-light text-dark border">{{ inv.role_offered }}</span></td>
+                                    <td><span class="badge bg-primary-subtle text-primary border">{{ inv.match_score }}%</span></td>
+                                    <td class="small text-muted">{{ inv.created_at.strftime('%d %b %Y') }}</td>
+                                    <td>
+                                        <span class="badge {% if inv.status == 'Accepted' %}bg-success{% elif inv.status == 'Pending' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+                                            {{ inv.status }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted small py-3 mb-0 text-center">You have not sent any team invitations yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+

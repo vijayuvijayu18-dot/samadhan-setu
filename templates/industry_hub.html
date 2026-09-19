@@ -1,0 +1,438 @@
+{% extends "base.html" %}
+
+{% block title %}Industry + University Collaboration Hub - SamadhanSetu{% endblock %}
+
+{% block content %}
+<!-- Industry Hub Hero Banner -->
+<div class="bg-primary text-white py-4 mb-4" style="background: linear-gradient(135deg, #0b2545 0%, #1e3a8a 50%, #0f172a 100%);">
+    <div class="container">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <span class="badge bg-warning text-dark text-uppercase px-2 py-1 fw-bold">SIH 2026 Core Feature 3</span>
+                    <span class="badge bg-success text-white">NEP 2020 Quadruple Helix Portal</span>
+                </div>
+                <h2 class="fw-bold mb-1 text-white"><i class="fas fa-handshake text-warning me-2"></i> Industry & University Collaboration Hub</h2>
+                <p class="text-light opacity-90 small mb-0">
+                    Connecting corporate CSR foundations, enterprise R&D, and industrial mentors with university squads solving critical state challenges.
+                </p>
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+                {% if current_user %}
+                <button type="button" class="btn btn-warning text-dark fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#requestIndustrySupportModal">
+                    <i class="fas fa-plus-circle me-1"></i> Request Industry Support
+                </button>
+                {% else %}
+                <a href="{{ url_for('login') }}" class="btn btn-warning text-dark fw-bold shadow-sm">
+                    <i class="fas fa-sign-in-alt me-1"></i> Sign In to Request Support
+                </a>
+                {% endif %}
+                <a href="{{ url_for('projects') }}" class="btn btn-outline-light shadow-sm">
+                    <i class="fas fa-tasks me-1"></i> Browse Projects
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container mb-5">
+    <!-- Hub KPI Metrics -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="kpi-card shadow-sm">
+                <div class="kpi-label">Open Support Requests</div>
+                <div class="kpi-val text-primary">{{ requests|length }}</div>
+                <div class="text-muted small">Awaiting Corporate Partners</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="kpi-card shadow-sm">
+                <div class="kpi-label">Projects Seeking Support</div>
+                <div class="kpi-val text-success">{{ projects_seeking_support|length }}</div>
+                <div class="text-muted small">Active University Squads</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="kpi-card shadow-sm">
+                <div class="kpi-label">Active Collaborations</div>
+                <div class="kpi-val text-warning">{{ active_collaborations }}</div>
+                <div class="text-muted small">CSR & Co-development</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="kpi-card shadow-sm">
+                <div class="kpi-label">Total Corporate Offers</div>
+                <div class="kpi-val text-info">{{ total_responses }}</div>
+                <div class="text-muted small">Formal Partnership Proposals</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter & Search Bar with Action Button -->
+    <div class="card border shadow-sm mb-4 bg-white">
+        <div class="card-body p-3">
+            <form method="GET" action="{{ url_for('industry_collaboration') }}" class="row g-2 align-items-center">
+                <div class="col-md-5">
+                    <div class="input-group">
+                        <span class="input-group-text bg-light"><i class="fas fa-search text-muted"></i></span>
+                        <input type="text" name="q" class="form-control" placeholder="Search by challenge, project, or requirements..." value="{{ search_query or '' }}">
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <select name="type" class="form-select">
+                        <option value="">All Support Categories</option>
+                        {% for st in industry_support_types %}
+                        <option value="{{ st }}" {% if selected_type == st %}selected{% endif %}>{{ st }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select name="status" class="form-select">
+                        <option value="">All Statuses</option>
+                        {% for st in statuses %}
+                        <option value="{{ st }}" {% if selected_status == st %}selected{% endif %}>{{ st }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary-gov flex-fill">
+                        <i class="fas fa-filter me-1"></i> Filter
+                    </button>
+                    {% if selected_type or selected_status or search_query %}
+                    <a href="{{ url_for('industry_collaboration') }}" class="btn btn-outline-secondary" title="Clear Filters">
+                        <i class="fas fa-times"></i>
+                    </a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main Support Requests Grid -->
+    <div class="card border shadow-sm mb-5 bg-white">
+        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="fw-bold text-dark mb-0">
+                    <i class="fas fa-hands-helping text-primary me-2"></i> Active Corporate Collaboration Opportunities
+                </h5>
+                <small class="text-muted">Directly empower academic researchers with technology grants, fabrication access, and field scaling</small>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-light text-dark border">{{ requests|length }} Open Requests</span>
+                {% if current_user %}
+                <button type="button" class="btn btn-sm btn-primary-gov" data-bs-toggle="modal" data-bs-target="#requestIndustrySupportModal">
+                    <i class="fas fa-plus me-1"></i> Post Request
+                </button>
+                {% endif %}
+            </div>
+        </div>
+        <div class="card-body p-4">
+            {% if requests %}
+            <div class="row g-4">
+                {% for req in requests %}
+                <div class="col-lg-6">
+                    <div class="support-card h-100 d-flex flex-column border rounded-3 p-4 bg-white shadow-sm hover-shadow transition">
+                        <!-- Card Header -->
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1">
+                                <i class="fas fa-tag me-1"></i> {{ req.support_type }}
+                            </span>
+                            <span class="badge {% if req.status == 'Collaboration Started' %}bg-success text-white{% elif req.status == 'Industry Interested' %}bg-warning text-dark{% elif req.status == 'Completed' %}bg-dark text-white{% else %}bg-info text-dark{% endif %}">
+                                {{ req.status }}
+                            </span>
+                        </div>
+
+                        <h5 class="fw-bold text-dark mb-1">
+                            <a href="{{ url_for('project_detail', project_id=req.project.id) }}" class="text-decoration-none text-dark hover-primary">
+                                {{ req.title or req.project.title }}
+                            </a>
+                        </h5>
+                        <div class="small text-muted mb-2">
+                            <span><i class="fas fa-tasks text-secondary me-1"></i> Project: {{ req.project.title[:55] }}...</span>
+                        </div>
+
+                        <p class="text-secondary small mb-3 flex-grow-1" style="line-height: 1.6;">
+                            {{ req.description }}
+                        </p>
+
+                        <!-- Collaboration Status Progression Stepper -->
+                        <div class="mb-3 p-2 bg-light rounded border">
+                            <div class="d-flex justify-content-between text-center align-items-center" style="font-size: 10px;">
+                                {% set flow = ["Support Requested", "Under Review", "Industry Interested", "Collaboration Started", "Completed"] %}
+                                {% set req_status = req.status %}
+                                {% set curr_idx = 0 %}
+                                {% if req_status == 'Under Review' %}{% set curr_idx = 1 %}
+                                {% elif req_status == 'Industry Interested' %}{% set curr_idx = 2 %}
+                                {% elif req_status == 'Collaboration Started' %}{% set curr_idx = 3 %}
+                                {% elif req_status == 'Completed' %}{% set curr_idx = 4 %}
+                                {% endif %}
+
+                                {% for s in flow %}
+                                <div class="d-flex flex-column align-items-center flex-fill">
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center mb-1 fw-bold"
+                                         style="width: 22px; height: 22px; font-size: 10px;
+                                         {% if loop.index0 < curr_idx %}background-color: #10b981; color: white;
+                                         {% elif loop.index0 == curr_idx %}background-color: #134074; color: white; border: 2px solid #3b82f6;
+                                         {% else %}background-color: #e2e8f0; color: #64748b;{% endif %}">
+                                        {% if loop.index0 < curr_idx %}<i class="fas fa-check"></i>{% else %}{{ loop.index }}{% endif %}
+                                    </div>
+                                    <span class="{% if loop.index0 == curr_idx %}fw-bold text-primary{% else %}text-muted{% endif %}" style="font-size: 9px; line-height: 1.1;">{{ s }}</span>
+                                </div>
+                                {% if not loop.last %}
+                                <div class="align-self-center flex-fill border-top" style="height: 2px; margin-top: -12px; {% if loop.index0 < curr_idx %}border-color: #10b981 !important;{% else %}border-color: #cbd5e1 !important;{% endif %}"></div>
+                                {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Budget & Timeline Details Box -->
+                        <div class="p-3 bg-light rounded border small mb-3">
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <span class="text-muted d-block">Estimated Budget / Value:</span>
+                                    <span class="fw-bold text-dark font-monospace fs-6">
+                                        {% if req.estimated_budget %}
+                                            {{ req.estimated_budget }}
+                                        {% else %}
+                                            In-kind / Mentorship
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                <div class="col-6">
+                                    <span class="text-muted d-block">Timeline:</span>
+                                    <span class="fw-bold text-dark">
+                                        {{ req.timeline or 'Immediate / 3-6 Months' }}
+                                    </span>
+                                </div>
+                                <div class="col-12 mt-2 pt-2 border-top">
+                                    <span class="text-muted">Lead Innovator & University:</span>
+                                    <div class="fw-semibold text-primary">
+                                        {{ req.project.lead_user.full_name }} &bull; {{ req.project.university_partner or req.project.lead_user.organization }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="pt-2 border-top mt-auto d-flex gap-2">
+                            <a href="{{ url_for('project_detail', project_id=req.project.id) }}" class="btn btn-sm btn-outline-secondary flex-fill">
+                                <i class="fas fa-eye me-1"></i> View Workspace
+                            </a>
+                            {% if current_user %}
+                            <button type="button" class="btn btn-sm btn-primary-gov flex-fill" data-bs-toggle="modal" data-bs-target="#hubRespondModal{{ req.id }}">
+                                <i class="fas fa-handshake me-1"></i> Propose Partnership
+                            </button>
+                            {% else %}
+                            <a href="{{ url_for('login') }}" class="btn btn-sm btn-primary-gov flex-fill">
+                                <i class="fas fa-sign-in-alt me-1"></i> Log In to Propose
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modal for responding to support request -->
+                {% if current_user %}
+                <div class="modal fade" id="hubRespondModal{{ req.id }}" tabindex="-1" aria-labelledby="hubRespondModalLabel{{ req.id }}" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <form method="POST" action="{{ url_for('respond_industry_support', request_id=req.id) }}">
+                                <div class="modal-header">
+                                    <h5 class="modal-title fw-bold" id="hubRespondModalLabel{{ req.id }}">
+                                        <i class="fas fa-handshake text-primary me-2"></i> Submit Industry Collaboration Offer
+                                    </h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="p-3 bg-light rounded border mb-3">
+                                        <div class="fw-bold text-dark">{{ req.title or req.project.title }}</div>
+                                        <div class="text-muted small">Category: {{ req.support_type }} | Lead: {{ req.project.lead_user.full_name }}</div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label small fw-bold text-dark">Collaboration / Support Proposal *</label>
+                                        <textarea name="support_offered" class="form-control" rows="3" placeholder="Describe your corporate support (e.g. Schedule VII CSR grant, provision of IoT edge sensors, access to testing lab, mentorship by senior staff)..." required></textarea>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label small fw-bold text-dark">Organization / Corporation Name</label>
+                                        <input type="text" name="organization_name" class="form-control" value="{{ current_user.organization or 'Corporate Innovation Partner' }}" required>
+                                    </div>
+                                    <div class="row g-3">
+                                        <div class="col-6">
+                                            <label class="form-label small fw-bold text-dark">Contact Person</label>
+                                            <input type="text" name="contact_person" class="form-control" value="{{ current_user.full_name }}" required>
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label small fw-bold text-dark">Contact Email</label>
+                                            <input type="email" name="contact_email" class="form-control" value="{{ current_user.email }}" required>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                                    <button type="submit" class="btn btn-primary-gov btn-sm">
+                                        <i class="fas fa-paper-plane me-1"></i> Submit Partnership Offer
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-hands-helping text-muted fa-3x mb-3"></i>
+                <h5 class="fw-bold text-dark">No Matching Industry Support Requests Found</h5>
+                <p class="text-muted small mb-3">Try adjusting your search criteria or publish a new industry support request for your project.</p>
+                {% if current_user %}
+                <button type="button" class="btn btn-primary-gov btn-sm" data-bs-toggle="modal" data-bs-target="#requestIndustrySupportModal">
+                    <i class="fas fa-plus me-1"></i> Post New Support Request
+                </button>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Corporate Collaboration Framework Guide -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="p-4 bg-white border rounded-3 h-100 shadow-sm">
+                <div class="d-inline-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary rounded-circle mb-3" style="width: 48px; height: 48px;">
+                    <i class="fas fa-coins fa-lg"></i>
+                </div>
+                <h6 class="fw-bold text-dark">1. CSR & Direct Seed Grants</h6>
+                <p class="text-muted small mb-0">
+                    Channel Schedule VII CSR contributions directly into verified societal prototypes solving drinking water, agricultural, and rural development bottlenecks.
+                </p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="p-4 bg-white border rounded-3 h-100 shadow-sm">
+                <div class="d-inline-flex align-items-center justify-content-center bg-success bg-opacity-10 text-success rounded-circle mb-3" style="width: 48px; height: 48px;">
+                    <i class="fas fa-microchip fa-lg"></i>
+                </div>
+                <h6 class="fw-bold text-dark">2. Hardware & Testbed Access</h6>
+                <p class="text-muted small mb-0">
+                    Sponsor bill of materials (BOM), embedded sensors, fabrication tools, and corporate quality assurance laboratories to fast-track MVP hardening.
+                </p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="p-4 bg-white border rounded-3 h-100 shadow-sm">
+                <div class="d-inline-flex align-items-center justify-content-center bg-warning bg-opacity-10 text-warning rounded-circle mb-3" style="width: 48px; height: 48px;">
+                    <i class="fas fa-user-tie fa-lg"></i>
+                </div>
+                <h6 class="fw-bold text-dark">3. Senior Engineering Mentorship</h6>
+                <p class="text-muted small mb-0">
+                    Pair lead corporate architects and product managers with student and faculty researchers to guide industrial viability and mass manufacturing.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Request Industry Support (Global Modal) -->
+<div class="modal fade" id="requestIndustrySupportModal" tabindex="-1" aria-labelledby="requestIndustrySupportModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            {% if current_user %}
+            <form method="POST" action="{{ url_for('create_industry_support_global') }}">
+                <input type="hidden" name="next" value="{{ url_for('industry_collaboration') }}">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold" id="requestIndustrySupportModalLabel">
+                        <i class="fas fa-handshake text-warning me-2"></i> Request Industry Support & Corporate Sponsorship
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="p-3 bg-light rounded border mb-3">
+                        <div class="fw-bold text-dark"><i class="fas fa-info-circle text-primary me-1"></i> Connect with Corporate CSR & Industry R&D</div>
+                        <div class="text-muted small">Publish your university squad's requirements to receive funding, hardware kits, testbed access, and corporate co-development.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-dark">Select Project Seeking Support *</label>
+                        <select name="project_id" class="form-select" required>
+                            {% for p in all_projects %}
+                            <option value="{{ p.id }}">[PROJECT-{{ p.id }}] {{ p.title }} (Lead: {{ p.lead_user.full_name if p.lead_user else 'Innovator' }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-dark">Category of Support Needed *</label>
+                            <select name="support_type" class="form-select" required>
+                                {% for st in industry_support_types %}
+                                <option value="{{ st }}">{{ st }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-dark">Request Title *</label>
+                            <input type="text" name="title" class="form-control" placeholder="e.g. CSR Grant & Edge Sensors for Water Pilot" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-dark">Detailed Description of Requirements *</label>
+                        <textarea name="description" class="form-control" rows="3" placeholder="Detail the exact technical components, funding requirements, testing rig needs, or mentorship areas required..." required></textarea>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-dark">Estimated Budget / Financial Value</label>
+                            <input type="text" name="estimated_budget" class="form-control" placeholder="e.g. ₹2,50,000 or BOM Provision">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-dark">Expected Timeline / Urgency</label>
+                            <input type="text" name="timeline" class="form-control" placeholder="e.g. 6 Weeks / Pilot Deployment Phase">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-dark">Point of Contact Information</label>
+                        <input type="text" name="contact_info" class="form-control" value="{{ current_user.full_name }} ({{ current_user.email }})" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary-gov btn-sm">
+                        <i class="fas fa-bullhorn me-1"></i> Publish Support Request to Hub
+                    </button>
+                </div>
+            </form>
+            {% else %}
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold" id="requestIndustrySupportModalLabel">
+                    <i class="fas fa-lock text-warning me-2"></i> Authentication Required
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center py-4">
+                <i class="fas fa-user-lock text-primary fa-3x mb-3"></i>
+                <h5 class="fw-bold text-dark">Sign In to Request Industry Support</h5>
+                <p class="text-secondary small mb-4">Please log in with your registered innovator or research account to publish corporate sponsorship requests for your active projects.</p>
+                <a href="{{ url_for('login') }}" class="btn btn-primary-gov px-4">
+                    <i class="fas fa-sign-in-alt me-1"></i> Sign In to Continue
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% if action == 'request' %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var myModalEl = document.getElementById('requestIndustrySupportModal');
+        if (myModalEl) {
+            var myModal = new bootstrap.Modal(myModalEl);
+            myModal.show();
+        }
+    });
+</script>
+{% endif %}
+{% endblock %}
