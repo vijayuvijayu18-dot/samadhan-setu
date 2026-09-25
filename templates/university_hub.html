@@ -1,0 +1,312 @@
+{% extends "base.html" %}
+
+{% block title %}Higher Education Institutions & University Collaboration Hub - Samadhan Setu{% endblock %}
+
+{% block content %}
+<!-- University Hub Header -->
+<div class="bg-primary text-white py-4 mb-4" style="background: linear-gradient(135deg, #0b2545 0%, #134074 100%);">
+    <div class="container">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-2 text-light small opacity-75">
+                <li class="breadcrumb-item"><a href="{{ url_for('landing') }}" class="text-light">Home</a></li>
+                <li class="breadcrumb-item active text-warning" aria-current="page">University Collaboration Hub</li>
+            </ol>
+        </nav>
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <span class="badge bg-warning text-dark text-uppercase fw-bold px-3 py-1">NEP 2020 Experiential Social Innovation</span>
+                    <span class="badge bg-success text-white">Active HEI Convergence</span>
+                </div>
+                <h1 class="h2 fw-bold mb-1 text-white">
+                    <i class="fas fa-university text-warning me-2"></i> University Collaboration & Academic R&D Hub
+                </h1>
+                <p class="text-light opacity-90 mb-0 small">
+                    Connecting grassroots societal challenges with Higher Education Institutions, multidisciplinary student squads, and faculty mentors for ground-tested societal innovation.
+                </p>
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+                <a href="#assignedChallenges" class="btn btn-warning text-dark fw-bold shadow-sm">
+                    <i class="fas fa-tasks me-1"></i> Assigned Challenges
+                </a>
+                <a href="{{ url_for('smart_team') }}" class="btn btn-outline-light shadow-sm">
+                    <i class="fas fa-users-cog me-1"></i> Multidisciplinary Team Builder
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container mb-5">
+    <!-- Quick Metric Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm bg-white text-center p-3 h-100 border-start border-primary border-4">
+                <div class="text-primary mb-1"><i class="fas fa-university fa-2x"></i></div>
+                <div class="fs-3 fw-bold text-dark">{{ total_heis }}</div>
+                <div class="text-muted small fw-semibold">Partner Universities & HEIs</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm bg-white text-center p-3 h-100 border-start border-success border-4">
+                <div class="text-success mb-1"><i class="fas fa-chalkboard-teacher fa-2x"></i></div>
+                <div class="fs-3 fw-bold text-dark">{{ faculty_mentors_count }}</div>
+                <div class="text-muted small fw-semibold">Active Faculty Mentors</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm bg-white text-center p-3 h-100 border-start border-warning border-4">
+                <div class="text-warning mb-1"><i class="fas fa-user-graduate fa-2x"></i></div>
+                <div class="fs-3 fw-bold text-dark">{{ student_innovators_count }}</div>
+                <div class="text-muted small fw-semibold">Student Innovators Engaged</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm bg-white text-center p-3 h-100 border-start border-info border-4">
+                <div class="text-info mb-1"><i class="fas fa-project-diagram fa-2x"></i></div>
+                <div class="fs-3 fw-bold text-dark">{{ active_projects_count }}</div>
+                <div class="text-muted small fw-semibold">Active Academic Workspaces</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Domain Filter Tabs -->
+    <div class="card border shadow-sm mb-4 bg-white">
+        <div class="card-body p-3">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="fw-bold text-dark small"><i class="fas fa-filter text-primary me-1"></i> Filter by Domain:</span>
+                    <a href="{{ url_for('universities') }}" class="btn btn-sm {% if not selected_domain %}btn-primary-gov{% else %}btn-outline-secondary{% endif %}">
+                        All Domains
+                    </a>
+                    {% for cat in categories[:6] %}
+                    <a href="{{ url_for('universities', domain=cat) }}" class="btn btn-sm {% if selected_domain == cat %}btn-primary-gov{% else %}btn-outline-secondary{% endif %}">
+                        {{ cat }}
+                    </a>
+                    {% endfor %}
+                </div>
+                <span class="badge bg-light text-dark border">Showing {{ matched_challenges|length }} Grassroots Challenges</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 1: Grassroots Challenges & Academic Matching -->
+    <div class="card border shadow-sm mb-5 bg-white" id="assignedChallenges">
+        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="fw-bold text-dark mb-0">
+                    <i class="fas fa-bullhorn text-primary me-2"></i> Grassroots Societal Challenges & Smart HEI Matching
+                </h5>
+                <small class="text-muted">Challenges routed toward universities based on department specialization and institutional capabilities</small>
+            </div>
+            <a href="{{ url_for('challenges') }}" class="btn btn-sm btn-outline-primary">
+                View All Challenges <i class="fas fa-arrow-right ms-1"></i>
+            </a>
+        </div>
+        <div class="card-body p-4">
+            <div class="row g-4">
+                {% for item in matched_challenges %}
+                {% set ch = item.challenge %}
+                <div class="col-lg-6">
+                    <div class="card h-100 border shadow-sm hover-shadow transition">
+                        <div class="card-header bg-light d-flex justify-content-between align-items-center py-2 px-3">
+                            <span class="badge bg-dark font-monospace text-uppercase" style="font-size: 0.75rem;">{{ ch.code }}</span>
+                            <div class="d-flex align-items-center gap-1">
+                                <span class="badge {% if ch.priority == 'Critical' %}bg-danger{% elif ch.priority == 'High' %}bg-warning text-dark{% else %}bg-info text-dark{% endif %}">
+                                    {{ ch.priority }}
+                                </span>
+                                <span class="badge {% if ch.status in ['In Progress', 'ASSIGNED'] %}bg-success{% elif ch.status == 'Pilot' %}bg-primary{% else %}bg-secondary{% endif %}">
+                                    {{ ch.status }}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="card-body p-3 d-flex flex-column">
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <span class="badge bg-light text-primary border small">{{ ch.category }}</span>
+                                <span class="text-muted small"><i class="fas fa-map-marker-alt text-danger me-1"></i>{{ ch.location }}</span>
+                            </div>
+                            <h6 class="fw-bold text-dark mb-2">
+                                <a href="{{ url_for('challenge_detail', challenge_id=ch.id) }}" class="text-dark text-decoration-none hover-primary">
+                                    {{ ch.title }}
+                                </a>
+                            </h6>
+                            <p class="text-muted small mb-3 flex-grow-1" style="display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">
+                                {{ ch.description }}
+                            </p>
+
+                            <!-- Required Skills -->
+                            <div class="mb-3">
+                                <span class="text-muted small fw-semibold d-block mb-1">Required Academic Expertise:</span>
+                                <div class="d-flex flex-wrap gap-1">
+                                    {% for s in (ch.required_skills or 'Engineering, Social Sciences').split(',')[:4] %}
+                                    <span class="badge bg-light text-dark border small" style="font-size: 0.7rem;">{{ s.strip() }}</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                            <!-- Matched HEIs -->
+                            <div class="p-2 rounded bg-light border mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="small fw-bold text-dark"><i class="fas fa-microchip text-primary me-1"></i> Top Matched Institutions:</span>
+                                    <span class="badge bg-white text-success border small">Algorithmic Fit</span>
+                                </div>
+                                {% if item.matches %}
+                                    {% for m in item.matches %}
+                                    <div class="d-flex justify-content-between align-items-center small py-1 border-bottom border-light">
+                                        <span class="text-dark truncate" style="max-width: 250px;">{{ m.uni.name }}</span>
+                                        <span class="badge bg-success text-white" style="font-size: 0.65rem;">{{ m.score }}% Fit</span>
+                                    </div>
+                                    {% endfor %}
+                                {% else %}
+                                    <div class="text-muted small">Open to all affiliated universities.</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Actions -->
+                            <div class="pt-2 border-top d-flex flex-wrap justify-content-between align-items-center gap-2">
+                                {% if item.assigned_project %}
+                                    <span class="small text-success fw-bold"><i class="fas fa-check-circle me-1"></i> Active in Project #{{ item.assigned_project.id }}</span>
+                                    <a href="{{ url_for('project_detail', project_id=item.assigned_project.id) }}" class="btn btn-sm btn-outline-success">
+                                        <i class="fas fa-tasks me-1"></i> Open Workspace
+                                    </a>
+                                {% else %}
+                                    <button type="button" class="btn btn-sm btn-primary-gov" data-bs-toggle="modal" data-bs-target="#acceptModal{{ ch.id }}">
+                                        <i class="fas fa-hand-holding-heart me-1"></i> Accept for University R&D
+                                    </button>
+                                    <a href="{{ url_for('smart_team') }}" class="btn btn-sm btn-outline-secondary">
+                                        <i class="fas fa-users me-1"></i> Assemble Squad
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Accept Challenge Modal for this challenge -->
+                <div class="modal fade" id="acceptModal{{ ch.id }}" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content border-0 shadow">
+                            <form action="{{ url_for('accept_university_challenge', challenge_id=ch.id) }}" method="POST">
+                                <div class="modal-header bg-primary text-white">
+                                    <h5 class="modal-title fw-bold"><i class="fas fa-university me-2"></i> Accept Challenge for Institutional R&D</h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body p-4">
+                                    <div class="alert alert-info py-2 small mb-3">
+                                        <i class="fas fa-info-circle me-1"></i> You are adopting <strong>{{ ch.code }}: {{ ch.title[:50] }}...</strong> under your University's social innovation program.
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label fw-semibold small">Select University / Institution <span class="text-danger">*</span></label>
+                                        <select class="form-select" name="university_name" required>
+                                            {% for u in universities %}
+                                            <option value="{{ u.name }}" {% if loop.first %}selected{% endif %}>{{ u.name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label fw-semibold small">Lead Department / Laboratory <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" name="department" placeholder="e.g. Dept. of Environmental Science & Engineering" required>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label fw-semibold small">Designated Faculty Mentor Name <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" name="faculty_mentor_name" placeholder="e.g. Dr. Sunita Soren" required>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label fw-semibold small">Expected R&D & Field Pilot Duration</label>
+                                        <select class="form-select" name="duration_months">
+                                            <option value="3">3 Months (Fast-Track Prototype)</option>
+                                            <option value="6" selected>6 Months (Semester Project & Field Trial)</option>
+                                            <option value="12">12 Months (Comprehensive Scale-Up)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="modal-footer bg-light">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                    <button type="submit" class="btn btn-primary-gov">
+                                        <i class="fas fa-check-circle me-1"></i> Confirm Adoption & Launch Workspace
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 2: Higher Education Institutions Directory & Institutional Capabilities -->
+    <div class="card border shadow-sm mb-4 bg-white">
+        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="fw-bold text-dark mb-0">
+                    <i class="fas fa-building-columns text-primary me-2"></i> Partner Universities & Institutional Capabilities
+                </h5>
+                <small class="text-muted">Premier Higher Education Institutions leading grassroots technological translations across Jharkhand</small>
+            </div>
+            <span class="badge bg-primary px-3 py-2 fs-6">{{ universities|length }} Verified Institutions</span>
+        </div>
+        <div class="card-body p-4">
+            <div class="row g-4">
+                {% for u in universities %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="card h-100 border shadow-sm hover-shadow transition">
+                        <div class="card-body p-4 d-flex flex-column">
+                            <div class="d-flex align-items-start gap-3 mb-3">
+                                <div class="rounded-circle bg-light d-flex align-items-center justify-content-center border" style="width: 50px; height: 50px; min-width: 50px;">
+                                    <i class="fas {{ u.logo_icon or 'fa-university' }} fa-lg text-primary"></i>
+                                </div>
+                                <div>
+                                    <h6 class="fw-bold text-dark mb-1">{{ u.name }}</h6>
+                                    <span class="text-muted small"><i class="fas fa-map-marker-alt text-danger me-1"></i>{{ u.location }}</span>
+                                </div>
+                            </div>
+                            <p class="text-muted small mb-3 flex-grow-1">
+                                {{ u.description }}
+                            </p>
+
+                            <!-- Institutional Capabilities -->
+                            {% if u.capabilities %}
+                            <div class="mb-2">
+                                <span class="fw-bold text-dark small d-block mb-1"><i class="fas fa-cogs text-secondary me-1"></i> Specialized Capabilities:</span>
+                                <div class="p-2 rounded bg-light border small text-dark">
+                                    {{ u.capabilities }}
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            <!-- Participation Modes -->
+                            {% if u.participation_modes %}
+                            <div class="mb-3">
+                                <span class="fw-bold text-dark small d-block mb-1"><i class="fas fa-handshake text-secondary me-1"></i> Collaboration Modes:</span>
+                                <div class="d-flex flex-wrap gap-1">
+                                    {% for m in u.participation_modes.split(',') %}
+                                    <span class="badge bg-warning text-dark border small" style="font-size: 0.65rem;">{{ m.strip() }}</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            <div class="pt-2 border-top d-flex justify-content-between align-items-center">
+                                {% if u.website %}
+                                <a href="{{ u.website }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-secondary">
+                                    <i class="fas fa-globe me-1"></i> Website
+                                </a>
+                                {% endif %}
+                                <a href="{{ url_for('challenges') }}" class="btn btn-sm btn-primary-gov">
+                                    <i class="fas fa-search me-1"></i> View Relevant Needs
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

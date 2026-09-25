@@ -423,17 +423,25 @@
                 <div class="col-md-3">
                     <div class="p-3 rounded bg-light border h-100">
                         <span class="badge bg-primary text-white mb-2">Principal Investigator</span>
-                        <h6 class="fw-bold text-dark mb-1">{{ project.lead_user.full_name }}</h6>
-                        <div class="text-muted small">{{ project.lead_user.organization }}</div>
-                        <div class="text-muted small"><i class="fas fa-envelope me-1"></i> {{ project.lead_user.email }}</div>
+                        <h6 class="fw-bold text-dark mb-1">{{ project.lead_user.full_name if project.lead_user else 'Academic Squad Lead' }}</h6>
+                        <div class="text-muted small">{{ project.lead_user.organization if project.lead_user else (project.university_partner or 'Partner HEI') }}</div>
+                        <div class="text-muted small"><i class="fas fa-envelope me-1"></i> {{ project.lead_user.email if project.lead_user else 'lead@institute.ac.in' }}</div>
                     </div>
                 </div>
 
                 <div class="col-md-3">
                     <div class="p-3 rounded bg-light border h-100">
-                        <span class="badge bg-info text-white mb-2">University Partner</span>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="badge bg-info text-white">University Partner</span>
+                            <button type="button" class="btn btn-xs btn-outline-primary py-0 px-2 small" data-bs-toggle="modal" data-bs-target="#assignMentorModal">
+                                <i class="fas fa-edit me-1"></i> Mentor
+                            </button>
+                        </div>
                         <h6 class="fw-bold text-dark mb-1">{{ project.university_partner or 'IIT Research Laboratory' }}</h6>
-                        <div class="text-muted small">Academic Mentorship & Lab Testing</div>
+                        <div class="text-primary small fw-semibold">
+                            <i class="fas fa-chalkboard-teacher me-1"></i> {{ project.faculty_mentor_name or 'Dr. Assigned Mentor' }}
+                        </div>
+                        <div class="text-muted small">{{ project.faculty_mentor_department or 'Department of Engineering' }}</div>
                     </div>
                 </div>
 
@@ -442,14 +450,21 @@
                         <span class="badge bg-warning text-dark mb-2">Industry Sponsor</span>
                         <h6 class="fw-bold text-dark mb-1">{{ project.industry_partner or 'Corporate R&D Division' }}</h6>
                         <div class="text-muted small">Cloud, Hardware BOM & Fabrication</div>
+                        <div class="text-warning small fw-semibold mt-1"><i class="fas fa-handshake me-1"></i> Active CSR Collaboration</div>
                     </div>
                 </div>
 
                 <div class="col-md-3">
                     <div class="p-3 rounded bg-light border h-100">
-                        <span class="badge bg-secondary text-white mb-2">Public/NGO Agency</span>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="badge bg-secondary text-white">Public/NGO Agency</span>
+                            <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-2 small" data-bs-toggle="modal" data-bs-target="#updatePilotModal">
+                                <i class="fas fa-map-marker-alt me-1"></i> Pilot
+                            </button>
+                        </div>
                         <h6 class="fw-bold text-dark mb-1">{{ project.govt_ngo_partner or 'Municipal Corporation' }}</h6>
-                        <div class="text-muted small">Field Testbed & Ground Clearance</div>
+                        <div class="text-success small fw-semibold"><i class="fas fa-location-arrow me-1"></i> {{ project.pilot_location or 'Block / District Field Site' }}</div>
+                        <div class="text-muted small">Status: {{ project.pilot_status or 'Planning' }} ({{ project.implementation_status or 'Prototype Scale' }})</div>
                     </div>
                 </div>
             </div>
@@ -727,6 +742,260 @@
             </div>
         </div>
     </div>
+
+    <!-- Deliverables & Multi-Stakeholder Approvals Row -->
+    <div class="row g-4 mb-4">
+        <!-- Technical Deliverables -->
+        <div class="col-lg-6">
+            <div class="card border shadow-sm bg-white h-100">
+                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0"><i class="fas fa-file-code text-primary me-2"></i> Technical Deliverables & Documentation</h6>
+                        <small class="text-muted">Code repositories, CAD models, lab test reports & datasets</small>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addDeliverableModal">
+                        <i class="fas fa-plus me-1"></i> Submit Deliverable
+                    </button>
+                </div>
+                <div class="card-body p-3">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle mb-0">
+                            <thead class="table-light small text-muted">
+                                <tr>
+                                    <th>Deliverable</th>
+                                    <th>Type</th>
+                                    <th>Status</th>
+                                    <th>Notes</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for d in project.deliverables %}
+                                <tr>
+                                    <td>
+                                        <div class="fw-semibold text-dark">{{ d.title }}</div>
+                                        {% if d.file_url %}
+                                        <a href="{{ d.file_url }}" target="_blank" class="small text-primary text-decoration-none">
+                                            <i class="fas fa-download me-1"></i> Download Asset
+                                        </a>
+                                        {% endif %}
+                                    </td>
+                                    <td><span class="badge bg-light text-dark border small">{{ d.deliverable_type }}</span></td>
+                                    <td>
+                                        <span class="badge {% if d.status == 'Approved' %}bg-success{% elif d.status == 'Submitted' %}bg-primary{% else %}bg-warning text-dark{% endif %}">
+                                            {{ d.status }}
+                                        </span>
+                                    </td>
+                                    <td class="small text-muted">{{ d.notes or '-' }}</td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="4" class="text-center py-3 text-muted small">No deliverables submitted yet.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Multi-Stakeholder Approvals -->
+        <div class="col-lg-6">
+            <div class="card border shadow-sm bg-white h-100">
+                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0"><i class="fas fa-stamp text-success me-2"></i> Governance Signoffs & Stage Approvals</h6>
+                        <small class="text-muted">Formal endorsements from Faculty Mentor, Industry & Nodal Officer</small>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#signApprovalModal">
+                        <i class="fas fa-pen-nib me-1"></i> Sign Approval
+                    </button>
+                </div>
+                <div class="card-body p-3">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle mb-0">
+                            <thead class="table-light small text-muted">
+                                <tr>
+                                    <th>Approval Gate</th>
+                                    <th>Signatory</th>
+                                    <th>Status</th>
+                                    <th>Remarks</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for a in project.approvals %}
+                                <tr>
+                                    <td><span class="fw-semibold text-dark">{{ a.approval_type }}</span></td>
+                                    <td>
+                                        <div class="small fw-semibold text-dark">{{ a.approver_name }}</div>
+                                        <div class="small text-muted">{{ a.approver_role }}</div>
+                                    </td>
+                                    <td>
+                                        <span class="badge {% if a.status == 'Approved' %}bg-success{% elif a.status == 'Conditional' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+                                            {{ a.status }}
+                                        </span>
+                                    </td>
+                                    <td class="small text-muted">{{ a.remarks or 'Clearance granted.' }}</td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="4" class="text-center py-3 text-muted small">No formal approvals signed yet.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Testing Outcomes & Intellectual Property Row -->
+    <div class="row g-4 mb-4">
+        <!-- Lab Testing & Field Verification Outcomes -->
+        <div class="col-lg-6">
+            <div class="card border shadow-sm bg-white h-100">
+                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0"><i class="fas fa-vial text-info me-2"></i> Lab Testing & Field Trial Outcomes</h6>
+                        <small class="text-muted">NABL water potability tests, stress assays, and quality certifications</small>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#addTestingModal">
+                        <i class="fas fa-plus me-1"></i> Log Test
+                    </button>
+                </div>
+                <div class="card-body p-3">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle mb-0">
+                            <thead class="table-light small text-muted">
+                                <tr>
+                                    <th>Test Name</th>
+                                    <th>Type</th>
+                                    <th>Observed Metrics</th>
+                                    <th>Result</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for t in project.testing_outcomes %}
+                                <tr>
+                                    <td>
+                                        <div class="fw-semibold text-dark">{{ t.test_name }}</div>
+                                        <small class="text-muted">{{ t.certification_body or 'Institutional Lab' }}</small>
+                                    </td>
+                                    <td><span class="badge bg-light text-dark border small">{{ t.test_type }}</span></td>
+                                    <td class="small text-dark">{{ t.metrics_observed }}</td>
+                                    <td>
+                                        <span class="badge {% if t.result == 'Passed' %}bg-success{% else %}bg-warning text-dark{% endif %}">
+                                            {{ t.result }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="4" class="text-center py-3 text-muted small">No test outcomes logged yet.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Intellectual Property (IP) Generation -->
+        <div class="col-lg-6">
+            <div class="card border shadow-sm bg-white h-100">
+                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0"><i class="fas fa-lightbulb text-warning me-2"></i> Intellectual Property (IP) Generated</h6>
+                        <small class="text-muted">Patents, Design Registrations, and Open-Source Hardware assets</small>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-warning text-dark fw-semibold" data-bs-toggle="modal" data-bs-target="#addIpModal">
+                        <i class="fas fa-plus me-1"></i> Record IP
+                    </button>
+                </div>
+                <div class="card-body p-3">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle mb-0">
+                            <thead class="table-light small text-muted">
+                                <tr>
+                                    <th>Type</th>
+                                    <th>Title & Filing No.</th>
+                                    <th>Inventors</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for ip in project.ip_records %}
+                                <tr>
+                                    <td>
+                                        <span class="badge {% if ip.ip_type == 'Patent' %}bg-primary{% else %}bg-warning text-dark{% endif %}">
+                                            {{ ip.ip_type }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="fw-semibold text-dark">{{ ip.title }}</div>
+                                        <code class="text-primary small">{{ ip.application_no or 'Application In Review' }}</code>
+                                    </td>
+                                    <td class="small text-muted">{{ ip.inventors }}</td>
+                                    <td><span class="badge bg-info text-dark">{{ ip.status }}</span></td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="4" class="text-center py-3 text-muted small">No intellectual property assets registered yet.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Multidisciplinary Discussion & Project Comments Stream -->
+    <div class="card border shadow-sm mb-4 bg-white">
+        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="fw-bold text-dark mb-0"><i class="fas fa-comments text-primary me-2"></i> Multidisciplinary Collaboration Stream</h5>
+                <small class="text-muted">Direct technical discourse connecting student innovators, faculty mentors, industry advisors, and citizen stakeholders</small>
+            </div>
+            <span class="badge bg-light text-dark border">{{ project.comments|length }} Comments</span>
+        </div>
+        <div class="card-body p-4">
+            <!-- Add Comment Form -->
+            <form action="{{ url_for('add_project_comment', project_id=project.id) }}" method="POST" class="mb-4">
+                <div class="row g-2 mb-2">
+                    <div class="col-md-9">
+                        <input type="text" name="comment_text" class="form-control" placeholder="Post a technical update, question, or guidance for the team..." required>
+                    </div>
+                    <div class="col-md-3">
+                        <button type="submit" class="btn btn-primary-gov w-100">
+                            <i class="fas fa-paper-plane me-1"></i> Post Update
+                        </button>
+                    </div>
+                </div>
+            </form>
+
+            <!-- Comments List -->
+            <div class="vstack gap-3">
+                {% for c in project.comments %}
+                <div class="p-3 rounded bg-light border">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <div>
+                            <span class="fw-bold text-dark small">{{ c.author.full_name if c.author else 'Team Collaborator' }}</span>
+                            <span class="badge bg-primary-subtle text-primary border small ms-1">{{ c.user_role }}</span>
+                        </div>
+                        <span class="text-muted small">{{ c.created_at.strftime('%d %b %Y, %H:%M') if c.created_at else '' }}</span>
+                    </div>
+                    <div class="text-dark small">{{ c.comment_text }}</div>
+                </div>
+                {% else %}
+                <div class="text-center py-3 text-muted small">No comments in discussion stream yet.</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- Modal: Add New Task -->
@@ -990,6 +1259,328 @@
                     <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-primary-gov btn-sm">
                         <i class="fas fa-check-circle me-1"></i> Add Member to Roster
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Add Technical Deliverable -->
+<div class="modal fade" id="addDeliverableModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('add_project_deliverable', project_id=project.id) }}" enctype="multipart/form-data">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title fw-bold"><i class="fas fa-file-code me-2"></i> Submit Technical Deliverable</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-dark">Deliverable Title *</label>
+                        <input type="text" name="title" class="form-control" placeholder="e.g. IoT Sensor Firmware Source Code / CAD Drawing" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-dark">Deliverable Type *</label>
+                        <select name="deliverable_type" class="form-select">
+                            <option value="Technical Report">Technical Report</option>
+                            <option value="Hardware Prototype">Hardware Prototype</option>
+                            <option value="Software Codebase">Software Codebase</option>
+                            <option value="Lab Test Report">Lab Test Report</option>
+                            <option value="Datasets / Telemetry">Datasets / Telemetry</option>
+                            <option value="Field Trial Log">Field Trial Log</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-dark">Description</label>
+                        <textarea name="description" class="form-control" rows="2" placeholder="Brief technical summary..."></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-dark">Upload Asset / Document (PDF, ZIP, PNG, etc.)</label>
+                        <input type="file" name="deliverable_file" class="form-control">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-dark">Verification Notes</label>
+                        <input type="text" name="notes" class="form-control" placeholder="e.g. Bench tested in BIT Mesra VLSI Lab">
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary-gov btn-sm">
+                        <i class="fas fa-check-circle me-1"></i> Submit Deliverable
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Sign Stage Approval -->
+<div class="modal fade" id="signApprovalModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('sign_project_approval', project_id=project.id) }}">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title fw-bold"><i class="fas fa-stamp me-2"></i> Sign Stage Approval / Endorsement</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-dark">Approval Category *</label>
+                        <select name="approval_type" class="form-select" required>
+                            <option value="Faculty Mentor Signoff">Faculty Mentor Signoff</option>
+                            <option value="Industry Partner Endorsement">Industry Partner Endorsement</option>
+                            <option value="Government Nodal Clearance">Government Nodal Clearance</option>
+                            <option value="Institutional Ethics Clearance">Institutional Ethics Clearance</option>
+                        </select>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-bold text-dark">Approver Name *</label>
+                            <input type="text" name="approver_name" class="form-control" value="{{ current_user.full_name if current_user else '' }}" placeholder="e.g. Dr. Sunita Soren" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-bold text-dark">Role *</label>
+                            <select name="approver_role" class="form-select">
+                                <option value="Faculty Mentor">Faculty Mentor</option>
+                                <option value="Industry Lead">Industry Lead</option>
+                                <option value="Government Nodal Officer">Government Nodal Officer</option>
+                                <option value="Evaluator / Admin">Evaluator / Admin</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-dark">Approval Status</label>
+                        <select name="status" class="form-select">
+                            <option value="Approved">Approved / Cleared</option>
+                            <option value="Conditional">Conditional Approval</option>
+                            <option value="Revision Requested">Revision Requested</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-dark">Formal Remarks & Evaluation Notes</label>
+                        <textarea name="remarks" class="form-control" rows="3" placeholder="Provide qualitative review feedback..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success btn-sm">
+                        <i class="fas fa-signature me-1"></i> Sign & Certify Approval
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Log Testing Outcome -->
+<div class="modal fade" id="addTestingModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('add_project_testing_outcome', project_id=project.id) }}">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title fw-bold"><i class="fas fa-vial me-2"></i> Log Lab Testing / Field Outcome</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-dark">Test Name *</label>
+                        <input type="text" name="test_name" class="form-control" placeholder="e.g. 72-Hour Continuous Fluoride Adsorption Assay" required>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-bold text-dark">Test Environment *</label>
+                            <select name="test_type" class="form-select">
+                                <option value="Lab Testing">Lab Testing</option>
+                                <option value="Field Trial">Field Trial</option>
+                                <option value="Stress Testing">Stress Testing</option>
+                                <option value="Potability Certification">Potability Certification</option>
+                                <option value="Community Acceptance">Community Acceptance</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-bold text-dark">Result *</label>
+                            <select name="result" class="form-select">
+                                <option value="Passed">Passed</option>
+                                <option value="Conditional Pass">Conditional Pass</option>
+                                <option value="In Progress">In Progress</option>
+                                <option value="Failed">Failed</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-dark">Quantitative Metrics Observed</label>
+                        <textarea name="metrics_observed" class="form-control" rows="2" placeholder="e.g. Fluoride dropped from 3.2 mg/L to 0.72 mg/L; pH stabilized at 7.2"></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-dark">Testing Facility / Certification Body</label>
+                        <input type="text" name="certification_body" class="form-control" placeholder="e.g. NABL Certified Water Testing Lab / IIT ISM Lab">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-dark">Notes / Compliance Standard</label>
+                        <input type="text" name="notes" class="form-control" placeholder="e.g. Complies with IS 10500 Potable Water Standards">
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-info text-white btn-sm">
+                        <i class="fas fa-save me-1"></i> Log Testing Record
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Record Intellectual Property -->
+<div class="modal fade" id="addIpModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('add_project_ip', project_id=project.id) }}">
+                <div class="modal-header bg-warning text-dark">
+                    <h5 class="modal-title fw-bold"><i class="fas fa-lightbulb me-2"></i> Record Intellectual Property (IP)</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-dark">IP Classification *</label>
+                        <select name="ip_type" class="form-select">
+                            <option value="Patent">Patent (Invention)</option>
+                            <option value="Design Registration">Design Registration (Aesthetics & Form)</option>
+                            <option value="Copyright / Software">Copyright / Software Codebase</option>
+                            <option value="Open Source Hardware (OSHWA)">Open Source Hardware (OSHWA)</option>
+                            <option value="Defensive Publication">Defensive Publication</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-dark">IP Title *</label>
+                        <input type="text" name="title" class="form-control" placeholder="e.g. Regenerable Composite Alumina Matrix with Automated Micro-Backwash" required>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-bold text-dark">Filing / Application No.</label>
+                            <input type="text" name="application_no" class="form-control" placeholder="e.g. TEMP/E-1/2026/DEL/...">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-bold text-dark">Filing Status</label>
+                            <select name="status" class="form-select">
+                                <option value="Drafted">Drafted</option>
+                                <option value="Filed" selected>Filed</option>
+                                <option value="Published">Published</option>
+                                <option value="Granted / Registered">Granted / Registered</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-dark">Inventors / Authors</label>
+                        <input type="text" name="inventors" class="form-control" placeholder="e.g. Dr. Sunita Soren, Pooja Kumari, Aakash Verma">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-dark">Jurisdiction</label>
+                        <input type="text" name="jurisdiction" class="form-control" value="Indian Patent Office (IPO)">
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning text-dark fw-bold btn-sm">
+                        <i class="fas fa-save me-1"></i> Save IP Record
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Update Field Pilot Status -->
+<div class="modal fade" id="updatePilotModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('update_pilot_status', project_id=project.id) }}">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title fw-bold"><i class="fas fa-map-marker-alt me-2"></i> Update Field Pilot & Implementation</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-dark">Ground Pilot Location</label>
+                        <input type="text" name="pilot_location" class="form-control" value="{{ project.pilot_location or '' }}" placeholder="e.g. Baghmara Block, Dhanbad, Jharkhand">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-dark">Pilot Execution Status</label>
+                        <select name="pilot_status" class="form-select">
+                            <option value="Planning" {% if project.pilot_status == 'Planning' %}selected{% endif %}>Planning & Site Reconnaissance</option>
+                            <option value="Active Field Trials" {% if project.pilot_status == 'Active Field Trials' %}selected{% endif %}>Active Field Trials</option>
+                            <option value="Pilot Operational" {% if project.pilot_status == 'Pilot Operational' %}selected{% endif %}>Pilot Operational (Running)</option>
+                            <option value="Completed" {% if project.pilot_status == 'Completed' %}selected{% endif %}>Pilot Completed & Validated</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-dark">Implementation Scale</label>
+                        <select name="implementation_status" class="form-select">
+                            <option value="Prototype Scale" {% if project.implementation_status == 'Prototype Scale' %}selected{% endif %}>Prototype Scale (Lab Testbed)</option>
+                            <option value="Pilot Scale" {% if project.implementation_status == 'Pilot Scale' %}selected{% endif %}>Pilot Scale (1-3 Hamlets / Mandis)</option>
+                            <option value="District Handover" {% if project.implementation_status == 'District Handover' %}selected{% endif %}>District Handover in Progress</option>
+                            <option value="State Deployment" {% if project.implementation_status == 'State Deployment' %}selected{% endif %}>State-Wide Policy Deployment</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary-gov btn-sm">
+                        <i class="fas fa-check-circle me-1"></i> Update Field Status
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Assign / Change Faculty Mentor -->
+<div class="modal fade" id="assignMentorModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('assign_faculty_mentor', project_id=project.id) }}">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title fw-bold"><i class="fas fa-chalkboard-teacher me-2"></i> Assign Faculty Mentor</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-dark">Faculty Mentor Full Name *</label>
+                        <input type="text" name="mentor_name" class="form-control" value="{{ project.faculty_mentor_name or '' }}" placeholder="e.g. Dr. Sunita Soren" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-dark">Academic Department</label>
+                        <input type="text" name="mentor_department" class="form-control" value="{{ project.faculty_mentor_department or '' }}" placeholder="e.g. Dept. of Environmental Engineering, IIT (ISM)">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-dark">Faculty Official Email</label>
+                        <input type="email" name="mentor_email" class="form-control" placeholder="faculty@institute.ac.in">
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary-gov btn-sm">
+                        <i class="fas fa-check-circle me-1"></i> Save Mentor Assignment
                     </button>
                 </div>
             </form>

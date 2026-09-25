@@ -28,7 +28,7 @@
                 </div>
 
                 <div class="card-body p-4">
-                    <form method="POST" action="{{ url_for('submit_challenge') }}">
+                    <form method="POST" action="{{ url_for('submit_challenge') }}" enctype="multipart/form-data">
                         <!-- Section 1: Submitter & Geographic Details -->
                         <div class="bg-light p-3 rounded-3 border mb-4">
                             <h6 class="fw-bold text-primary mb-3">
@@ -38,9 +38,11 @@
                                 <div class="col-md-4">
                                     <label class="form-label small fw-bold text-dark">Submitting Entity *</label>
                                     <select name="submitter_type" class="form-select" required>
-                                        {% for st in submitter_types or ["Citizen / Resident", "Gram Panchayat / Local Body", "Community Org / SHG", "Government Agency"] %}
-                                            <option value="{{ st }}">{{ st }}</option>
-                                        {% endfor %}
+                                        <option value="Citizen / Resident">Individual Citizen / Resident</option>
+                                        <option value="Community Group / SHG">Community Group / Self-Help Group (SHG)</option>
+                                        <option value="Panchayati Raj Institution (PRI)">Panchayati Raj Institution (Gram Panchayat / PRI)</option>
+                                        <option value="Urban Local Body (ULB)">Urban Local Body (ULB / Municipality / Municipal Corp)</option>
+                                        <option value="Government Department / Agency">Government Department / Line Agency</option>
                                     </select>
                                 </div>
                                 <div class="col-md-4">
@@ -209,6 +211,23 @@
                                 <input type="date" name="deadline" class="form-control">
                             </div>
 
+                            <div class="col-md-7">
+                                <label class="form-label small fw-bold text-dark">Affected Community / Population Group *</label>
+                                <input type="text" name="affected_population" class="form-control" placeholder="e.g. 8,500 tribal residents, school students, or smallholder farmers" value="General Community" required>
+                                <div class="form-text small">Identify specific demographic group facing the challenge.</div>
+                            </div>
+
+                            <div class="col-md-5">
+                                <label class="form-label small fw-bold text-dark">Estimated People Affected Count</label>
+                                <input type="number" name="people_affected_count" class="form-control" placeholder="e.g. 5000" value="5000" min="1">
+                                <div class="form-text small">Quantified scale of impact.</div>
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label small fw-bold text-dark">Supporting Information & Context</label>
+                                <textarea name="supporting_info" class="form-control" rows="2" placeholder="Local historical context, prior panchayat attempts, seasonal factors, or community survey insights..."></textarea>
+                            </div>
+
                             <div class="col-12">
                                 <label class="form-label small fw-bold text-dark">Required Engineering Skills & Disciplines</label>
                                 <input type="text" name="required_skills" class="form-control" placeholder="e.g. IoT, LoRaWAN, Water Membrane Filtration, Telemedicine, AgriTech, Solar Microgrids">
@@ -227,14 +246,22 @@
                             </h6>
                             <div class="row g-3">
                                 <div class="col-md-6">
-                                    <label class="form-label small fw-bold text-dark">Photographs / Video Evidence Link</label>
-                                    <input type="text" name="media_url" class="form-control" placeholder="e.g. https://storage.jharkhand.gov.in/evidence/water-dhanbad.jpg">
-                                    <div class="form-text small">Field photograph or inspection recording URL.</div>
+                                    <label class="form-label small fw-bold text-dark">Upload Field Photo / Video Evidence</label>
+                                    <input type="file" name="evidence_file" class="form-control" accept="image/*,video/*">
+                                    <div class="form-text small">Upload camera photo or field video directly from device (PNG, JPG, MP4, WebM).</div>
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label small fw-bold text-dark">Field Survey / Lab Test Document Link</label>
+                                    <label class="form-label small fw-bold text-dark">Upload Field Survey / Lab Test Document</label>
+                                    <input type="file" name="document_file" class="form-control" accept=".pdf,.docx,.txt,.csv">
+                                    <div class="form-text small">Panchayat resolution, water test report, or survey PDF/DOCX.</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold text-dark">Or Online Photo/Video URL (Optional)</label>
+                                    <input type="text" name="media_url" class="form-control" placeholder="e.g. https://storage.jharkhand.gov.in/evidence/water-dhanbad.jpg">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold text-dark">Or Online Document Link (Optional)</label>
                                     <input type="text" name="document_url" class="form-control" placeholder="e.g. https://storage.jharkhand.gov.in/docs/fluoride-report-baghmara.pdf">
-                                    <div class="form-text small">Panchayat resolution, water test report, or survey PDF.</div>
                                 </div>
                             </div>
                         </div>

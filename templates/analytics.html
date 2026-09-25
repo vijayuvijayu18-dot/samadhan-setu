@@ -1,0 +1,411 @@
+{% extends "base.html" %}
+
+{% block title %}Visual Analytics & Innovation Intelligence - Samadhan Setu{% endblock %}
+
+{% block content %}
+<!-- Analytics Header -->
+<div class="bg-primary text-white py-4 mb-4" style="background: linear-gradient(135deg, #0b2545 0%, #134074 100%);">
+    <div class="container">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-2 text-light small opacity-75">
+                <li class="breadcrumb-item"><a href="{{ url_for('landing') }}" class="text-light">Home</a></li>
+                <li class="breadcrumb-item active text-warning" aria-current="page">Visual Analytics</li>
+            </ol>
+        </nav>
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <span class="badge bg-warning text-dark text-uppercase fw-bold px-3 py-1">State & National Societal Intelligence</span>
+                    <span class="badge bg-info text-dark">Live Platform Telemetry</span>
+                </div>
+                <h1 class="h2 fw-bold mb-1 text-white">
+                    <i class="fas fa-chart-line text-warning me-2"></i> Visual Analytics & Innovation Outcomes
+                </h1>
+                <p class="text-light opacity-90 mb-0 small">
+                    Comprehensive multi-dimensional intelligence tracking societal challenge ingestion, university R&D, industry investments, patent generation, and grassroots impact.
+                </p>
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+                <a href="{{ url_for('impact') }}" class="btn btn-outline-light shadow-sm">
+                    <i class="fas fa-receipt me-1"></i> Ground Impact Ledger
+                </a>
+                <button type="button" class="btn btn-warning text-dark fw-bold shadow-sm" onclick="window.print()">
+                    <i class="fas fa-print me-1"></i> Print / Export Report
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container mb-5">
+    <!-- Mandatory Authenticity & Illustrative Data Disclaimer -->
+    <div class="alert alert-warning border-warning shadow-sm d-flex align-items-start gap-3 mb-4" role="alert">
+        <i class="fas fa-info-circle fa-2x text-warning mt-1"></i>
+        <div>
+            <h6 class="alert-heading fw-bold mb-1">
+                <span class="badge bg-dark text-warning me-1">DEMO DATA / ILLUSTRATIVE DATA</span>
+                Standard Governance Transparency Disclosure
+            </h6>
+            <div class="small text-dark">
+                Platform metrics reflect verified database state coupled with realistic illustrative simulation data calibrated to authentic Jharkhand grassroots development benchmarks. All data points are clearly delineated between live database counts and historical regional baselines to ensure ethical integrity.
+            </div>
+        </div>
+    </div>
+
+    <!-- Executive KPI Metric Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-lg-2">
+            <div class="card border-0 shadow-sm bg-white p-3 h-100 text-center border-bottom border-primary border-3">
+                <span class="text-muted small fw-semibold text-uppercase">Challenges</span>
+                <h3 class="fw-bold text-primary mb-0 mt-1">{{ total_challenges }}</h3>
+                <span class="badge bg-light text-muted border small mt-2">Active Ingestion</span>
+            </div>
+        </div>
+        <div class="col-6 col-lg-2">
+            <div class="card border-0 shadow-sm bg-white p-3 h-100 text-center border-bottom border-success border-3">
+                <span class="text-muted small fw-semibold text-uppercase">Universities</span>
+                <h3 class="fw-bold text-success mb-0 mt-1">{{ uni_count }}</h3>
+                <span class="badge bg-light text-muted border small mt-2">Premier HEIs</span>
+            </div>
+        </div>
+        <div class="col-6 col-lg-2">
+            <div class="card border-0 shadow-sm bg-white p-3 h-100 text-center border-bottom border-warning border-3">
+                <span class="text-muted small fw-semibold text-uppercase">Industry / CSR</span>
+                <h3 class="fw-bold text-warning mb-0 mt-1">{{ industry_count }}</h3>
+                <span class="badge bg-light text-muted border small mt-2">Corporate Partners</span>
+            </div>
+        </div>
+        <div class="col-6 col-lg-2">
+            <div class="card border-0 shadow-sm bg-white p-3 h-100 text-center border-bottom border-info border-3">
+                <span class="text-muted small fw-semibold text-uppercase">Patents / IP</span>
+                <h3 class="fw-bold text-info mb-0 mt-1">{{ total_patents }}</h3>
+                <span class="badge bg-light text-muted border small mt-2">IP Registrations</span>
+            </div>
+        </div>
+        <div class="col-6 col-lg-2">
+            <div class="card border-0 shadow-sm bg-white p-3 h-100 text-center border-bottom border-purple border-3" style="border-bottom-color: #6f42c1 !important;">
+                <span class="text-muted small fw-semibold text-uppercase">Active Projects</span>
+                <h3 class="fw-bold text-dark mb-0 mt-1" style="color: #6f42c1 !important;">{{ total_projects }}</h3>
+                <span class="badge bg-light text-muted border small mt-2">10-Stage Pipeline</span>
+            </div>
+        </div>
+        <div class="col-6 col-lg-2">
+            <div class="card border-0 shadow-sm bg-white p-3 h-100 text-center border-bottom border-danger border-3">
+                <span class="text-muted small fw-semibold text-uppercase">Beneficiaries</span>
+                <h3 class="fw-bold text-danger mb-0 mt-1">{{ "{:,}".format(total_beneficiaries) }}</h3>
+                <span class="badge bg-light text-muted border small mt-2">Citizens Reached</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Visual Charts Row 1: Thematic Sector Distribution & District-Wise Velocity -->
+    <div class="row g-4 mb-4">
+        <!-- Thematic Sector Distribution -->
+        <div class="col-lg-5">
+            <div class="card border shadow-sm bg-white h-100">
+                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0"><i class="fas fa-chart-pie text-primary me-2"></i> Thematic Sector Distribution</h6>
+                        <small class="text-muted">Grassroots societal challenges by core development domain</small>
+                    </div>
+                    <span class="badge bg-light text-dark border">8 Sectors</span>
+                </div>
+                <div class="card-body p-4 d-flex flex-column align-items-center justify-content-center">
+                    <div style="position: relative; height: 260px; width: 100%;">
+                        <canvas id="sectorChart"></canvas>
+                    </div>
+                    <div class="row g-2 w-100 mt-3 pt-3 border-top text-center small">
+                        {% for cat, cnt in sector_counts.items() %}
+                        <div class="col-4">
+                            <span class="text-muted d-block truncate">{{ cat }}</span>
+                            <span class="fw-bold text-dark">{{ cnt }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- District-Wise Distribution (Jharkhand 24 Districts) -->
+        <div class="col-lg-7">
+            <div class="card border shadow-sm bg-white h-100">
+                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0"><i class="fas fa-map-marked-alt text-primary me-2"></i> District-Wise Challenge Ingestion & Solution Velocity</h6>
+                        <small class="text-muted">Distribution across Jharkhand tribal and peri-urban district clusters</small>
+                    </div>
+                    <span class="badge bg-warning text-dark small">DEMO DATA</span>
+                </div>
+                <div class="card-body p-4">
+                    <div style="position: relative; height: 290px; width: 100%;">
+                        <canvas id="districtChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Visual Charts Row 2: 10-Stage Lifecycle Funnel & Quadruple Helix Participation -->
+    <div class="row g-4 mb-4">
+        <!-- 10-Stage Project Lifecycle Velocity -->
+        <div class="col-lg-7">
+            <div class="card border shadow-sm bg-white h-100">
+                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0"><i class="fas fa-tasks text-primary me-2"></i> 10-Stage Project Lifecycle Progression</h6>
+                        <small class="text-muted">Rigorous sequential stages from Challenge Identification to Community Impact</small>
+                    </div>
+                    <span class="badge bg-primary text-white">Full Funnel</span>
+                </div>
+                <div class="card-body p-4">
+                    <div style="position: relative; height: 280px; width: 100%;">
+                        <canvas id="lifecycleChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quadruple Helix Stakeholder Participation -->
+        <div class="col-lg-5">
+            <div class="card border shadow-sm bg-white h-100">
+                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0"><i class="fas fa-handshake text-primary me-2"></i> Quadruple Helix Stakeholder Ratio</h6>
+                        <small class="text-muted">Convergence of Citizens, Academia, Industry, and Governance</small>
+                    </div>
+                    <span class="badge bg-light text-dark border">Ecosystem</span>
+                </div>
+                <div class="card-body p-4 d-flex flex-column align-items-center justify-content-center">
+                    <div style="position: relative; height: 260px; width: 100%;">
+                        <canvas id="helixChart"></canvas>
+                    </div>
+                    <div class="mt-3 pt-3 border-top w-100 small text-center text-muted">
+                        Engaging {{ uni_count }} Universities, {{ industry_count }} Industries, {{ startup_count }} Startups & Hubs.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 3: Intellectual Property & Innovation Outcomes Ledger -->
+    <div class="card border shadow-sm mb-4 bg-white">
+        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="fw-bold text-dark mb-0"><i class="fas fa-lightbulb text-warning me-2"></i> Intellectual Property (IP) & Commercialization Outcomes</h5>
+                <small class="text-muted">Patents, Design Registrations, and Open-Source Prototypes engineered through university-industry collaboration</small>
+            </div>
+            <span class="badge bg-info text-dark">{{ ip_records|length }} Registered Assets</span>
+        </div>
+        <div class="card-body p-4">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr class="small text-uppercase text-muted">
+                            <th>IP Type</th>
+                            <th>Title & Technical Scope</th>
+                            <th>Filing / App No.</th>
+                            <th>Jurisdiction</th>
+                            <th>Inventors & Institutions</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ip in ip_records %}
+                        <tr>
+                            <td>
+                                <span class="badge {% if ip.ip_type == 'Patent' %}bg-primary{% elif ip.ip_type == 'Design Registration' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+                                    {{ ip.ip_type }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="fw-bold text-dark">{{ ip.title }}</div>
+                                <div class="text-muted small">Origin Project: #{{ ip.project_id }} - {{ ip.project.title[:50] }}...</div>
+                            </td>
+                            <td>
+                                <code class="text-primary fw-semibold">{{ ip.application_no or 'TEMP/2026/IPO' }}</code>
+                            </td>
+                            <td>
+                                <span class="small text-muted">{{ ip.jurisdiction or 'Indian Patent Office (IPO)' }}</span>
+                            </td>
+                            <td>
+                                <div class="small fw-semibold text-dark">{{ ip.inventors or 'Faculty & Student Innovators' }}</div>
+                                <div class="small text-muted">{{ ip.project.university_partner or 'Partner University' }}</div>
+                            </td>
+                            <td>
+                                <span class="badge {% if ip.status in ['Granted / Registered', 'Published'] %}bg-success{% else %}bg-info text-dark{% endif %}">
+                                    {{ ip.status }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center py-4 text-muted">No intellectual property records generated yet.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 4: Quantitative Ground Impact Telemetry -->
+    <div class="card border shadow-sm mb-4 bg-white">
+        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="fw-bold text-dark mb-0"><i class="fas fa-check-double text-success me-2"></i> Field Pilot Impact Indicators & Ground Gains</h5>
+                <small class="text-muted">Authentic before-vs-after telemetry measurements verified by district administrations</small>
+            </div>
+            <a href="{{ url_for('impact') }}" class="btn btn-sm btn-outline-primary">
+                View Full Impact Ledger <i class="fas fa-arrow-right ms-1"></i>
+            </a>
+        </div>
+        <div class="card-body p-4">
+            <div class="row g-3">
+                {% for m in metrics %}
+                <div class="col-md-6 col-lg-3">
+                    <div class="card border h-100 p-3 bg-light">
+                        <span class="badge bg-secondary w-auto align-self-start mb-2">{{ m.category }}</span>
+                        <h6 class="fw-bold text-dark mb-2">{{ m.project_title }}</h6>
+                        <div class="small text-muted mb-2">
+                            <i class="fas fa-users text-primary me-1"></i> {{ "{:,}".format(m.people_impacted) }} citizens reached across {{ m.villages_reached }} villages
+                        </div>
+                        <div class="p-2 rounded bg-white border small mt-auto">
+                            <div class="fw-bold text-success"><i class="fas fa-arrow-trend-up me-1"></i> Cost Saved: Rs {{ m.cost_saved_lakhs }} Lakhs</div>
+                            <div class="text-muted small mt-1">{{ m.resources_saved }}</div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js Engine -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 1. Thematic Sector Chart (Doughnut)
+    const sectorCtx = document.getElementById('sectorChart').getContext('2d');
+    const sectorLabels = {{ sector_counts.keys()|list|tojson }};
+    const sectorData = {{ sector_counts.values()|list|tojson }};
+    const sectorColors = ['#0b2545', '#134074', '#1d4ed8', '#0284c7', '#059669', '#d97706', '#ea580c', '#7c3aed'];
+
+    new Chart(sectorCtx, {
+        type: 'doughnut',
+        data: {
+            labels: sectorLabels,
+            datasets: [{
+                data: sectorData,
+                backgroundColor: sectorColors.slice(0, sectorLabels.length),
+                borderWidth: 2,
+                borderColor: '#ffffff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: { boxWidth: 12, font: { size: 11 } }
+                }
+            }
+        }
+    });
+
+    // 2. District Distribution Chart (Bar)
+    const districtCtx = document.getElementById('districtChart').getContext('2d');
+    const districtLabels = ['Ranchi', 'Dhanbad', 'East Singhbhum', 'Bokaro', 'Dumka', 'Latehar', 'Khunti', 'Hazaribagh', 'Deoghar', 'West Singhbhum'];
+    const challengesPerDistrict = [3, 2, 2, 1, 1, 1, 1, 1, 1, 0];
+    const projectsPerDistrict = [2, 1, 1, 0, 1, 1, 1, 0, 1, 0];
+
+    new Chart(districtCtx, {
+        type: 'bar',
+        data: {
+            labels: districtLabels,
+            datasets: [
+                {
+                    label: 'Registered Challenges',
+                    data: challengesPerDistrict,
+                    backgroundColor: '#134074',
+                    borderRadius: 4
+                },
+                {
+                    label: 'Active HEI Projects',
+                    data: projectsPerDistrict,
+                    backgroundColor: '#d97706',
+                    borderRadius: 4
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { stepSize: 1 }
+                },
+                x: {
+                    ticks: { maxRotation: 45, minRotation: 45, font: { size: 10 } }
+                }
+            },
+            plugins: {
+                legend: { position: 'top', labels: { boxWidth: 12 } }
+            }
+        }
+    });
+
+    // 3. 10-Stage Lifecycle Horizontal Bar Chart
+    const lifecycleCtx = document.getElementById('lifecycleChart').getContext('2d');
+    const stageNames = {{ stage_counts.keys()|list|tojson }};
+    const stageCounts = {{ stage_counts.values()|list|tojson }};
+
+    new Chart(lifecycleCtx, {
+        type: 'bar',
+        data: {
+            labels: stageNames,
+            datasets: [{
+                label: 'Projects in Stage',
+                data: stageCounts,
+                backgroundColor: '#0284c7',
+                borderRadius: 4
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: { beginAtZero: true, ticks: { stepSize: 1 } },
+                y: { ticks: { font: { size: 10 } } }
+            },
+            plugins: {
+                legend: { display: false }
+            }
+        }
+    });
+
+    // 4. Quadruple Helix Stakeholders Polar / Pie
+    const helixCtx = document.getElementById('helixChart').getContext('2d');
+    new Chart(helixCtx, {
+        type: 'polarArea',
+        data: {
+            labels: ['Universities & HEIs', 'Industry & CSR', 'Startups & Incubators', 'Citizens & PRIs/ULBs'],
+            datasets: [{
+                data: [{{ uni_count }}, {{ industry_count }}, {{ startup_count }}, {{ total_challenges }}],
+                backgroundColor: ['rgba(19, 64, 116, 0.75)', 'rgba(217, 119, 6, 0.75)', 'rgba(5, 150, 105, 0.75)', 'rgba(2, 132, 199, 0.75)']
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

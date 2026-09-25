@@ -159,11 +159,11 @@ body {
 
 /* Split-Screen Enterprise Login */
 .auth-split-wrapper {
-  min-height: calc(100vh - 120px);
+  min-height: calc(100vh - 130px);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2rem 0;
+  padding: 1.25rem 0;
 }
 
 .auth-card {
@@ -172,14 +172,14 @@ body {
   box-shadow: var(--shadow-xl);
   overflow: hidden;
   border: 1px solid var(--border-color);
-  max-width: 1040px;
+  max-width: 1000px;
   width: 100%;
 }
 
 .auth-left-banner {
   background: linear-gradient(145deg, #0b2545 0%, #134074 60%, #1e3a8a 100%);
   color: #ffffff;
-  padding: 3.5rem 3rem;
+  padding: 2.25rem 2.25rem;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -210,7 +210,7 @@ body {
 }
 
 .auth-right-form {
-  padding: 3.5rem 3rem;
+  padding: 2.25rem 2.5rem;
   background-color: #ffffff;
 }
 

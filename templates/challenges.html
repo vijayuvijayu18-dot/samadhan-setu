@@ -44,12 +44,22 @@
                         </select>
                     </div>
 
-                    <div class="col-md-3 col-lg-3">
-                        <label class="form-label small fw-bold text-dark">Department</label>
-                        <select name="department" class="form-select">
-                            <option value="All">All Departments</option>
-                            {% for dept in all_departments %}
-                                <option value="{{ dept }}" {% if department_filter == dept %}selected{% endif %}>{{ dept }}</option>
+                    <div class="col-md-3 col-lg-2">
+                        <label class="form-label small fw-bold text-dark">Submitter Type</label>
+                        <select name="submitter_type" class="form-select">
+                            <option value="All">All Entities</option>
+                            {% for st in all_submitter_types or ["Individual Citizen", "Community Group / SHG", "Panchayati Raj Institution (PRI)", "Urban Local Body (ULB)", "Government Department / Nodal Agency"] %}
+                                <option value="{{ st }}" {% if submitter_type_filter == st %}selected{% endif %}>{{ st }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-3 col-lg-2">
+                        <label class="form-label small fw-bold text-dark">District</label>
+                        <select name="district" class="form-select">
+                            <option value="All">All Districts</option>
+                            {% for dist in all_districts %}
+                                <option value="{{ dist }}" {% if district_filter == dist %}selected{% endif %}>{{ dist }}</option>
                             {% endfor %}
                         </select>
                     </div>
@@ -64,9 +74,9 @@
                         </select>
                     </div>
 
-                    <div class="col-md-3 col-lg-2 d-flex align-items-end gap-2">
-                        <button type="submit" class="btn btn-primary-gov w-100">
-                            <i class="fas fa-filter me-1"></i> Apply
+                    <div class="col-md-3 col-lg-1 d-flex align-items-end gap-1">
+                        <button type="submit" class="btn btn-primary-gov w-100" title="Apply Filters">
+                            <i class="fas fa-filter"></i>
                         </button>
                         <a href="{{ url_for('challenges') }}" class="btn btn-outline-secondary" title="Reset Filters">
                             <i class="fas fa-undo"></i>

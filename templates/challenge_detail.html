@@ -772,11 +772,15 @@
 
             <!-- 4. Similar Challenges in Same Category -->
             {% if similar_challenges %}
-            <div class="card border shadow-sm">
-                <div class="card-header bg-white py-3 border-bottom">
-                    <h6 class="fw-bold text-dark mb-0">
-                        <i class="fas fa-clone text-secondary me-2"></i> Similar Societal Challenges
-                    </h6>
+            <div class="card border border-warning shadow-sm">
+                <div class="card-header bg-warning bg-opacity-10 py-3 border-bottom">
+                    <div class="d-flex align-items-center justify-content-between mb-1">
+                        <span class="badge bg-warning text-dark fw-bold">
+                            <i class="fas fa-exclamation-triangle me-1"></i> SIMILAR CHALLENGE DETECTED
+                        </span>
+                        <small class="text-muted">Human/Admin Review</small>
+                    </div>
+                    <div class="small text-secondary">Similar challenge(s) identified in database. Review before merging or grouping.</div>
                 </div>
                 <div class="card-body p-3">
                     {% for sc in similar_challenges %}
@@ -790,12 +794,58 @@
                         </div>
                     </div>
                     {% endfor %}
+                    {% if is_admin %}
+                    <button type="button" class="btn btn-sm btn-outline-warning text-dark w-100 mt-2" data-bs-toggle="modal" data-bs-target="#groupSimilarModal">
+                        <i class="fas fa-object-group me-1"></i> Group / Coordinate Challenges
+                    </button>
+                    {% endif %}
                 </div>
             </div>
             {% endif %}
         </div>
     </div>
 </div>
+
+<!-- Modal: Group / Coordinate Similar Challenges -->
+{% if similar_challenges and is_admin %}
+<div class="modal fade" id="groupSimilarModal" tabindex="-1" aria-labelledby="groupSimilarModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('group_similar_challenge', challenge_id=challenge.id) }}">
+                <div class="modal-header bg-light">
+                    <h5 class="modal-title fw-bold text-dark" id="groupSimilarModalLabel">
+                        <i class="fas fa-object-group text-warning me-2"></i> Group Similar Challenges
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <p class="small text-muted mb-3">
+                        Review duplicate suggestions and coordinate solving teams to prevent redundant R&D across Jharkhand institutions.
+                    </p>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-dark">Select Target Challenge to Group With</label>
+                        <select name="target_challenge_id" class="form-select" required>
+                            {% for sc in similar_challenges %}
+                            <option value="{{ sc.id }}">{{ sc.code }} — {{ sc.title[:50] }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-dark">Coordination / Review Notes</label>
+                        <textarea name="notes" class="form-control" rows="3" placeholder="Explain why these challenges are grouped (e.g. Shared watershed, common regional problem)...">Grouped under coordinated innovation track to pool university research resources.</textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning text-dark fw-bold px-3">
+                        <i class="fas fa-link me-1"></i> Confirm Grouping
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
 
 <!-- Modal: Edit / Verify Problem DNA -->
 {% if can_edit_dna and problem_dna %}

@@ -331,6 +331,90 @@
             </div>
         </div>
     </div>
+
+    <!-- Partner Organizations Directory (Industries, Startups, MSMEs, CSR, Research Labs, Innovation Hubs) -->
+    <div class="card border shadow-sm mb-4 bg-white">
+        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="fw-bold text-dark mb-0">
+                    <i class="fas fa-building text-primary me-2"></i> Partner Directory: Industry, Startups, MSMEs & Innovation Hubs
+                </h5>
+                <small class="text-muted">Explore verified corporate CSR foundations, fabrication MSMEs, and incubator partners ready to collaborate</small>
+            </div>
+            <span class="badge bg-primary px-3 py-2 fs-6">{{ partner_organizations|length if partner_organizations else '8+' }} Active Partners</span>
+        </div>
+        <div class="card-body p-4">
+            <div class="row g-4">
+                {% for org in partner_organizations %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="card h-100 border shadow-sm hover-shadow transition">
+                        <div class="card-body p-4 d-flex flex-column">
+                            <div class="d-flex align-items-start gap-3 mb-3">
+                                <div class="rounded-circle bg-light d-flex align-items-center justify-content-center border" style="width: 48px; height: 48px; min-width: 48px;">
+                                    <i class="fas {{ org.logo_icon or 'fa-building' }} fa-lg text-primary"></i>
+                                </div>
+                                <div>
+                                    <h6 class="fw-bold text-dark mb-1">{{ org.name }}</h6>
+                                    <div class="d-flex align-items-center gap-1">
+                                        <span class="badge {% if org.type == 'Industry' %}bg-primary{% elif org.type == 'Startup' %}bg-success{% elif org.type == 'MSME' %}bg-warning text-dark{% else %}bg-info text-dark{% endif %} small" style="font-size: 0.65rem;">
+                                            {{ org.type }}
+                                        </span>
+                                        <span class="text-muted small"><i class="fas fa-map-marker-alt text-danger me-1"></i>{{ org.location }}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <p class="text-muted small mb-3 flex-grow-1">
+                                {{ org.description }}
+                            </p>
+
+                            <!-- Capabilities -->
+                            {% if org.capabilities %}
+                            <div class="mb-2">
+                                <span class="fw-bold text-dark small d-block mb-1"><i class="fas fa-tools text-secondary me-1"></i> Technical Capabilities:</span>
+                                <div class="p-2 rounded bg-light border small text-dark">
+                                    {{ org.capabilities }}
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            <!-- Areas of Interest -->
+                            {% if org.areas_of_interest %}
+                            <div class="mb-2">
+                                <span class="fw-bold text-dark small d-block mb-1"><i class="fas fa-bullseye text-secondary me-1"></i> Areas of Interest:</span>
+                                <div class="text-muted small">{{ org.areas_of_interest }}</div>
+                            </div>
+                            {% endif %}
+
+                            <!-- Participation Modes -->
+                            {% if org.participation_modes %}
+                            <div class="mb-3">
+                                <span class="fw-bold text-dark small d-block mb-1"><i class="fas fa-hands-helping text-secondary me-1"></i> Participation Modes:</span>
+                                <div class="d-flex flex-wrap gap-1">
+                                    {% for m in org.participation_modes.split(',') %}
+                                    <span class="badge bg-warning text-dark border small" style="font-size: 0.65rem;">{{ m.strip() }}</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            <div class="pt-2 border-top d-flex justify-content-between align-items-center mt-auto">
+                                {% if org.website %}
+                                <a href="{{ org.website }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-secondary">
+                                    <i class="fas fa-globe me-1"></i> Profile / Web
+                                </a>
+                                {% endif %}
+                                <a href="{{ url_for('projects') }}" class="btn btn-sm btn-primary-gov">
+                                    <i class="fas fa-handshake me-1"></i> Connect with Squads
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- Modal: Request Industry Support (Global Modal) -->

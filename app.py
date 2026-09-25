@@ -75,6 +75,10 @@ JHARKHAND_DISTRICTS = [
 
 SUBMITTER_TYPES = [
     "Citizen / Resident",
+    "Community Group / SHG",
+    "Panchayati Raj Institution (PRI)",
+    "Urban Local Body (ULB)",
+    "Government Department / Agency",
     "Gram Panchayat / Local Body",
     "Community Org / SHG",
     "Government Agency"
@@ -107,15 +111,17 @@ PUBLIC_USER_TYPES = [
     "Industry Representative",
     "Organization Representative",
     "Domain Expert",
-    "NGO Representative"
+    "NGO Representative",
+    "Faculty Mentor",
+    "Government Representative"
 ]
 USER_TYPES = PUBLIC_USER_TYPES + ["ADMINISTRATOR"]
 
 PRIORITY_LEVELS = ["Low", "Medium", "High", "Critical"]
 
 CHALLENGE_STATUSES = [
-    "PENDING VERIFICATION", "UNDER REVIEW", "APPROVED", "VERIFIED",
-    "REJECTED", "NEEDS INFORMATION", "IN PROGRESS", "COMPLETED",
+    "SUBMITTED", "UNDER REVIEW", "VALIDATED", "ASSIGNED", "IN PROGRESS", "COMPLETED",
+    "PENDING VERIFICATION", "APPROVED", "VERIFIED", "REJECTED", "NEEDS INFORMATION",
     "Open", "Pilot", "Implemented", "Closed"
 ]
 
@@ -134,6 +140,27 @@ PROJECT_LIFECYCLE_STAGES = [
     "Solution Improved",
     "Implementation",
     "Impact Measured"
+]
+
+PARTICIPATION_MODES = [
+    "Mentoring",
+    "Co-development",
+    "Funding",
+    "Prototyping",
+    "Pilot implementation",
+    "Technology transfer"
+]
+
+PARTNER_ORGANIZATION_TYPES = [
+    "University",
+    "Industry",
+    "Startup",
+    "MSME",
+    "CSR Organization",
+    "Research Institution",
+    "Innovation Hub",
+    "Government",
+    "NGO"
 ]
 
 INDUSTRY_SUPPORT_TYPES = [
@@ -196,10 +223,13 @@ class Organization(db.Model):
     __tablename__ = 'organizations'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(200), nullable=False, unique=True)
-    type = db.Column(db.String(50), nullable=False) # University, Industry, Startup, Government, NGO, Research Institution
+    type = db.Column(db.String(50), nullable=False) # University, Industry, Startup, Government, NGO, Research Institution, MSME, CSR Organization, Innovation Hub
     location = db.Column(db.String(150), nullable=False)
     description = db.Column(db.Text, nullable=False)
     expertise_tags = db.Column(db.Text, nullable=False) # comma-separated
+    capabilities = db.Column(db.Text, nullable=True) # Laboratories, Testbeds, Centres of Excellence, Rapid Prototyping
+    areas_of_interest = db.Column(db.Text, nullable=True) # Thematic domains & research priorities
+    participation_modes = db.Column(db.String(250), nullable=True) # Mentoring, Co-development, Funding, Prototyping, Pilot implementation, Technology transfer
     website = db.Column(db.String(200), nullable=True)
     logo_icon = db.Column(db.String(100), default='fa-university')
     is_verified = db.Column(db.Boolean, default=True)
@@ -509,6 +539,11 @@ class Project(db.Model):
     university_partner = db.Column(db.String(200), nullable=True)
     industry_partner = db.Column(db.String(200), nullable=True)
     govt_ngo_partner = db.Column(db.String(200), nullable=True)
+    faculty_mentor_name = db.Column(db.String(150), nullable=True)
+    faculty_mentor_department = db.Column(db.String(200), nullable=True)
+    pilot_location = db.Column(db.String(200), nullable=True)
+    pilot_status = db.Column(db.String(100), default='Planning') # Planning, Active Field Trials, Completed
+    implementation_status = db.Column(db.String(100), default='Prototype Scale') # Prototype Scale, Pilot Scale, District Handover, State Deployment
     start_date = db.Column(db.DateTime, default=datetime.utcnow)
     target_date = db.Column(db.DateTime, nullable=True)
     status = db.Column(db.String(50), default='Active') # Active, In Pilot, Implemented, Completed
@@ -523,6 +558,11 @@ class Project(db.Model):
     stage_updates = db.relationship('ProjectStageUpdate', backref='project', lazy=True, cascade='all, delete-orphan', order_by='ProjectStageUpdate.created_at.desc()')
     impact_indicators = db.relationship('ProjectImpactMetric', backref='project', lazy=True, cascade='all, delete-orphan', order_by='ProjectImpactMetric.recorded_at.desc()')
     support_requests = db.relationship('IndustrySupportRequest', backref='project', lazy=True, cascade='all, delete-orphan', order_by='IndustrySupportRequest.created_at.desc()')
+    deliverables = db.relationship('ProjectDeliverable', backref='project', lazy=True, cascade='all, delete-orphan', order_by='ProjectDeliverable.due_date')
+    approvals = db.relationship('ProjectApproval', backref='project', lazy=True, cascade='all, delete-orphan')
+    testing_outcomes = db.relationship('ProjectTestingOutcome', backref='project', lazy=True, cascade='all, delete-orphan', order_by='ProjectTestingOutcome.date_conducted.desc()')
+    ip_records = db.relationship('ProjectIP', backref='project', lazy=True, cascade='all, delete-orphan')
+    comments = db.relationship('ProjectComment', backref='project', lazy=True, cascade='all, delete-orphan', order_by='ProjectComment.created_at.desc()')
 
     @property
     def code(self):
@@ -815,6 +855,75 @@ class IndustrySupportResponse(db.Model):
         return self.industry_user
 
 
+class ProjectDeliverable(db.Model):
+    __tablename__ = 'project_deliverables'
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey('projects.id'), nullable=False)
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    deliverable_type = db.Column(db.String(100), default='Technical Report') # Technical Report, Hardware Prototype, Software Codebase, Lab Test Report, Datasets / Telemetry, Field Trial Log
+    due_date = db.Column(db.DateTime, nullable=True)
+    status = db.Column(db.String(50), default='Pending') # Pending, Submitted, Approved, Revision Requested
+    file_url = db.Column(db.String(255), nullable=True)
+    submitted_at = db.Column(db.DateTime, nullable=True)
+    approved_at = db.Column(db.DateTime, nullable=True)
+    notes = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class ProjectApproval(db.Model):
+    __tablename__ = 'project_approvals'
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey('projects.id'), nullable=False)
+    approval_type = db.Column(db.String(150), nullable=False) # Faculty Mentor Signoff, Industry Partner Endorsement, Government Nodal Clearance, Institutional Ethics Clearance
+    approver_name = db.Column(db.String(150), nullable=False)
+    approver_role = db.Column(db.String(100), nullable=False) # Faculty Mentor, Industry Lead, Government Nodal Officer, Admin
+    status = db.Column(db.String(50), default='Pending') # Pending, Approved, Conditional, Rejected
+    remarks = db.Column(db.Text, nullable=True)
+    signed_at = db.Column(db.DateTime, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class ProjectTestingOutcome(db.Model):
+    __tablename__ = 'project_testing_outcomes'
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey('projects.id'), nullable=False)
+    test_name = db.Column(db.String(200), nullable=False)
+    test_type = db.Column(db.String(100), nullable=False) # Lab Testing, Field Trial, Stress Testing, Quality / Potability Certification, Community Acceptance
+    result = db.Column(db.String(50), default='Passed') # Passed, Conditional Pass, In Progress, Failed
+    date_conducted = db.Column(db.DateTime, default=datetime.utcnow)
+    metrics_observed = db.Column(db.Text, nullable=True)
+    evidence_url = db.Column(db.String(255), nullable=True)
+    certification_body = db.Column(db.String(200), nullable=True)
+    notes = db.Column(db.Text, nullable=True)
+
+
+class ProjectIP(db.Model):
+    __tablename__ = 'project_ip'
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey('projects.id'), nullable=False)
+    ip_type = db.Column(db.String(100), nullable=False) # Patent, Design Registration, Copyright / Software, Open Source Hardware (OSHWA), Defensive Publication
+    title = db.Column(db.String(250), nullable=False)
+    application_no = db.Column(db.String(100), nullable=True)
+    filing_date = db.Column(db.DateTime, nullable=True)
+    status = db.Column(db.String(50), default='Drafted') # Drafted, Filed, Published, Granted / Registered
+    inventors = db.Column(db.String(250), nullable=True)
+    jurisdiction = db.Column(db.String(100), default='Indian Patent Office (IPO)')
+
+
+class ProjectComment(db.Model):
+    __tablename__ = 'project_comments'
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey('projects.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    comment_text = db.Column(db.Text, nullable=False)
+    user_role = db.Column(db.String(100), default='Innovator')
+    attachment_url = db.Column(db.String(255), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    user = db.relationship('User', foreign_keys=[user_id], lazy=True)
+
+
 def ensure_database_schema_compat():
     """Auto-migrates SQLite tables non-destructively for SIH features and cleans up redundant duplicates."""
     try:
@@ -829,6 +938,30 @@ def ensure_database_schema_compat():
                 conn.exec_driver_sql("ALTER TABLE milestones ADD COLUMN completion_pct INTEGER DEFAULT 0")
             if 'responsible_team' not in cols:
                 conn.exec_driver_sql("ALTER TABLE milestones ADD COLUMN responsible_team VARCHAR(150) DEFAULT 'Project Core Team'")
+
+            # Check projects table columns
+            proj_info = conn.exec_driver_sql("PRAGMA table_info(projects)").fetchall()
+            pcols = [r[1] for r in proj_info] if proj_info else []
+            if 'faculty_mentor_name' not in pcols:
+                conn.exec_driver_sql("ALTER TABLE projects ADD COLUMN faculty_mentor_name VARCHAR(150)")
+            if 'faculty_mentor_department' not in pcols:
+                conn.exec_driver_sql("ALTER TABLE projects ADD COLUMN faculty_mentor_department VARCHAR(200)")
+            if 'pilot_location' not in pcols:
+                conn.exec_driver_sql("ALTER TABLE projects ADD COLUMN pilot_location VARCHAR(200)")
+            if 'pilot_status' not in pcols:
+                conn.exec_driver_sql("ALTER TABLE projects ADD COLUMN pilot_status VARCHAR(100) DEFAULT 'Planning'")
+            if 'implementation_status' not in pcols:
+                conn.exec_driver_sql("ALTER TABLE projects ADD COLUMN implementation_status VARCHAR(100) DEFAULT 'Prototype Scale'")
+
+            # Check organizations table columns
+            org_info = conn.exec_driver_sql("PRAGMA table_info(organizations)").fetchall()
+            ocols = [r[1] for r in org_info] if org_info else []
+            if 'capabilities' not in ocols:
+                conn.exec_driver_sql("ALTER TABLE organizations ADD COLUMN capabilities TEXT")
+            if 'areas_of_interest' not in ocols:
+                conn.exec_driver_sql("ALTER TABLE organizations ADD COLUMN areas_of_interest TEXT")
+            if 'participation_modes' not in ocols:
+                conn.exec_driver_sql("ALTER TABLE organizations ADD COLUMN participation_modes VARCHAR(250)")
 
             # Clean up any legacy duplicate project impact metric rows, preserving the latest record
             pim_info = conn.exec_driver_sql("PRAGMA table_info(project_impact_metrics)").fetchall()
@@ -2276,6 +2409,8 @@ def challenges():
     status_filter = request.args.get('status', '').strip()
     priority_filter = request.args.get('priority', '').strip()
     location_filter = request.args.get('location', '').strip()
+    submitter_type_filter = request.args.get('submitter_type', '').strip()
+    district_filter = request.args.get('district', '').strip()
 
     query = Challenge.query
 
@@ -2308,6 +2443,12 @@ def challenges():
     if priority_filter and priority_filter != 'All':
         query = query.filter(Challenge.priority == priority_filter)
 
+    if submitter_type_filter and submitter_type_filter != 'All':
+        query = query.filter(Challenge.submitter_type == submitter_type_filter)
+
+    if district_filter and district_filter != 'All':
+        query = query.filter((Challenge.district == district_filter) | (Challenge.location.ilike(f"%{district_filter}%")))
+
     if location_filter:
         query = query.filter(Challenge.location.ilike(f"%{location_filter}%"))
 
@@ -2321,6 +2462,10 @@ def challenges():
         status_filter=status_filter,
         priority_filter=priority_filter,
         location_filter=location_filter,
+        submitter_type_filter=submitter_type_filter,
+        district_filter=district_filter,
+        all_submitter_types=SUBMITTER_TYPES,
+        all_districts=JHARKHAND_DISTRICTS,
         is_admin=is_admin
     )
 
@@ -2351,6 +2496,34 @@ def submit_challenge():
         expected_outcome = request.form.get('expected_outcome', '').strip()
         media_url = request.form.get('media_url', '').strip()
         document_url = request.form.get('document_url', '').strip()
+        affected_population = request.form.get('affected_population', request.form.get('affected_community', 'General Community')).strip()
+        people_affected_str = request.form.get('people_affected_count', '1000').strip()
+        supporting_info = request.form.get('supporting_info', '').strip()
+        try:
+            people_affected_count = int(people_affected_str) if people_affected_str else 1000
+        except Exception:
+            people_affected_count = 1000
+
+        # Handle uploaded evidence files from camera/device
+        if 'evidence_file' in request.files:
+            file = request.files['evidence_file']
+            if file and file.filename != '':
+                ext = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else ''
+                if ext in ALLOWED_EXTENSIONS:
+                    filename = secure_filename(f"evid_{uuid.uuid4().hex[:8]}_{file.filename}")
+                    save_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                    file.save(save_path)
+                    media_url = f"/static/uploads/{filename}"
+
+        if 'document_file' in request.files:
+            doc_file = request.files['document_file']
+            if doc_file and doc_file.filename != '':
+                ext = doc_file.filename.rsplit('.', 1)[-1].lower() if '.' in doc_file.filename else ''
+                if ext in ALLOWED_EXTENSIONS:
+                    doc_filename = secure_filename(f"doc_{uuid.uuid4().hex[:8]}_{doc_file.filename}")
+                    doc_save_path = os.path.join(app.config['UPLOAD_FOLDER'], doc_filename)
+                    doc_file.save(doc_save_path)
+                    document_url = f"/static/uploads/{doc_filename}"
 
         # Status: Admin submissions can be specified; Citizen submissions start as PENDING VERIFICATION
         if user and user.user_type == 'ADMINISTRATOR':
@@ -2388,7 +2561,7 @@ def submit_challenge():
         else:
             deadline = datetime.utcnow() + timedelta(days=90)
 
-        impact_score = calculate_ai_impact_score(priority, 10000, required_skills, expected_outcome)
+        impact_score = calculate_ai_impact_score(priority, people_affected_count, required_skills, expected_outcome)
 
         try:
             new_challenge = Challenge(
@@ -2408,6 +2581,9 @@ def submit_challenge():
                 expected_outcome=expected_outcome or 'Operational deployment meeting societal specifications.',
                 media_url=media_url,
                 document_url=document_url,
+                affected_population=affected_population,
+                people_affected_count=people_affected_count,
+                shortcomings=supporting_info,
                 ai_impact_score=impact_score,
                 created_date=datetime.utcnow(),
                 created_by_id=user.id if user else None
@@ -2647,11 +2823,54 @@ def update_challenge_status(challenge_id):
     if new_status in CHALLENGE_STATUSES:
         challenge.status = new_status
         db.session.commit()
+        if challenge.created_by_id:
+            send_notification(
+                challenge.created_by_id,
+                "Challenge Status Update",
+                f"Your challenge {challenge.code} status has been updated to '{new_status}'.",
+                url_for('challenge_detail', challenge_id=challenge.id)
+            )
         flash(f"Challenge status updated to '{new_status}'.", 'success')
     else:
         flash('Invalid status provided.', 'warning')
 
     return redirect(request.referrer or url_for('challenge_detail', challenge_id=challenge.id))
+
+
+@app.route('/challenge/<int:challenge_id>/group-similar', methods=['POST'])
+@login_required
+def group_similar_challenge(challenge_id):
+    """Admin or Author groups/coordinates similar challenges to prevent redundant R&D."""
+    challenge = Challenge.query.get_or_404(challenge_id)
+    target_id = request.form.get('target_challenge_id')
+    notes = request.form.get('notes', 'Grouped under coordinated innovation track.').strip()
+
+    if target_id:
+        try:
+            target_ch = Challenge.query.get(int(target_id))
+            if target_ch:
+                group_tag = f"\n\n[SIMILAR CHALLENGE GROUPING]: Grouped with {target_ch.code} ({target_ch.title[:40]}...): {notes}"
+                if group_tag not in challenge.description:
+                    challenge.description += group_tag
+                reverse_tag = f"\n\n[SIMILAR CHALLENGE GROUPING]: Grouped with {challenge.code} ({challenge.title[:40]}...): {notes}"
+                if reverse_tag not in target_ch.description:
+                    target_ch.description += reverse_tag
+                db.session.commit()
+                if challenge.created_by_id:
+                    send_notification(
+                        challenge.created_by_id,
+                        "Challenges Grouped",
+                        f"Your challenge {challenge.code} has been grouped with {target_ch.code} for coordinated research.",
+                        url_for('challenge_detail', challenge_id=challenge.id)
+                    )
+                flash(f"Challenge #{challenge.id} ({challenge.code}) successfully grouped with #{target_ch.id} ({target_ch.code}).", 'success')
+                return redirect(url_for('challenge_detail', challenge_id=challenge.id))
+        except Exception as e:
+            db.session.rollback()
+            app.logger.error(f"Error grouping challenges: {e}")
+
+    flash("Target challenge not found.", 'warning')
+    return redirect(url_for('challenge_detail', challenge_id=challenge.id))
 
 
 @app.route('/challenge/<int:challenge_id>/follow', methods=['POST'])
@@ -2675,7 +2894,6 @@ def join_challenge(challenge_id):
 # ROUTES: SOLUTION PROPOSALS & LIFECYCLE
 # ---------------------------------------------------------
 @app.route('/solutions')
-@login_required
 def solutions():
     """Solutions Repository."""
     solutions_list = Solution.query.order_by(Solution.created_at.desc()).all()
@@ -2935,7 +3153,6 @@ def select_solution_for_project(solution_id):
 # ROUTES: PROJECT WORKSPACE & KANBAN TASKS
 # ---------------------------------------------------------
 @app.route('/projects')
-@login_required
 def projects():
     """Collaborative Projects Directory."""
     projects_list = deduplicate_projects(Project.query.order_by(Project.created_at.desc()).all())
@@ -3105,6 +3322,438 @@ def update_project_milestone(project_id, milestone_id):
     db.session.commit()
     flash(f"Milestone '{milestone.name}' updated successfully (Status: {milestone.status}, {milestone.completion_pct}%).", 'success')
     return redirect(url_for('project_detail', project_id=project.id))
+
+
+# ---------------------------------------------------------
+# ROUTES: PROJECT LIFECYCLE EXTENSIONS (DELIVERABLES, APPROVALS, TESTING, IP)
+# ---------------------------------------------------------
+@app.route('/project/<int:project_id>/add-deliverable', methods=['POST'])
+@login_required
+def add_project_deliverable(project_id):
+    """Add a verified technical deliverable or documentation to project."""
+    project = Project.query.get_or_404(project_id)
+    title = request.form.get('title', '').strip()
+    deliverable_type = request.form.get('deliverable_type', 'Technical Report').strip()
+    description = request.form.get('description', '').strip()
+    notes = request.form.get('notes', '').strip()
+    due_date_str = request.form.get('due_date', '').strip()
+
+    if not title:
+        flash("Deliverable title is required.", "danger")
+        return redirect(url_for('project_detail', project_id=project.id))
+
+    due_date = None
+    if due_date_str:
+        try:
+            due_date = datetime.strptime(due_date_str, '%Y-%m-%d')
+        except Exception:
+            pass
+
+    file_url = None
+    if 'deliverable_file' in request.files:
+        f = request.files['deliverable_file']
+        if f and f.filename and allowed_file(f.filename):
+            filename = secure_filename(f.filename)
+            unique_filename = f"{uuid.uuid4().hex[:10]}_{filename}"
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+            f.save(filepath)
+            file_url = f"/static/uploads/{unique_filename}"
+
+    deliv = ProjectDeliverable(
+        project_id=project.id,
+        title=title,
+        deliverable_type=deliverable_type,
+        description=description,
+        notes=notes,
+        file_url=file_url,
+        due_date=due_date,
+        status='Submitted',
+        submitted_at=datetime.utcnow()
+    )
+    db.session.add(deliv)
+    db.session.commit()
+    flash(f"Deliverable '{title}' submitted successfully.", "success")
+    return redirect(url_for('project_detail', project_id=project.id))
+
+
+@app.route('/project/<int:project_id>/sign-approval', methods=['POST'])
+@login_required
+def sign_project_approval(project_id):
+    """Sign multi-stakeholder approval (Faculty Mentor, Industry Partner, Government Nodal Officer)."""
+    project = Project.query.get_or_404(project_id)
+    user = get_current_user()
+
+    approval_type = request.form.get('approval_type', 'Faculty Mentor Signoff').strip()
+    approver_name = request.form.get('approver_name') or (user.full_name if user else 'Authorized Signatory')
+    approver_role = request.form.get('approver_role', 'Faculty Mentor').strip()
+    status = request.form.get('status', 'Approved').strip()
+    remarks = request.form.get('remarks', '').strip()
+
+    approval = ProjectApproval(
+        project_id=project.id,
+        approval_type=approval_type,
+        approver_name=approver_name,
+        approver_role=approver_role,
+        status=status,
+        remarks=remarks,
+        signed_at=datetime.utcnow()
+    )
+    db.session.add(approval)
+    db.session.commit()
+    flash(f"{approval_type} signed successfully with status '{status}'.", "success")
+    return redirect(url_for('project_detail', project_id=project.id))
+
+
+@app.route('/project/<int:project_id>/add-testing-outcome', methods=['POST'])
+@login_required
+def add_project_testing_outcome(project_id):
+    """Record lab testing outcome or field trial verification."""
+    project = Project.query.get_or_404(project_id)
+    test_name = request.form.get('test_name', '').strip()
+    test_type = request.form.get('test_type', 'Lab Testing').strip()
+    result = request.form.get('result', 'Passed').strip()
+    metrics_observed = request.form.get('metrics_observed', '').strip()
+    certification_body = request.form.get('certification_body', '').strip()
+    notes = request.form.get('notes', '').strip()
+
+    if not test_name:
+        flash("Test name is required.", "danger")
+        return redirect(url_for('project_detail', project_id=project.id))
+
+    outcome = ProjectTestingOutcome(
+        project_id=project.id,
+        test_name=test_name,
+        test_type=test_type,
+        result=result,
+        metrics_observed=metrics_observed,
+        certification_body=certification_body,
+        notes=notes,
+        date_conducted=datetime.utcnow()
+    )
+    db.session.add(outcome)
+    db.session.commit()
+    flash(f"Testing outcome '{test_name}' logged with result '{result}'.", "success")
+    return redirect(url_for('project_detail', project_id=project.id))
+
+
+@app.route('/project/<int:project_id>/add-ip', methods=['POST'])
+@login_required
+def add_project_ip(project_id):
+    """Record intellectual property generation (Patent, Design Registration, Copyright)."""
+    project = Project.query.get_or_404(project_id)
+    ip_type = request.form.get('ip_type', 'Patent').strip()
+    title = request.form.get('title', '').strip()
+    application_no = request.form.get('application_no', '').strip()
+    status = request.form.get('status', 'Filed').strip()
+    inventors = request.form.get('inventors', '').strip()
+    jurisdiction = request.form.get('jurisdiction', 'Indian Patent Office (IPO)').strip()
+
+    if not title:
+        flash("IP Title is required.", "danger")
+        return redirect(url_for('project_detail', project_id=project.id))
+
+    ip_record = ProjectIP(
+        project_id=project.id,
+        ip_type=ip_type,
+        title=title,
+        application_no=application_no,
+        status=status,
+        inventors=inventors,
+        jurisdiction=jurisdiction,
+        filing_date=datetime.utcnow()
+    )
+    db.session.add(ip_record)
+    db.session.commit()
+    flash(f"Intellectual property record '{title}' added under '{ip_type}'.", "success")
+    return redirect(url_for('project_detail', project_id=project.id))
+
+
+@app.route('/project/<int:project_id>/update-pilot-status', methods=['POST'])
+@login_required
+def update_pilot_status(project_id):
+    """Update field pilot location and ground implementation status."""
+    project = Project.query.get_or_404(project_id)
+    pilot_location = request.form.get('pilot_location', '').strip()
+    pilot_status = request.form.get('pilot_status', '').strip()
+    implementation_status = request.form.get('implementation_status', '').strip()
+
+    if pilot_location:
+        project.pilot_location = pilot_location
+    if pilot_status:
+        project.pilot_status = pilot_status
+    if implementation_status:
+        project.implementation_status = implementation_status
+
+    db.session.commit()
+    flash("Pilot location and implementation progress updated successfully.", "success")
+    return redirect(url_for('project_detail', project_id=project.id))
+
+
+@app.route('/project/<int:project_id>/add-comment', methods=['POST'])
+@login_required
+def add_project_comment(project_id):
+    """Post comment to multidisciplinary project collaboration stream."""
+    project = Project.query.get_or_404(project_id)
+    user = get_current_user()
+    comment_text = request.form.get('comment_text', '').strip()
+    user_role = request.form.get('user_role') or (user.user_type if user else 'Innovator')
+
+    if comment_text:
+        pc = ProjectComment(
+            project_id=project.id,
+            user_id=user.id if user else 1,
+            comment_text=comment_text,
+            user_role=user_role,
+            created_at=datetime.utcnow()
+        )
+        db.session.add(pc)
+        db.session.commit()
+        flash("Comment added to project discussion.", "info")
+
+    return redirect(url_for('project_detail', project_id=project.id))
+
+
+# ---------------------------------------------------------
+# ROUTES: UNIVERSITY COLLABORATION SYSTEM (HEI ENGAGEMENT)
+# ---------------------------------------------------------
+@app.route('/universities')
+@app.route('/university-hub')
+def universities():
+    """Higher Education Institution (HEI) Collaboration Hub."""
+    domain_filter = request.args.get('domain', '')
+
+    all_universities = Organization.query.filter_by(type='University').all()
+    all_challenges = Challenge.query.all()
+    all_projects = Project.query.all()
+
+    matched_challenges = []
+    for ch in all_challenges:
+        matching_unis = []
+        for uni in all_universities:
+            score = 0
+            uni_text = f"{uni.expertise_tags or ''} {uni.capabilities or ''} {uni.areas_of_interest or ''}".lower()
+            ch_text = f"{ch.category or ''} {ch.required_skills or ''} {ch.description or ''}".lower()
+
+            if ch.category and ch.category.lower() in uni_text:
+                score += 45
+            for skill in (ch.required_skills or '').split(','):
+                s = skill.strip().lower()
+                if s and s in uni_text:
+                    score += 15
+            if score >= 30:
+                matching_unis.append({'uni': uni, 'score': min(score, 98)})
+
+        matching_unis.sort(key=lambda x: x['score'], reverse=True)
+        assigned_proj = next((p for p in all_projects if p.challenge_id == ch.id), None)
+        matched_challenges.append({
+            'challenge': ch,
+            'matches': matching_unis[:3],
+            'assigned_project': assigned_proj
+        })
+
+    if domain_filter:
+        matched_challenges = [mc for mc in matched_challenges if mc['challenge'].category == domain_filter]
+
+    total_heis = len(all_universities)
+    faculty_mentors_count = db.session.query(db.func.count(db.func.distinct(Project.faculty_mentor_name))).filter(Project.faculty_mentor_name != None).scalar() or 2
+    student_innovators_count = TeamMember.query.count() or 6
+    active_projects_count = len(all_projects)
+
+    categories = list(CHALLENGE_CATEGORIES.keys())
+
+    return render_template(
+        'university_hub.html',
+        universities=all_universities,
+        matched_challenges=matched_challenges,
+        categories=categories,
+        total_heis=total_heis,
+        faculty_mentors_count=faculty_mentors_count,
+        student_innovators_count=student_innovators_count,
+        active_projects_count=active_projects_count,
+        selected_domain=domain_filter,
+        all_projects=all_projects
+    )
+
+
+@app.route('/university/challenge/<int:challenge_id>/accept', methods=['POST'])
+@login_required
+def accept_university_challenge(challenge_id):
+    """Higher Education Institution formally accepts a societal challenge for multidisciplinary R&D."""
+    challenge = Challenge.query.get_or_404(challenge_id)
+    user = get_current_user()
+
+    uni_name = request.form.get('university_name') or (user.organization if user else 'Premier Technical University')
+    mentor_name = request.form.get('faculty_mentor_name') or (user.full_name if user else 'Dr. Faculty Mentor')
+    department = request.form.get('department') or 'Department of Engineering & Applied Sciences'
+    duration_months = int(request.form.get('duration_months', '6'))
+
+    if challenge.status in ['Open', 'SUBMITTED', 'UNDER REVIEW', 'VALIDATED']:
+        challenge.status = 'ASSIGNED'
+
+    existing_project = Project.query.filter_by(challenge_id=challenge.id).first()
+    if not existing_project:
+        sol = Solution.query.filter_by(challenge_id=challenge.id).first()
+        if not sol:
+            sol = Solution(
+                challenge_id=challenge.id,
+                submitted_by_id=user.id if user else None,
+                title=f"University Solution: {challenge.title[:150]}",
+                problem_addressed=challenge.description,
+                detailed_solution=f"Academic and research R&D initiative by {uni_name} to engineer a deployable grassroots solution.",
+                innovation_points="Multidisciplinary student-faculty collaboration with industry testbed integration.",
+                technology_stack=challenge.required_skills or "Embedded Systems, Cloud Computing, IoT",
+                expected_impact=challenge.expected_outcome or "Targeted community impact addressing societal challenge.",
+                estimated_cost="Rs 15.00 Lakhs",
+                implementation_plan="Phase 1: Lab simulation; Phase 2: Hardware prototyping; Phase 3: Field pilot.",
+                status='PROTOTYPE',
+                is_selected=True
+            )
+            db.session.add(sol)
+            db.session.flush()
+
+        new_project = Project(
+            challenge_id=challenge.id,
+            solution_id=sol.id,
+            title=f"HEI Project: {challenge.title[:120]}",
+            description=f"Multidisciplinary innovation initiative led by {uni_name} ({department}) addressing {challenge.title}.",
+            lead_user_id=user.id if user else None,
+            university_partner=uni_name,
+            faculty_mentor_name=mentor_name,
+            faculty_mentor_department=department,
+            pilot_location=challenge.location,
+            pilot_status='Planning',
+            implementation_status='Prototype Scale',
+            current_stage='Team Formation',
+            progress_pct=15,
+            target_date=datetime.utcnow() + timedelta(days=duration_months*30),
+            status='Active'
+        )
+        db.session.add(new_project)
+        db.session.flush()
+
+        m1 = Milestone(project_id=new_project.id, name="Multidisciplinary Team Assembly & Technical Architecture", description="Form student squad and define engineering specs", due_date=datetime.utcnow() + timedelta(days=21), status="In Progress", completion_pct=40, order_idx=1)
+        m2 = Milestone(project_id=new_project.id, name="Prototype Lab Validation & Bench Testing", description="Proof-of-concept testing in institutional lab", due_date=datetime.utcnow() + timedelta(days=60), status="Not Started", completion_pct=0, order_idx=2)
+        m3 = Milestone(project_id=new_project.id, name="Field Pilot Deployment & Community Handover", description="Field deployment with local PRIs/ULBs", due_date=datetime.utcnow() + timedelta(days=duration_months*30), status="Not Started", completion_pct=0, order_idx=3)
+        db.session.add_all([m1, m2, m3])
+
+        tm = TeamMember(project_id=new_project.id, name=mentor_name, role_title="Faculty Mentor", organization=uni_name, email=user.email if user else None)
+        db.session.add(tm)
+
+        db.session.commit()
+        flash(f"Challenge successfully accepted by {uni_name}! Project workspace #{new_project.id} initialized.", "success")
+        return redirect(url_for('project_detail', project_id=new_project.id))
+    else:
+        existing_project.university_partner = uni_name
+        existing_project.faculty_mentor_name = mentor_name
+        existing_project.faculty_mentor_department = department
+        db.session.commit()
+        flash(f"Challenge adoption confirmed for {uni_name}. Redirected to workspace #{existing_project.id}.", "success")
+        return redirect(url_for('project_detail', project_id=existing_project.id))
+
+
+@app.route('/university/project/<int:project_id>/assign-mentor', methods=['POST'])
+@login_required
+def assign_faculty_mentor(project_id):
+    """Assign or update faculty mentor for an active university project."""
+    project = Project.query.get_or_404(project_id)
+    mentor_name = request.form.get('mentor_name', '').strip()
+    mentor_dept = request.form.get('mentor_department', '').strip()
+    mentor_email = request.form.get('mentor_email', '').strip()
+
+    if not mentor_name:
+        flash("Faculty mentor name is required.", "danger")
+        return redirect(url_for('project_detail', project_id=project.id))
+
+    project.faculty_mentor_name = mentor_name
+    if mentor_dept:
+        project.faculty_mentor_department = mentor_dept
+
+    existing_member = TeamMember.query.filter_by(project_id=project.id, name=mentor_name).first()
+    if not existing_member:
+        tm = TeamMember(
+            project_id=project.id,
+            name=mentor_name,
+            role_title="Faculty Mentor",
+            organization=project.university_partner or "Academic Partner Institution",
+            email=mentor_email or None
+        )
+        db.session.add(tm)
+
+    db.session.commit()
+    flash(f"Faculty Mentor '{mentor_name}' successfully assigned to Project #{project.id}.", "success")
+    return redirect(url_for('project_detail', project_id=project.id))
+
+
+# ---------------------------------------------------------
+# ROUTES: VISUAL ANALYTICS DASHBOARD
+# ---------------------------------------------------------
+@app.route('/analytics')
+def analytics():
+    """
+    State & National Societal Innovation Visual Analytics Dashboard.
+    Provides multi-sector charts, district-wise breakdowns, university participation,
+    industry CSR investments, patent outcomes, and lifecycle metrics.
+    Clearly identifies illustrative demonstration data with DEMO DATA badges.
+    """
+    challenges = Challenge.query.all()
+    projects = Project.query.all()
+    solutions = Solution.query.all()
+    orgs = Organization.query.all()
+    metrics = ImpactMetric.query.all()
+    ip_records = ProjectIP.query.all()
+
+    total_challenges = len(challenges)
+    total_projects = len(projects)
+    total_solutions = len(solutions)
+    total_orgs = len(orgs)
+    total_patents = len(ip_records)
+
+    sector_counts = {}
+    for ch in challenges:
+        cat = ch.category or 'Other'
+        sector_counts[cat] = sector_counts.get(cat, 0) + 1
+
+    district_counts = {}
+    for ch in challenges:
+        dist = ch.district or 'Ranchi'
+        district_counts[dist] = district_counts.get(dist, 0) + 1
+
+    uni_count = sum(1 for o in orgs if o.type == 'University')
+    industry_count = sum(1 for o in orgs if o.type in ['Industry', 'MSME'])
+    startup_count = sum(1 for o in orgs if o.type in ['Startup', 'Innovation Hub'])
+
+    stage_counts = {stg: 0 for stg in PROJECT_LIFECYCLE_STAGES}
+    for p in projects:
+        stg = p.current_stage or 'Prototype Development'
+        if stg in stage_counts:
+            stage_counts[stg] += 1
+        else:
+            stage_counts['Prototype Development'] = stage_counts.get('Prototype Development', 0) + 1
+
+    total_beneficiaries = sum(m.people_impacted for m in metrics)
+    total_villages = sum(m.villages_reached for m in metrics)
+    total_cost_saved = sum(m.cost_saved_lakhs for m in metrics)
+
+    return render_template(
+        'analytics.html',
+        total_challenges=total_challenges,
+        total_projects=total_projects,
+        total_solutions=total_solutions,
+        total_orgs=total_orgs,
+        total_patents=total_patents,
+        uni_count=uni_count,
+        industry_count=industry_count,
+        startup_count=startup_count,
+        sector_counts=sector_counts,
+        district_counts=district_counts,
+        stage_counts=stage_counts,
+        total_beneficiaries=total_beneficiaries,
+        total_villages=total_villages,
+        total_cost_saved=total_cost_saved,
+        metrics=metrics,
+        projects=projects,
+        ip_records=ip_records
+    )
 
 
 @app.route('/challenge/<int:challenge_id>/comment', methods=['POST'])
@@ -3498,6 +4147,7 @@ def industry_collaboration():
 
     all_projects = Project.query.order_by(Project.title.asc()).all()
     projects_seeking_support = Project.query.join(IndustrySupportRequest).distinct().all()
+    partner_organizations = Organization.query.filter(Organization.type.in_(['Industry', 'Startup', 'MSME', 'CSR', 'Research Institution', 'Innovation Hub'])).all()
 
     return render_template('industry_hub.html',
         requests=all_requests,
@@ -3512,7 +4162,10 @@ def industry_collaboration():
         active_collaborations=active_collaborations,
         total_responses=total_responses,
         all_projects=all_projects,
-        projects_seeking_support=projects_seeking_support
+        projects_seeking_support=projects_seeking_support,
+        partner_organizations=partner_organizations,
+        participation_modes=PARTICIPATION_MODES,
+        partner_organization_types=PARTNER_ORGANIZATION_TYPES
     )
 
 
@@ -3655,7 +4308,6 @@ def accept_industry_response(response_id):
 # ROUTES: ORGANIZATIONS & NATIONAL IMPACT
 # ---------------------------------------------------------
 @app.route('/organizations')
-@login_required
 def organizations():
     """Organizations Directory."""
     type_filter = request.args.get('type', '')
@@ -4090,7 +4742,7 @@ def api_samadhan_ai_update_draft():
         return jsonify({'success': False, 'error': 'Session not found'}), 404
 
     current_draft = ai_sess.get_draft()
-    for key in ['title', 'problem_summary', 'domain', 'subdomain', 'location', 'district', 'affected_population', 'timing']:
+    for key in ['title', 'problem_summary', 'domain', 'subdomain', 'location', 'district', 'affected_population', 'priority', 'timing']:
         if key in data and data[key]:
             current_draft[key] = data[key]
 
@@ -4126,6 +4778,7 @@ def api_samadhan_ai_submit():
     district = draft.get('district', 'Ranchi').strip()
     affected_population = draft.get('affected_population', 'General Community').strip()
     people_affected_count = int(draft.get('people_affected_count', 10000))
+    priority = draft.get('priority') or classify_thematic_domain(title, description).get('priority') or 'Medium'
 
     # Append raw unedited citizen words for permanent auditability & transparency
     if ai_sess and ai_sess.original_input:
@@ -4144,7 +4797,7 @@ def api_samadhan_ai_submit():
     status = 'Open' if (user and user.user_type == 'ADMINISTRATOR') else 'PENDING VERIFICATION'
     submitter_type = user.user_type if user else 'Citizen / Resident'
 
-    impact_score = calculate_ai_impact_score('Medium', people_affected_count, '', '')
+    impact_score = calculate_ai_impact_score(priority, people_affected_count, '', '')
 
     new_challenge = Challenge(
         title=title,
@@ -4154,7 +4807,7 @@ def api_samadhan_ai_submit():
         location=location,
         district=district,
         submitter_type=submitter_type,
-        priority='Medium',
+        priority=priority,
         status=status,
         organization=user.organization if user and user.organization else 'Community Initiative',
         deadline=datetime.utcnow() + timedelta(days=90),
@@ -4251,41 +4904,139 @@ def internal_error(error):
 # ---------------------------------------------------------
 def seed_database():
     """
-    Initializes controlled database with ONLY the single Administrator account
-    and stable, static, realistic societal challenges (no random generation).
+    Initializes controlled database with administrators, core Quadruple Helix users,
+    stable societal challenges, problem DNA, solutions, projects, milestones, deliverables,
+    approvals, testing outcomes, intellectual property, organizations, and impact metrics.
     """
     with app.app_context():
         db.create_all()
 
-        # 1. Ensure Single Admin Account (admin@samadhansetu.com / Admin@123)
+        # 1. Ensure Administrators (admin@samadhansetu.com & admin@samadhansetu.gov.in)
         admin = User.query.filter_by(email="admin@samadhansetu.com").first()
         if not admin:
-            # Check if old admin exists and update
-            old_admin = User.query.filter_by(email="admin@samadhansetu.gov.in").first()
-            if old_admin:
-                admin = old_admin
-                admin.email = "admin@samadhansetu.com"
-                admin.full_name = "Administrator"
-                admin.user_type = "ADMINISTRATOR"
-                admin.set_password("Admin@123")
-            else:
-                admin = User(
-                    full_name="Administrator",
-                    email="admin@samadhansetu.com",
-                    phone="+91-11-23456789",
-                    user_type="ADMINISTRATOR",
-                    organization="National Innovation & Governance Cell",
-                    location="New Delhi",
-                    skills="Platform Governance, Evaluation, Policy, Multi-Sector Convergence",
-                    bio="Lead Administrator overseeing national societal innovation pipelines.",
-                    contribution_score=1000
-                )
-                admin.set_password("Admin@123")
-                db.session.add(admin)
-            db.session.commit()
-            print("Admin account initialized: admin@samadhansetu.com")
+            admin = User(
+                full_name="Administrator",
+                email="admin@samadhansetu.com",
+                phone="+91-11-23456789",
+                user_type="ADMINISTRATOR",
+                organization="National Innovation & Governance Cell",
+                location="New Delhi",
+                skills="Platform Governance, Evaluation, Policy, Multi-Sector Convergence",
+                bio="Lead Administrator overseeing national societal innovation pipelines.",
+                contribution_score=1000
+            )
+            admin.set_password("Admin@123")
+            db.session.add(admin)
+        else:
+            admin.set_password("Admin@123")
 
-        # 2. Controlled Stable Challenge titles
+        gov_admin = User.query.filter_by(email="admin@samadhansetu.gov.in").first()
+        if not gov_admin:
+            gov_admin = User(
+                full_name="National Governance Administrator",
+                email="admin@samadhansetu.gov.in",
+                phone="+91-11-23456780",
+                user_type="ADMINISTRATOR",
+                organization="Department of Higher Education & Innovation (MoE / AICTE)",
+                location="New Delhi",
+                skills="National Innovation Coordination, Governance, Smart Matchmaking",
+                bio="National nodal officer for Samadhan Setu societal challenge coordination.",
+                contribution_score=1000
+            )
+            gov_admin.set_password("Admin@123")
+            db.session.add(gov_admin)
+        else:
+            gov_admin.set_password("Admin@123")
+        db.session.commit()
+
+        # 1b. Ensure Core Quadruple Helix Users
+        core_users = [
+            {
+                "email": "aakash.iot@bitmesra.ac.in",
+                "full_name": "Aakash Verma",
+                "phone": "+91-9835012345",
+                "user_type": "Student",
+                "organization": "Birla Institute of Technology (BIT), Mesra, Ranchi",
+                "location": "Ranchi, Jharkhand",
+                "skills": "IoT, Embedded Systems, LoRaWAN, Microcontrollers, Python",
+                "bio": "M.Tech IoT researcher specializing in decentralized environmental sensing.",
+                "password": "Password@123"
+            },
+            {
+                "email": "sunita.env@iitism.ac.in",
+                "full_name": "Dr. Sunita Soren",
+                "phone": "+91-9431054321",
+                "user_type": "Researcher",
+                "organization": "Indian Institute of Technology (ISM) Dhanbad",
+                "location": "Dhanbad, Jharkhand",
+                "skills": "Water Engineering, Membrane Filtration, Fluoride Remediation, Hydrology",
+                "bio": "Associate Professor at TEXMiN clean water laboratory.",
+                "password": "Password@123"
+            },
+            {
+                "email": "rajesh.singhania@tatasteel.com",
+                "full_name": "Rajesh Singhania",
+                "phone": "+91-9234098765",
+                "user_type": "Industry Representative",
+                "organization": "Tata Steel Foundation & Tata Motors CSR",
+                "location": "Jamshedpur, Jharkhand",
+                "skills": "CSR Partnerships, Prototype Acceleration, Industrial Fabrication, Scale-Up",
+                "bio": "Head of Social Innovation & Rural CSR Initiatives.",
+                "password": "Password@123"
+            },
+            {
+                "email": "pooja.ai@iiitranchi.ac.in",
+                "full_name": "Pooja Kumari",
+                "phone": "+91-9771034567",
+                "user_type": "Student",
+                "organization": "IIIT Ranchi",
+                "location": "Ranchi, Jharkhand",
+                "skills": "Machine Learning, Computer Vision, Edge AI, Python, FastAPI",
+                "bio": "B.Tech CSE student passionate about AI solutions for rural governance.",
+                "password": "Password@123"
+            },
+            {
+                "email": "arvind.agri@bauranchi.org",
+                "full_name": "Dr. Arvind Kumar",
+                "phone": "+91-9431123490",
+                "user_type": "Faculty Mentor",
+                "organization": "Birsa Agricultural University (BAU), Kanke",
+                "location": "Ranchi, Jharkhand",
+                "skills": "AgriTech, Thermal Storage, Post-Harvest Management, Rural Livelihoods",
+                "bio": "Head of Post-Harvest Technology and Agri-Business Incubation Centre.",
+                "password": "Password@123"
+            },
+            {
+                "email": "anita.singh@ranchi.org",
+                "full_name": "Anita Singh",
+                "phone": "+91-9334056789",
+                "user_type": "Citizen",
+                "organization": "Mahila Samakhya Jharkhand",
+                "location": "Bero, Ranchi",
+                "skills": "Community Mobilization, Organic Farming, SHG Leadership",
+                "bio": "Grassroots community organizer advocating for peri-urban farm storage.",
+                "password": "Password@123"
+            }
+        ]
+        for udata in core_users:
+            u = User.query.filter_by(email=udata['email']).first()
+            if not u:
+                u = User(
+                    email=udata['email'],
+                    full_name=udata['full_name'],
+                    phone=udata['phone'],
+                    user_type=udata['user_type'],
+                    organization=udata['organization'],
+                    location=udata['location'],
+                    skills=udata['skills'],
+                    bio=udata['bio'],
+                    contribution_score=250
+                )
+                u.set_password(udata['password'])
+                db.session.add(u)
+        db.session.commit()
+
+        # 2. Controlled Stable Challenge Titles
         controlled_titles = [
             "Abandoned Coal Pit Mine Water Purification & Fluoride Remediation for Hamlets",
             "Solar-Assisted Farm-to-Haat Cold Storage & Vernacular Market Linkage for Peri-Urban Clusters",
@@ -4296,6 +5047,8 @@ def seed_database():
             "Offline Bilingual STEM Tablets & Interactive Science Kits for Tribal Residential Schools",
             "Smart Haat Solid Waste Segregation & Dynamic Inundation Clearance Telemetry"
         ]
+
+        # Clean up ad-hoc test challenges while preserving controlled set
         extra_challenges = Challenge.query.filter(~Challenge.title.in_(controlled_titles)).all()
         for ech in extra_challenges:
             for s in ech.solutions:
@@ -4303,18 +5056,28 @@ def seed_database():
                     Task.query.filter_by(project_id=p.id).delete()
                     Milestone.query.filter_by(project_id=p.id).delete()
                     ProjectPartner.query.filter_by(project_id=p.id).delete()
+                    ProjectDeliverable.query.filter_by(project_id=p.id).delete()
+                    ProjectApproval.query.filter_by(project_id=p.id).delete()
+                    ProjectTestingOutcome.query.filter_by(project_id=p.id).delete()
+                    ProjectIP.query.filter_by(project_id=p.id).delete()
+                    ProjectComment.query.filter_by(project_id=p.id).delete()
                     db.session.delete(p)
                 db.session.delete(s)
+            for p in ech.projects:
+                Task.query.filter_by(project_id=p.id).delete()
+                Milestone.query.filter_by(project_id=p.id).delete()
+                ProjectPartner.query.filter_by(project_id=p.id).delete()
+                ProjectDeliverable.query.filter_by(project_id=p.id).delete()
+                ProjectApproval.query.filter_by(project_id=p.id).delete()
+                ProjectTestingOutcome.query.filter_by(project_id=p.id).delete()
+                ProjectIP.query.filter_by(project_id=p.id).delete()
+                ProjectComment.query.filter_by(project_id=p.id).delete()
+                db.session.delete(p)
             db.session.delete(ech)
         if extra_challenges:
             db.session.commit()
 
-        if Challenge.query.count() >= 8:
-            return
-
-        print("Seeding controlled stable societal challenges into database...")
-
-        # 3. Controlled Stable Predefined Challenges (Authentic Jharkhand Grassroots Challenges)
+        # 3. Controlled Stable Predefined Challenges
         controlled_challenges = [
             {
                 "title": "Abandoned Coal Pit Mine Water Purification & Fluoride Remediation for Hamlets",
@@ -4323,7 +5086,7 @@ def seed_database():
                 "location": "Baghmara & Nirsa, Dhanbad, Jharkhand",
                 "district": "Dhanbad",
                 "block": "Baghmara",
-                "submitter_type": "Gram Panchayat / Local Body",
+                "submitter_type": "Panchayati Raj Institution (PRI)",
                 "priority": "Critical",
                 "status": "In Progress",
                 "organization": "BCCL CSR & DWSD Jharkhand",
@@ -4339,9 +5102,9 @@ def seed_database():
                 "location": "Bero & Kanke, Ranchi, Jharkhand",
                 "district": "Ranchi",
                 "block": "Bero",
-                "submitter_type": "Community Org / SHG",
+                "submitter_type": "Community Group / SHG",
                 "priority": "High",
-                "status": "Open",
+                "status": "In Progress",
                 "organization": "Jharkhand State Agri Marketing Board",
                 "deadline": datetime(2026, 11, 30),
                 "description": "Tribal farmers in Ranchi vegetable belts harvest surplus tomato, cabbage, and peas. Absence of village-level pre-cooling leads to 35% post-harvest rot. Farmers are forced to sell to commission intermediaries for as low as Rs 3/kg.",
@@ -4355,7 +5118,7 @@ def seed_database():
                 "location": "Shikaripara & Kathikund, Dumka, Jharkhand",
                 "district": "Dumka",
                 "block": "Shikaripara",
-                "submitter_type": "Citizen / Resident",
+                "submitter_type": "Individual Citizen",
                 "priority": "Critical",
                 "status": "Pilot",
                 "organization": "National Health Mission Jharkhand",
@@ -4371,7 +5134,7 @@ def seed_database():
                 "location": "Torpa & Rania, Khunti, Jharkhand",
                 "district": "Khunti",
                 "block": "Torpa",
-                "submitter_type": "Community Org / SHG",
+                "submitter_type": "Community Group / SHG",
                 "priority": "High",
                 "status": "In Progress",
                 "organization": "Jharkhand State Livelihood Promotion Society (JSLPS)",
@@ -4387,7 +5150,7 @@ def seed_database():
                 "location": "Adityapur & Jamshedpur, East Singhbhum, Jharkhand",
                 "district": "East Singhbhum (Jamshedpur)",
                 "block": "Golmuri-cum-Jugsalai",
-                "submitter_type": "Government Agency",
+                "submitter_type": "Government Department / Agency",
                 "priority": "High",
                 "status": "Open",
                 "organization": "JSPCB & East Singhbhum District Administration",
@@ -4403,7 +5166,7 @@ def seed_database():
                 "location": "Netarhat Plateau, Latehar, Jharkhand",
                 "district": "Latehar",
                 "block": "Mahuadanr",
-                "submitter_type": "Gram Panchayat / Local Body",
+                "submitter_type": "Panchayati Raj Institution (PRI)",
                 "priority": "High",
                 "status": "Pilot",
                 "organization": "JREDA Latehar Division",
@@ -4419,7 +5182,7 @@ def seed_database():
                 "location": "Bermo & Chas, Bokaro, Jharkhand",
                 "district": "Bokaro",
                 "block": "Bermo",
-                "submitter_type": "Government Agency",
+                "submitter_type": "Government Department / Agency",
                 "priority": "Medium",
                 "status": "Open",
                 "organization": "Jharkhand Tribal Welfare Residential Education Society",
@@ -4435,7 +5198,7 @@ def seed_database():
                 "location": "Ranchi Municipal Corporation, Jharkhand",
                 "district": "Ranchi",
                 "block": "Kanke",
-                "submitter_type": "Citizen / Resident",
+                "submitter_type": "Urban Local Body (ULB)",
                 "priority": "High",
                 "status": "Open",
                 "organization": "Ranchi Municipal Corporation (RMC)",
@@ -4447,170 +5210,385 @@ def seed_database():
         ]
 
         for item in controlled_challenges:
-            ch = Challenge(
-                title=item['title'],
-                category=item['category'],
-                department=item['department'],
-                location=item['location'],
-                district=item.get('district', 'Ranchi'),
-                block=item.get('block', ''),
-                submitter_type=item.get('submitter_type', 'Citizen / Resident'),
-                priority=item['priority'],
-                status=item['status'],
-                organization=item['organization'],
-                deadline=item['deadline'],
-                description=item['description'],
-                required_skills=item['required_skills'],
-                expected_outcome=item['expected_outcome'],
-                ai_impact_score=calculate_ai_impact_score(item['priority'], 10000, item['required_skills'], item['expected_outcome']),
-                created_date=datetime(2026, 1, 15, 10, 0, 0),
-                created_by_id=admin.id
-            )
-            db.session.add(ch)
+            ch = Challenge.query.filter_by(title=item['title']).first()
+            if not ch:
+                ch = Challenge(
+                    title=item['title'],
+                    category=item['category'],
+                    department=item['department'],
+                    location=item['location'],
+                    district=item.get('district', 'Ranchi'),
+                    block=item.get('block', ''),
+                    submitter_type=item.get('submitter_type', 'Individual Citizen'),
+                    priority=item['priority'],
+                    status=item['status'],
+                    organization=item['organization'],
+                    deadline=item['deadline'],
+                    description=item['description'],
+                    required_skills=item['required_skills'],
+                    expected_outcome=item['expected_outcome'],
+                    ai_impact_score=calculate_ai_impact_score(item['priority'], 10000, item['required_skills'], item['expected_outcome']),
+                    created_date=datetime(2026, 1, 15, 10, 0, 0),
+                    created_by_id=admin.id
+                )
+                db.session.add(ch)
+                db.session.flush()
 
-        # 4. Controlled Stable Organizations (Premier Jharkhand HEIs & Industry Partners)
-        orgs = [
-            Organization(
-                name="Birla Institute of Technology (BIT), Mesra, Ranchi",
-                type="University",
-                location="Ranchi, Jharkhand",
-                description="Premier deemed university with Centres of Excellence in AI, Robotics, Remote Sensing, and dedicated Technology Business Incubator (BIT-TBI).",
-                expertise_tags="IoT, Robotics, Artificial Intelligence, Smart Cities, Urban Development, Telematics, Remote Sensing, Computer Vision",
-                website="https://www.bitmesra.ac.in",
-                logo_icon="fa-university"
-            ),
-            Organization(
-                name="Indian Institute of Technology (ISM) Dhanbad",
-                type="University",
-                location="Dhanbad, Jharkhand",
-                description="Institute of National Importance with TEXMiN Hub, specialized in groundwater hydrology, mine water purification, clean energy, and geophysics.",
-                expertise_tags="Water Resources, Clean Energy, Environmental Engineering, Mining Tech, Geophysics, Hydrology, Clean Coal, Filtration",
-                website="https://www.iitism.ac.in",
-                logo_icon="fa-graduation-cap"
-            ),
-            Organization(
-                name="National Institute of Technology (NIT) Jamshedpur",
-                type="University",
-                location="Jamshedpur, Jharkhand",
-                description="Premier technical institution closely linked to Jharkhand industrial corridor, featuring advanced manufacturing testbeds and smart grid laboratories.",
-                expertise_tags="Heavy Engineering, Materials Science, Industrial Automation, Smart Grids, Manufacturing, Metallurgy, LoRaWAN",
-                website="https://www.nitjsr.ac.in",
-                logo_icon="fa-microchip"
-            ),
-            Organization(
-                name="Birsa Agricultural University (BAU), Kanke",
-                type="University",
-                location="Ranchi, Jharkhand",
-                description="State agricultural university with Agri-Business Incubation Centre (ABIC) leading tribal farm modernization, lac cultivation, and soil testing.",
-                expertise_tags="AgriTech, Agriculture, Soil Health, Rural Livelihoods, Crop Science, Horticulture, Agro-forestry, Lac Cultivation",
-                website="https://www.bauranchi.org",
-                logo_icon="fa-seedling"
-            ),
-            Organization(
-                name="All India Institute of Medical Sciences (AIIMS) Deoghar",
-                type="University",
-                location="Deoghar, Jharkhand",
-                description="Apex medical research and healthcare institution providing specialized digital telemedicine outreach to tribal districts of Santhal Pargana.",
-                expertise_tags="Healthcare, Telemedicine, Public Health, Rural Epidemiology, Maternal Health, Diagnostic Devices, Medical IoT",
-                website="https://www.aiimsdeoghar.edu.in",
-                logo_icon="fa-hospital-user"
-            ),
-            Organization(
-                name="Central University of Jharkhand (CUJ), Brambe",
-                type="University",
-                location="Ranchi, Jharkhand",
-                description="Central university leading tribal linguistic preservation, NEP 2020 experiential learning curricula, and rural governance research.",
-                expertise_tags="Education, Tribal Languages, Public Administration, Social Innovation, Rural Development, Renewable Energy, EdTech",
-                website="https://www.cuj.ac.in",
-                logo_icon="fa-book-reader"
-            ),
-            Organization(
-                name="Tata Steel Foundation & Tata Motors CSR",
-                type="Industry",
-                location="Jamshedpur, Jharkhand",
-                description="Pioneering corporate social responsibility foundation providing industrial testbeds, CSR grant funding, and community scaling.",
-                expertise_tags="Corporate CSR, Industrial IoT, Clean Water, Environment, Heavy Tech, Tribal Health, Prototyping, Manufacturing",
-                website="https://www.tatasteel.com",
-                logo_icon="fa-building"
-            ),
-            Organization(
-                name="Central Coalfields Limited (CCL) & BCCL (Coal India)",
-                type="Industry",
-                location="Ranchi & Dhanbad, Jharkhand",
-                description="Major public sector energy enterprise investing CSR funds in mine water treatment, rural community healthcare, and solar electrification.",
-                expertise_tags="Mine Water Reclamation, Water Resources, Clean Energy, Rural Infrastructure, Community CSR, Environmental Restoration",
-                website="https://www.centralcoalfields.in",
-                logo_icon="fa-industry"
-            ),
-            Organization(
-                name="Steel Authority of India Limited (SAIL Bokaro)",
-                type="Industry",
-                location="Bokaro, Jharkhand",
-                description="One of India's largest steel plants supporting industrial innovation, secondary recycling, waste-to-energy, and technical skill development.",
-                expertise_tags="Industrial Waste-to-Energy, Automation, Heavy Manufacturing, Vocational Training, Technical CSR, Energy",
-                website="https://www.sail.co.in",
-                logo_icon="fa-cogs"
-            ),
-            Organization(
-                name="Jharkhand Innovation Lab (JIL) / Startup Jharkhand",
-                type="Startup",
-                location="Ranchi, Jharkhand",
-                description="State nodal innovation agency under Dept. of IT & e-Gov providing up to Rs 15 Lakhs prototype grants, testbed access, and incubation mentorship.",
-                expertise_tags="Early Stage Seed Grants, Prototyping Facilities, MSME Scaling, Incubation, Tech Mentorship, Smart Cities",
-                website="https://startup.jharkhand.gov.in",
-                logo_icon="fa-rocket"
-            )
-        ]
-        db.session.add_all(orgs)
+            # Ensure ProblemDNA exists
+            if not ch.problem_dna:
+                dna = generate_problem_dna(ch)
+                db.session.add(dna)
+        db.session.commit()
 
-        # 5. Stable Impact Metrics (Jharkhand Focused)
-        metrics = [
-            ImpactMetric(
-                project_title="Coal-Belt Mine Water Purification Grid",
-                category="Water Resources",
-                people_impacted=480000,
-                villages_reached=42,
-                cost_saved_lakhs=180.0,
-                time_saved_pct=65,
-                environmental_gain="120 Million Litres potable water reclaimed from abandoned pits",
-                employment_created=64,
-                resources_saved="Fluoride levels brought below 1.0 mg/L in 42 tribal hamlets"
-            ),
-            ImpactMetric(
-                project_title="Santhal Pargana ASHA Telemedicine Hubs",
-                category="Healthcare",
-                people_impacted=74000,
-                villages_reached=95,
-                cost_saved_lakhs=210.0,
-                time_saved_pct=82,
-                environmental_gain="140,000 km unnecessary rural patient commute averted",
-                employment_created=58,
-                resources_saved="Emergency maternal referral time reduced by 3.8 hours"
-            ),
-            ImpactMetric(
-                project_title="Ranchi Peri-Urban Solar Cold Haat Chain",
-                category="Agriculture",
-                people_impacted=125000,
-                villages_reached=38,
-                cost_saved_lakhs=95.0,
-                time_saved_pct=45,
-                environmental_gain="850 Metric Tons vegetable post-harvest rot prevented",
-                employment_created=40,
-                resources_saved="Average farmer household income increased by 42%"
-            ),
-            ImpactMetric(
-                project_title="Netarhat Plateau Solar DC Mini-Grids",
-                category="Energy",
-                people_impacted=26000,
-                villages_reached=16,
-                cost_saved_lakhs=84.0,
-                time_saved_pct=40,
-                environmental_gain="92,000 Litres hazardous kerosene burn eliminated per year",
-                employment_created=30,
-                resources_saved="24x7 solar electricity delivered to 380 tribal homes"
-            )
-        ]
-        db.session.add_all(metrics)
+        # 4. Controlled Stable Organizations (Premier Jharkhand HEIs, Industry Partners, MSMEs, Hubs)
+        if Organization.query.count() < 8:
+            orgs = [
+                Organization(
+                    name="Birla Institute of Technology (BIT), Mesra, Ranchi",
+                    type="University",
+                    location="Ranchi, Jharkhand",
+                    description="Premier deemed university with Centres of Excellence in AI, Robotics, Remote Sensing, and dedicated Technology Business Incubator (BIT-TBI).",
+                    expertise_tags="IoT, Robotics, Artificial Intelligence, Smart Cities, Urban Development, Telematics, Remote Sensing, Computer Vision",
+                    website="https://www.bitmesra.ac.in",
+                    logo_icon="fa-university",
+                    capabilities="AI & Robotics testbeds, sensor calibration labs, rapid PCB prototyping",
+                    areas_of_interest="Smart Cities, Rural Telemetry, Autonomous Systems, Agritech",
+                    participation_modes="Mentoring, Co-development, Prototyping"
+                ),
+                Organization(
+                    name="Indian Institute of Technology (ISM) Dhanbad",
+                    type="University",
+                    location="Dhanbad, Jharkhand",
+                    description="Institute of National Importance with TEXMiN Hub, specialized in groundwater hydrology, mine water purification, clean energy, and geophysics.",
+                    expertise_tags="Water Resources, Clean Energy, Environmental Engineering, Mining Tech, Geophysics, Hydrology, Clean Coal, Filtration",
+                    website="https://www.iitism.ac.in",
+                    logo_icon="fa-graduation-cap",
+                    capabilities="ICP-MS water testing, membrane filtration test rigs, geophysics modeling",
+                    areas_of_interest="Water Resources, Clean Mining, Environmental Sustainability",
+                    participation_modes="Mentoring, Co-development, Pilot implementation, Technology transfer"
+                ),
+                Organization(
+                    name="National Institute of Technology (NIT) Jamshedpur",
+                    type="University",
+                    location="Jamshedpur, Jharkhand",
+                    description="Premier technical institution closely linked to Jharkhand industrial corridor, featuring advanced manufacturing testbeds and smart grid laboratories.",
+                    expertise_tags="Heavy Engineering, Materials Science, Industrial Automation, Smart Grids, Manufacturing, Metallurgy, LoRaWAN",
+                    website="https://www.nitjsr.ac.in",
+                    logo_icon="fa-microchip",
+                    capabilities="Smart grid testbench, structural metallurgy testing, LoRaWAN base stations",
+                    areas_of_interest="Industrial Automation, Clean Energy, Energy Storage",
+                    participation_modes="Co-development, Prototyping, Mentoring"
+                ),
+                Organization(
+                    name="Birsa Agricultural University (BAU), Kanke",
+                    type="University",
+                    location="Ranchi, Jharkhand",
+                    description="State agricultural university with Agri-Business Incubation Centre (ABIC) leading tribal farm modernization, lac cultivation, and soil testing.",
+                    expertise_tags="AgriTech, Agriculture, Soil Health, Rural Livelihoods, Crop Science, Horticulture, Agro-forestry, Lac Cultivation",
+                    website="https://www.bauranchi.org",
+                    logo_icon="fa-seedling",
+                    capabilities="Agronomy trial plots, post-harvest chilling labs, tribal crop bio-testing",
+                    areas_of_interest="Agriculture, Rural Livelihoods, Tribal Farm Economics",
+                    participation_modes="Co-development, Pilot implementation, Mentoring"
+                ),
+                Organization(
+                    name="All India Institute of Medical Sciences (AIIMS) Deoghar",
+                    type="University",
+                    location="Deoghar, Jharkhand",
+                    description="Apex medical research and healthcare institution providing specialized digital telemedicine outreach to tribal districts of Santhal Pargana.",
+                    expertise_tags="Healthcare, Telemedicine, Public Health, Rural Epidemiology, Maternal Health, Diagnostic Devices, Medical IoT",
+                    website="https://www.aiimsdeoghar.edu.in",
+                    logo_icon="fa-hospital-user",
+                    capabilities="Telemedicine command center, epidemiological data analytics, medical trial validation",
+                    areas_of_interest="Public Health, Rural Telemedicine, Maternal Health",
+                    participation_modes="Mentoring, Pilot implementation, Co-development"
+                ),
+                Organization(
+                    name="Central University of Jharkhand (CUJ), Brambe",
+                    type="University",
+                    location="Ranchi, Jharkhand",
+                    description="Central university leading tribal linguistic preservation, NEP 2020 experiential learning curricula, and rural governance research.",
+                    expertise_tags="Education, Tribal Languages, Public Administration, Social Innovation, Rural Development, Renewable Energy, EdTech",
+                    website="https://www.cuj.ac.in",
+                    logo_icon="fa-book-reader",
+                    capabilities="Linguistics audio laboratory, tribal pedagogy research center",
+                    areas_of_interest="Vernacular EdTech, Indigenous Knowledge Systems",
+                    participation_modes="Mentoring, Co-development"
+                ),
+                Organization(
+                    name="Tata Steel Foundation & Tata Motors CSR",
+                    type="Industry",
+                    location="Jamshedpur, Jharkhand",
+                    description="Pioneering corporate social responsibility foundation providing industrial testbeds, CSR grant funding, and community scaling.",
+                    expertise_tags="Corporate CSR, Industrial IoT, Clean Water, Environment, Heavy Tech, Tribal Health, Prototyping, Manufacturing",
+                    website="https://www.tatasteel.com",
+                    logo_icon="fa-building",
+                    capabilities="CSR seed grants up to Rs 50 Lakhs, industrial toolrooms, community testbeds",
+                    areas_of_interest="Water, Healthcare, Tribal Livelihoods, Prototyping",
+                    participation_modes="Funding, Mentoring, Prototyping, Pilot implementation"
+                ),
+                Organization(
+                    name="Central Coalfields Limited (CCL) & BCCL (Coal India)",
+                    type="Industry",
+                    location="Ranchi & Dhanbad, Jharkhand",
+                    description="Major public sector energy enterprise investing CSR funds in mine water treatment, rural community healthcare, and solar electrification.",
+                    expertise_tags="Mine Water Reclamation, Water Resources, Clean Energy, Rural Infrastructure, Community CSR, Environmental Restoration",
+                    website="https://www.centralcoalfields.in",
+                    logo_icon="fa-industry",
+                    capabilities="Disused pit water reservoirs, high-voltage test access, large-scale CSR grant pool",
+                    areas_of_interest="Mine Water Purification, Solar Microgrids",
+                    participation_modes="Funding, Pilot implementation, Technology transfer"
+                ),
+                Organization(
+                    name="Steel Authority of India Limited (SAIL Bokaro)",
+                    type="Industry",
+                    location="Bokaro, Jharkhand",
+                    description="One of India's largest steel plants supporting industrial innovation, secondary recycling, waste-to-energy, and technical skill development.",
+                    expertise_tags="Industrial Waste-to-Energy, Automation, Heavy Manufacturing, Vocational Training, Technical CSR, Energy",
+                    website="https://www.sail.co.in",
+                    logo_icon="fa-cogs",
+                    capabilities="Heavy engineering workshops, environmental monitoring labs",
+                    areas_of_interest="Circular Economy, Industrial Waste-to-Energy",
+                    participation_modes="Prototyping, Co-development, Mentoring"
+                ),
+                Organization(
+                    name="Jharkhand Innovation Lab (JIL) / Startup Jharkhand",
+                    type="Startup",
+                    location="Ranchi, Jharkhand",
+                    description="State nodal innovation agency under Dept. of IT & e-Gov providing up to Rs 15 Lakhs prototype grants, testbed access, and incubation mentorship.",
+                    expertise_tags="Early Stage Seed Grants, Prototyping Facilities, MSME Scaling, Incubation, Tech Mentorship, Smart Cities",
+                    website="https://startup.jharkhand.gov.in",
+                    logo_icon="fa-rocket",
+                    capabilities="State incubation seed fund, intellectual property facilitation centre",
+                    areas_of_interest="Smart Governance, Agritech, CleanTech",
+                    participation_modes="Funding, Prototyping, Technology transfer"
+                ),
+                Organization(
+                    name="Chotanagpur Rural Tech MSME Consortium",
+                    type="MSME",
+                    location="Tupudana Industrial Area, Ranchi, Jharkhand",
+                    description="Cluster of 35 light engineering and metal fabrication MSMEs producing localized solar mounting structures, agricultural implements, and water pumps.",
+                    expertise_tags="Precision Metal Fabrication, Cold Storage PUF Panels, Assembly, Rural Mechanization",
+                    website="https://msme.gov.in",
+                    logo_icon="fa-tools",
+                    capabilities="CNC machining, PUF insulated panel fabrication, solar pump skid assembly",
+                    areas_of_interest="Micro-Cold Storage, Water Filtration Skids",
+                    participation_modes="Prototyping, Co-development, Pilot implementation"
+                ),
+                Organization(
+                    name="Atal Incubation Centre - BIT Sindri",
+                    type="Innovation Hub",
+                    location="Dhanbad, Jharkhand",
+                    description="AIM-NITI Aayog backed incubator fostering hardware innovations in mining safety, clean energy, and rural water technologies.",
+                    expertise_tags="Hardware Prototyping, IoT Sensing Testbed, Seed Grants, Startup Mentorship",
+                    website="https://bitsindri.ac.in",
+                    logo_icon="fa-lightbulb",
+                    capabilities="Electronics CAD laboratory, 3D printing farm, rapid hardware prototyping",
+                    areas_of_interest="IoT Telemetry, Clean Energy, Disaster Management",
+                    participation_modes="Mentoring, Co-development, Prototyping"
+                )
+            ]
+            db.session.add_all(orgs)
+            db.session.commit()
+
+        # 5. Ensure Solutions & Projects (at least 2 linked to Controlled Challenges)
+        ch1 = Challenge.query.filter_by(title=controlled_titles[0]).first()
+        ch2 = Challenge.query.filter_by(title=controlled_titles[1]).first()
+
+        if ch1:
+            sol1 = Solution.query.filter_by(challenge_id=ch1.id).first()
+            if not sol1:
+                sol1 = Solution(
+                    challenge_id=ch1.id,
+                    submitted_by_id=admin.id,
+                    title="Solar-Powered Activated Alumina Defluoridation & Real-Time IoT Quality Grid",
+                    problem_addressed=ch1.description,
+                    detailed_solution="Autonomous community water filtration plant utilizing regenerable activated alumina bed coupled with ESP32 sensor telemetry.",
+                    innovation_points="Zero chemical discharge regeneration with solar-backed LoRaWAN continuous telemetry.",
+                    technology_stack="Activated Alumina Filters, ESP32 Microcontrollers, LoRaWAN Gateway, Solar Inverter 2kW, Cloud Dashboard",
+                    expected_impact="Supplies 60,000 L/day safe potable water (fluoride < 0.8 mg/L) to 8,500 villagers across 4 panchayats.",
+                    estimated_cost="Rs 18.50 Lakhs",
+                    implementation_plan="Month 1-2: Water sampling and testbed sizing; Month 3-4: Skid fabrication; Month 5-6: Field testing; Month 7: Panchayat handover.",
+                    scalability="Replicable across 42 coal-pit reservoirs in Dhanbad & Bokaro.",
+                    sustainability="Community Jal Samiti tariff model at 10 paise per 20L can for filter regeneration maintenance.",
+                    team_members_info="Dr. Sunita Soren (Faculty Mentor), Pooja Kumari (IoT Lead), Aakash Verma (Embedded Telemetry)",
+                    status="PROTOTYPE",
+                    endorsements_count=18,
+                    is_selected=True
+                )
+                db.session.add(sol1)
+                db.session.flush()
+
+            proj1 = Project.query.filter_by(challenge_id=ch1.id).first()
+            if not proj1:
+                proj1 = Project(
+                    challenge_id=ch1.id,
+                    solution_id=sol1.id,
+                    title="Smart Water Distribution & Fluoride Filtration Network",
+                    description="Community solar filtration plant treating 60,000 L/day mine discharge, supplying safe potable water to 8,500 villagers across 4 panchayats in Baghmara.",
+                    lead_user_id=admin.id,
+                    university_partner="Indian Institute of Technology (ISM) Dhanbad",
+                    industry_partner="Tata Steel Foundation & Tata Motors CSR",
+                    govt_ngo_partner="Drinking Water and Sanitation Department (DWSD Jharkhand)",
+                    faculty_mentor_name="Dr. Sunita Soren",
+                    faculty_mentor_department="Department of Environmental Science & Engineering, IIT (ISM) Dhanbad",
+                    pilot_location="Baghmara Block, Dhanbad, Jharkhand",
+                    pilot_status="Active Field Trials",
+                    implementation_status="Pilot Scale",
+                    start_date=datetime(2026, 1, 20),
+                    target_date=datetime(2026, 12, 31),
+                    status="Active",
+                    current_stage="Pilot Testing",
+                    progress_pct=65
+                )
+                db.session.add(proj1)
+                db.session.flush()
+
+            if Milestone.query.filter_by(project_id=proj1.id).count() == 0:
+                m1 = Milestone(project_id=proj1.id, name="Baseline Water Quality & Hydrogeological Survey", description="Sample collection and ICP-MS testing across 14 village handpumps", due_date=datetime(2026, 4, 30), status="Completed", completion_pct=100, is_completed=True, order_idx=1)
+                m2 = Milestone(project_id=proj1.id, name="Telemetry Hardware Integration & Pilot Testing", description="Fabrication of activated alumina skid with solar inverter and ESP32 nodes", due_date=datetime(2026, 7, 31), status="In Progress", completion_pct=85, is_completed=False, order_idx=2)
+                m3 = Milestone(project_id=proj1.id, name="NABL Certification & Jal Samiti Handover", description="Official testing report and training local youth for maintenance", due_date=datetime(2026, 11, 30), status="Not Started", completion_pct=15, is_completed=False, order_idx=3)
+                db.session.add_all([m1, m2, m3])
+                db.session.flush()
+
+                t1 = Task(project_id=proj1.id, title="Collect 45 water samples from Baghmara borewells", assigned_name="Pooja Kumari", status="Completed", priority="High")
+                t2 = Task(project_id=proj1.id, title="Deploy LoRaWAN telemetry base station", assigned_name="Aakash Verma", status="In Progress", priority="High")
+                db.session.add_all([t1, t2])
+
+                d1 = ProjectDeliverable(project_id=proj1.id, title="Groundwater Contamination Baseline Report", deliverable_type="Technical Report", status="Approved", notes="Verified by DWSD Jharkhand")
+                d2 = ProjectDeliverable(project_id=proj1.id, title="Autonomous Solar Filtration Skid Schematic", deliverable_type="Hardware Prototype", status="Submitted")
+                db.session.add_all([d1, d2])
+
+                a1 = ProjectApproval(project_id=proj1.id, approval_type="Faculty Mentor Signoff", approver_role="Faculty Mentor", approver_name="Dr. Sunita Soren", status="Approved", remarks="Verified fluorometer readings and pilot parameters.", signed_at=datetime(2026, 3, 5))
+                a2 = ProjectApproval(project_id=proj1.id, approval_type="Government Nodal Clearance", approver_role="Government Nodal Officer", approver_name="DWSD Superintending Engineer", status="Approved", remarks="Sanctioned installation in Baghmara Panchayat Bhawan premises.", signed_at=datetime(2026, 3, 12))
+                db.session.add_all([a1, a2])
+
+                o1 = ProjectTestingOutcome(project_id=proj1.id, test_name="Fluoride Removal Efficiency Run", test_type="Lab Testing", result="Passed", date_conducted=datetime(2026, 3, 10), metrics_observed="Fluoride reduced from 3.2 mg/L to 0.72 mg/L (77.5% reduction); TDS 310 ppm, pH 7.2", certification_body="NABL Certified State Water Testing Lab", notes="Complies with IS 10500 potable water standards.")
+                db.session.add(o1)
+
+                ip1 = ProjectIP(project_id=proj1.id, ip_type="Patent", title="Regenerable Composite Alumina Matrix with Automated Micro-Backwash", application_no="TEMP/E-1/2026/DEL/34120", filing_date=datetime(2026, 2, 14), status="Filed", inventors="Dr. Sunita Soren, Pooja Kumari, Aakash Verma", jurisdiction="Indian Patent Office (IPO)")
+                db.session.add(ip1)
+
+        if ch2:
+            sol2 = Solution.query.filter_by(challenge_id=ch2.id).first()
+            if not sol2:
+                sol2 = Solution(
+                    challenge_id=ch2.id,
+                    submitted_by_id=admin.id,
+                    title="Phase-Change Material Solar Micro-Chiller with Vernacular Haat Marketplace",
+                    problem_addressed=ch2.description,
+                    detailed_solution="Modular 2 MT solar cold room utilizing non-toxic phase-change material thermal storage coupled with Nagpuri/Hindi mandi price aggregation bot.",
+                    innovation_points="PCM eutectic plates maintain 4-8 deg C for 36 hours without grid electricity, linked to WhatsApp price aggregation.",
+                    technology_stack="PCM Thermal Storage, BLDC Compressors, 4kW Bifacial Solar Array, React Native, Python FastAPI",
+                    expected_impact="Cuts post-harvest vegetable rot from 35% to under 6%, raising farmer income by Rs 4,200/month.",
+                    estimated_cost="Rs 24.00 Lakhs",
+                    implementation_plan="Month 1: Thermal chamber design; Month 2-3: Fabrication at BAU workshop; Month 4: Pilot deployment at Bero haat; Month 5: Farmer cooperative onboarding.",
+                    scalability="Deployable across 180 weekly haats in peri-urban Jharkhand.",
+                    sustainability="User fee of Rs 0.50/kg/day covers solar panel upkeep and cooperative operator stipend.",
+                    team_members_info="Dr. Arvind Kumar (Faculty Mentor), Anita Singh (Farmer Lead)",
+                    status="PILOT",
+                    endorsements_count=24,
+                    is_selected=True
+                )
+                db.session.add(sol2)
+                db.session.flush()
+
+            proj2 = Project.query.filter_by(challenge_id=ch2.id).first()
+            if not proj2:
+                proj2 = Project(
+                    challenge_id=ch2.id,
+                    solution_id=sol2.id,
+                    title="Solar-Assisted Farm-to-Haat Cold Chain & Vernacular Market Linkage",
+                    description="Deployment of decentralized 2MT thermal chilling hubs at Bero rural vegetable mandis.",
+                    lead_user_id=admin.id,
+                    university_partner="Birsa Agricultural University (BAU), Kanke",
+                    industry_partner="Jharkhand Innovation Lab (JIL) / Startup Jharkhand",
+                    govt_ngo_partner="Jharkhand State Agri Marketing Board",
+                    faculty_mentor_name="Dr. Arvind Kumar",
+                    faculty_mentor_department="Department of Post-Harvest Technology, Birsa Agricultural University",
+                    pilot_location="Bero Weekly Haat Yard, Ranchi, Jharkhand",
+                    pilot_status="Active Field Trials",
+                    implementation_status="Prototype Scale",
+                    start_date=datetime(2026, 2, 1),
+                    target_date=datetime(2026, 11, 30),
+                    status="Active",
+                    current_stage="Field Pilot",
+                    progress_pct=70
+                )
+                db.session.add(proj2)
+                db.session.flush()
+
+            if Milestone.query.filter_by(project_id=proj2.id).count() == 0:
+                m4 = Milestone(project_id=proj2.id, name="PCM Micro-Chamber Thermal Performance Test", description="Temperature holding test under 42 deg C ambient conditions", due_date=datetime(2026, 5, 15), status="Completed", completion_pct=100, is_completed=True, order_idx=1)
+                m5 = Milestone(project_id=proj2.id, name="Farmer Onboarding & Vernacular App Rollout", description="Register 300 vegetable farmers on mandi price broadcast", due_date=datetime(2026, 8, 30), status="In Progress", completion_pct=60, is_completed=False, order_idx=2)
+                db.session.add_all([m4, m5])
+                db.session.flush()
+
+                t3 = Task(project_id=proj2.id, title="Fabricate insulated PUF chamber panels", assigned_name="Anita Singh", status="Completed", priority="Medium")
+                t4 = Task(project_id=proj2.id, title="Conduct workshop at Bero Kisan Samiti", assigned_name="Dr. Arvind Kumar", status="In Progress", priority="High")
+                db.session.add_all([t3, t4])
+
+                d3 = ProjectDeliverable(project_id=proj2.id, title="Thermal Decay Simulation & Field Report", deliverable_type="Technical Report", status="Approved", notes="Certified by BAU Ranchi")
+                db.session.add(d3)
+
+                a3 = ProjectApproval(project_id=proj2.id, approval_type="Faculty Mentor Signoff", approver_role="Faculty Mentor", approver_name="Dr. Arvind Kumar", status="Approved", remarks="Vegetable shelf-life extended by 11 days with zero chilling injury.", signed_at=datetime(2026, 3, 15))
+                db.session.add(a3)
+
+                o2 = ProjectTestingOutcome(project_id=proj2.id, test_name="Tomato Storage Weight Loss & Firmness Assay", test_type="Field Trial", result="Passed", date_conducted=datetime(2026, 3, 18), metrics_observed="Post-harvest rot dropped from 35% to 5.2% over 14 days under ambient 38 deg C", certification_body="BAU Central Testing Facility", notes="Substantial reduction in spoilage, certified by Horticulture Dept.")
+                db.session.add(o2)
+
+                ip2 = ProjectIP(project_id=proj2.id, ip_type="Design Registration", title="Modular Rapid-Assembly PCM Passive Chilling Pod for Weekly Haats", application_no="DESIGN/39821/2026", filing_date=datetime(2026, 1, 28), status="Published", inventors="Dr. Arvind Kumar, Anita Singh", jurisdiction="Indian Patent Office (IPO)")
+                db.session.add(ip2)
+
+        # 6. Stable Impact Metrics (Jharkhand Focused)
+        if ImpactMetric.query.count() < 4:
+            metrics = [
+                ImpactMetric(
+                    project_title="Coal-Belt Mine Water Purification Grid",
+                    category="Water Resources",
+                    people_impacted=480000,
+                    villages_reached=42,
+                    cost_saved_lakhs=180.0,
+                    time_saved_pct=65,
+                    environmental_gain="120 Million Litres potable water reclaimed from abandoned pits",
+                    employment_created=64,
+                    resources_saved="Fluoride levels brought below 1.0 mg/L in 42 tribal hamlets"
+                ),
+                ImpactMetric(
+                    project_title="Santhal Pargana ASHA Telemedicine Hubs",
+                    category="Healthcare",
+                    people_impacted=74000,
+                    villages_reached=95,
+                    cost_saved_lakhs=210.0,
+                    time_saved_pct=82,
+                    environmental_gain="140,000 km unnecessary rural patient commute averted",
+                    employment_created=58,
+                    resources_saved="Emergency maternal referral time reduced by 3.8 hours"
+                ),
+                ImpactMetric(
+                    project_title="Ranchi Peri-Urban Solar Cold Haat Chain",
+                    category="Agriculture",
+                    people_impacted=125000,
+                    villages_reached=38,
+                    cost_saved_lakhs=95.0,
+                    time_saved_pct=45,
+                    environmental_gain="850 Metric Tons vegetable post-harvest rot prevented",
+                    employment_created=40,
+                    resources_saved="Average farmer household income increased by 42%"
+                ),
+                ImpactMetric(
+                    project_title="Netarhat Plateau Solar DC Mini-Grids",
+                    category="Energy",
+                    people_impacted=26000,
+                    villages_reached=16,
+                    cost_saved_lakhs=84.0,
+                    time_saved_pct=40,
+                    environmental_gain="92,000 Litres hazardous kerosene burn eliminated per year",
+                    employment_created=30,
+                    resources_saved="24x7 solar electricity delivered to 380 tribal homes"
+                )
+            ]
+            db.session.add_all(metrics)
 
         db.session.commit()
         print("Controlled dataset successfully seeded into database.")

@@ -301,6 +301,15 @@
                             <div class="small fw-semibold text-secondary" id="draftSubdomainDisplay">--</div>
                         </div>
 
+                        <!-- Priority / Urgency -->
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label class="text-muted small fw-bold text-uppercase d-block mb-0" style="font-size: 0.68rem;">Priority</label>
+                                <span id="draftPriorityAttr"></span>
+                            </div>
+                            <span class="badge bg-warning text-dark px-2 py-1" id="draftPriorityDisplay">Medium</span>
+                        </div>
+
                         <!-- Affected Population -->
                         <div class="mb-3">
                             <div class="d-flex justify-content-between align-items-center mb-1">
@@ -361,11 +370,14 @@
 
                         <!-- Explicit Confirmation & Submission Actions -->
                         <div class="d-grid gap-2 mt-4 pt-2 border-top">
+                            <button type="button" id="openReviewModalBtn" class="btn btn-warning text-dark fw-bold py-2 shadow-sm d-flex align-items-center justify-content-center">
+                                <i class="fas fa-clipboard-check me-2"></i> Review & Confirm
+                            </button>
                             <button type="button" id="confirmSubmitBtn" class="btn btn-success fw-bold py-2 shadow-sm d-flex align-items-center justify-content-center">
                                 <i class="fas fa-paper-plane me-2"></i> Confirm & Submit Challenge
                             </button>
                             <small class="text-center text-muted" style="font-size: 0.72rem;">
-                                By submitting, this problem will be reviewed and published to Jharkhand innovators.
+                                Review the 7 dimensions before submitting to the national innovation portal.
                             </small>
                         </div>
                     </div>
@@ -441,8 +453,15 @@
 
             <!-- Similar Challenges Section -->
             <div id="successSimilarContainer" class="mb-4">
+                <div class="alert alert-warning border border-warning p-3 rounded-3 mb-3">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <span class="badge bg-warning text-dark px-3 py-2 fs-6"><i class="fas fa-exclamation-triangle me-1"></i> SIMILAR CHALLENGE DETECTED</span>
+                        <strong class="text-dark">Duplicate & Related Problem Detection</strong>
+                    </div>
+                    <p class="small text-secondary mb-0">Our AI has identified existing registered challenges with overlapping scope. Subject to human and administrator review before merging or grouping.</p>
+                </div>
                 <h6 class="fw-bold text-dark mb-2">
-                    <i class="fas fa-link text-primary me-2"></i> Similar Challenges in Jharkhand (Preventing Duplicate R&D)
+                    <i class="fas fa-link text-primary me-2"></i> Detected Overlapping Challenges in Jharkhand:
                 </h6>
                 <div id="successSimilarList" class="row g-2"></div>
             </div>
@@ -512,9 +531,20 @@
                         <textarea id="modalSummaryInput" class="form-control" rows="4" placeholder="Detailed description of what is happening..."></textarea>
                     </div>
 
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold text-dark">Timeline / Recurrence</label>
-                        <input type="text" id="modalTimingInput" class="form-control" placeholder="e.g. About two weeks ago, continuous">
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-dark">Timeline / Recurrence</label>
+                            <input type="text" id="modalTimingInput" class="form-control" placeholder="e.g. About two weeks ago, continuous">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-dark">Priority / Urgency Level</label>
+                            <select id="modalPrioritySelect" class="form-select">
+                                <option value="Critical">Critical (Immediate Hazard / Life Safety)</option>
+                                <option value="High">High (Severe Disruption / Broad Risk)</option>
+                                <option value="Medium" selected>Medium (Moderate Disruption / Ongoing)</option>
+                                <option value="Low">Low (Localized / Routine Upgrade)</option>
+                            </select>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -522,6 +552,89 @@
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
                 <button type="button" id="saveDraftModalBtn" class="btn btn-primary px-4">
                     <i class="fas fa-save me-1"></i> Save Changes
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 4B. Modal: Review & Confirm Structured Challenge -->
+<div class="modal fade" id="reviewConfirmModal" tabindex="-1" aria-labelledby="reviewConfirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="modal-header text-white" style="background: linear-gradient(135deg, #0b2545 0%, #134074 100%);">
+                <div>
+                    <span class="badge bg-warning text-dark text-uppercase px-2 py-1 small fw-bold mb-1">
+                        <i class="fas fa-clipboard-check me-1"></i> Review & Confirm
+                    </span>
+                    <h5 class="modal-title fw-bold text-white mb-0" id="reviewConfirmModalLabel">Review Your Structured Challenge</h5>
+                    <small class="text-white-50">Please review all 7 dimensions of your societal challenge before submitting to the national portal.</small>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4 bg-light">
+                <div class="card border-0 shadow-sm rounded-3 mb-3">
+                    <div class="card-body p-4">
+                        <div class="row g-3">
+                            <!-- 1. PROBLEM -->
+                            <div class="col-12 border-bottom pb-3">
+                                <div class="text-muted small fw-bold text-uppercase mb-1" style="font-size: 0.72rem; letter-spacing: 0.5px;">1. Problem</div>
+                                <h5 class="fw-bold text-dark mb-0" id="modalReviewTitle">--</h5>
+                            </div>
+
+                            <!-- 2. CATEGORY -->
+                            <div class="col-md-6 border-bottom pb-3">
+                                <div class="text-muted small fw-bold text-uppercase mb-1" style="font-size: 0.72rem; letter-spacing: 0.5px;">2. Category</div>
+                                <div class="fw-bold text-primary" id="modalReviewCategory">--</div>
+                                <small class="text-secondary" id="modalReviewSubdomain"></small>
+                            </div>
+
+                            <!-- 3. LOCATION -->
+                            <div class="col-md-6 border-bottom pb-3">
+                                <div class="text-muted small fw-bold text-uppercase mb-1" style="font-size: 0.72rem; letter-spacing: 0.5px;">3. Location</div>
+                                <div class="fw-semibold text-dark"><i class="fas fa-map-marker-alt text-danger me-1"></i> <span id="modalReviewLocation">--</span></div>
+                            </div>
+
+                            <!-- 4. AFFECTED COMMUNITY -->
+                            <div class="col-md-6 border-bottom pb-3">
+                                <div class="text-muted small fw-bold text-uppercase mb-1" style="font-size: 0.72rem; letter-spacing: 0.5px;">4. Affected Community</div>
+                                <div class="fw-semibold text-dark"><i class="fas fa-users text-primary me-1"></i> <span id="modalReviewPopulation">--</span></div>
+                            </div>
+
+                            <!-- 5. PRIORITY -->
+                            <div class="col-md-6 border-bottom pb-3">
+                                <div class="text-muted small fw-bold text-uppercase mb-1" style="font-size: 0.72rem; letter-spacing: 0.5px;">5. Priority</div>
+                                <div><span class="badge bg-warning text-dark px-3 py-1 fs-6" id="modalReviewPriority">Medium</span></div>
+                            </div>
+
+                            <!-- 6. DESCRIPTION -->
+                            <div class="col-12 border-bottom pb-3">
+                                <div class="text-muted small fw-bold text-uppercase mb-1" style="font-size: 0.72rem; letter-spacing: 0.5px;">6. Description</div>
+                                <div class="p-3 bg-white rounded border small text-dark" id="modalReviewDescription" style="white-space: pre-wrap; line-height: 1.5;">--</div>
+                            </div>
+
+                            <!-- 7. EVIDENCE -->
+                            <div class="col-12">
+                                <div class="text-muted small fw-bold text-uppercase mb-1" style="font-size: 0.72rem; letter-spacing: 0.5px;">7. Evidence</div>
+                                <div class="small fw-semibold text-dark" id="modalReviewEvidence">--</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert alert-info border border-info-subtle small mb-0 py-2 d-flex align-items-center gap-2">
+                    <i class="fas fa-shield-alt text-info fs-5"></i>
+                    <div>
+                        <strong>Verification Guarantee:</strong> You retain complete ownership. The challenge will be triaged and routed toward accredited universities and domain specialists for solution development.
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-white border-top">
+                <button type="button" class="btn btn-outline-secondary rounded-pill px-3" data-bs-dismiss="modal" id="modalReviewEditBtn">
+                    <i class="fas fa-edit me-1"></i> Edit Details
+                </button>
+                <button type="button" class="btn btn-success fw-bold rounded-pill px-4 shadow-sm" id="modalReviewConfirmSubmitBtn">
+                    <i class="fas fa-check-circle me-1"></i> Confirm & Submit Challenge
                 </button>
             </div>
         </div>
@@ -608,6 +721,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
     const editDraftModal = new bootstrap.Modal(document.getElementById("editDraftModal"));
     const locationModal = new bootstrap.Modal(document.getElementById("locationModal"));
+    const reviewConfirmModal = new bootstrap.Modal(document.getElementById("reviewConfirmModal"));
 
     // Scroll chat to bottom
     function scrollToBottom() {
@@ -744,6 +858,16 @@ document.addEventListener("DOMContentLoaded", function() {
         if (locAttrEl) locAttrEl.innerHTML = getAttributionBadge(attrs.location || (draft.location ? "Citizen provided" : "Needs verification"));
 
         draftSubdomainDisplay.innerText = draft.subdomain || "Civic Need";
+
+        // Priority
+        const prio = draft.priority || "Medium";
+        const draftPriorityDisplay = document.getElementById("draftPriorityDisplay");
+        if (draftPriorityDisplay) {
+            draftPriorityDisplay.innerText = prio;
+            draftPriorityDisplay.className = `badge bg-${prio === 'Critical' ? 'danger' : (prio === 'High' ? 'warning text-dark' : 'info text-dark')} px-2 py-1`;
+        }
+        const draftPriorityAttr = document.getElementById("draftPriorityAttr");
+        if (draftPriorityAttr) draftPriorityAttr.innerHTML = getAttributionBadge(attrs.priority || "AI prioritized");
 
         draftPopulationDisplay.innerText = draft.affected_population || "Community Residents (Pending verification)";
         const popAttrEl = document.getElementById("draftPopulationAttr");
@@ -1036,6 +1160,7 @@ document.addEventListener("DOMContentLoaded", function() {
         document.getElementById("modalDistrictSelect").value = currentDraft.district || 'Ranchi';
         document.getElementById("modalLocationInput").value = currentDraft.location || '';
         document.getElementById("modalPopulationInput").value = currentDraft.affected_population || '';
+        document.getElementById("modalPrioritySelect").value = currentDraft.priority || 'Medium';
         document.getElementById("modalSummaryInput").value = currentDraft.problem_summary || '';
         document.getElementById("modalTimingInput").value = currentDraft.timing || '';
         editDraftModal.show();
@@ -1049,6 +1174,7 @@ document.addEventListener("DOMContentLoaded", function() {
             district: document.getElementById("modalDistrictSelect").value,
             location: document.getElementById("modalLocationInput").value.trim(),
             affected_population: document.getElementById("modalPopulationInput").value.trim(),
+            priority: document.getElementById("modalPrioritySelect").value,
             problem_summary: document.getElementById("modalSummaryInput").value.trim(),
             timing: document.getElementById("modalTimingInput").value.trim()
         };
@@ -1159,14 +1285,60 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     });
 
+    // Populate and show Review & Confirm Modal (7 Dimensions)
+    function populateReviewModal() {
+        if (!currentDraft) return;
+        document.getElementById("modalReviewTitle").innerText = currentDraft.title || "Community Societal Challenge";
+        document.getElementById("modalReviewCategory").innerText = currentDraft.domain || "Thematic Domain";
+        document.getElementById("modalReviewSubdomain").innerText = currentDraft.subdomain || "";
+        document.getElementById("modalReviewLocation").innerText = currentDraft.location || "Jharkhand";
+        document.getElementById("modalReviewPopulation").innerText = currentDraft.affected_population || "Community Residents";
+        
+        const prio = currentDraft.priority || "Medium";
+        const modalReviewPriority = document.getElementById("modalReviewPriority");
+        modalReviewPriority.innerText = prio;
+        modalReviewPriority.className = `badge bg-${prio === 'Critical' ? 'danger' : (prio === 'High' ? 'warning text-dark' : 'info text-dark')} px-3 py-1 fs-6`;
+
+        document.getElementById("modalReviewDescription").innerText = currentDraft.problem_summary || "No description provided.";
+        
+        const evText = currentDraft.evidence_summary || (uploadedFiles.length > 0 ? (uploadedFiles.length + ' file(s) attached') : 'Field verification requested (no physical files attached)');
+        document.getElementById("modalReviewEvidence").innerText = evText;
+    }
+
+    const openReviewModalBtn = document.getElementById("openReviewModalBtn");
+    if (openReviewModalBtn) {
+        openReviewModalBtn.addEventListener("click", function() {
+            if (!currentDraft || !currentDraft.title) {
+                alert("Please provide the basic details of the problem before reviewing.");
+                return;
+            }
+            populateReviewModal();
+            reviewConfirmModal.show();
+        });
+    }
+
+    const modalReviewEditBtn = document.getElementById("modalReviewEditBtn");
+    if (modalReviewEditBtn) {
+        modalReviewEditBtn.addEventListener("click", function() {
+            reviewConfirmModal.hide();
+            document.getElementById("editDraftModalBtn").click();
+        });
+    }
+
+    const modalReviewConfirmSubmitBtn = document.getElementById("modalReviewConfirmSubmitBtn");
+    if (modalReviewConfirmSubmitBtn) {
+        modalReviewConfirmSubmitBtn.addEventListener("click", function() {
+            reviewConfirmModal.hide();
+            executeChallengeSubmission();
+        });
+    }
+
     // Explicit Confirmation & Submission
-    confirmSubmitBtn.addEventListener("click", async function() {
+    async function executeChallengeSubmission() {
         if (!currentDraft || !currentDraft.title) {
             alert("Please provide the basic details of the problem before submitting.");
             return;
         }
-
-        if (!confirm("Are you ready to submit this challenge to the Samadhan Setu network?")) return;
 
         confirmSubmitBtn.disabled = true;
         confirmSubmitBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span> Submitting to SamadhanSetu...`;
@@ -1227,6 +1399,11 @@ document.addEventListener("DOMContentLoaded", function() {
             confirmSubmitBtn.disabled = false;
             confirmSubmitBtn.innerHTML = `<i class="fas fa-paper-plane me-2"></i> Confirm & Submit Challenge`;
         }
+    }
+
+    confirmSubmitBtn.addEventListener("click", function() {
+        if (!confirm("Are you ready to submit this challenge to the Samadhan Setu network?")) return;
+        executeChallengeSubmission();
     });
 
     document.getElementById("submitAnotherBtn").addEventListener("click", function() {

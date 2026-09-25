@@ -51,7 +51,7 @@
                     <i class="fas fa-hands-helping text-primary"></i>
                 </span>
                 <span>SamadhanSetu</span>
-                <span class="brand-badge d-none d-sm-inline">JHARKHAND • NEP 2020</span>
+                <span class="brand-badge d-none d-xxl-inline">JHARKHAND • NEP 2020</span>
             </a>
 
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent" aria-controls="navbarContent" aria-expanded="false" aria-label="Toggle navigation">
@@ -84,13 +84,18 @@
                     {% endif %}
                     <!-- SIH Innovation Hub Dropdown -->
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle {% if request.endpoint in ['smart_team', 'team_matching', 'idea_impact', 'industry_collaboration'] %}active{% endif %}" href="#" id="innovationHubDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <a class="nav-link dropdown-toggle {% if request.endpoint in ['smart_team', 'team_matching', 'idea_impact', 'industry_collaboration', 'universities', 'analytics', 'organizations', 'impact'] %}active{% endif %}" href="#" id="innovationHubDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="fas fa-rocket text-warning me-1"></i> Innovation Hub <span class="badge bg-warning text-dark ms-1" style="font-size: 0.65rem; padding: 2px 5px;">SIH</span>
                         </a>
                         <ul class="dropdown-menu shadow border-0" aria-labelledby="innovationHubDropdown">
-                            <li><a class="dropdown-item py-2 {% if request.endpoint in ['smart_team', 'team_matching'] %}active{% endif %}" href="{{ url_for('smart_team') }}"><i class="fas fa-users-cog text-primary me-2"></i> Smart Team Matching</a></li>
-                            <li><a class="dropdown-item py-2 {% if request.endpoint == 'idea_impact' %}active{% endif %}" href="{{ url_for('idea_impact') }}"><i class="fas fa-route text-success me-2"></i> Idea &rarr; Impact Tracker</a></li>
+                            <li><a class="dropdown-item py-2 {% if request.endpoint == 'universities' %}active{% endif %}" href="{{ url_for('universities') }}"><i class="fas fa-graduation-cap text-primary me-2"></i> University Collaboration Hub</a></li>
                             <li><a class="dropdown-item py-2 {% if request.endpoint == 'industry_collaboration' %}active{% endif %}" href="{{ url_for('industry_collaboration') }}"><i class="fas fa-handshake text-warning me-2"></i> Industry Collaboration Hub</a></li>
+                            <li><a class="dropdown-item py-2 {% if request.endpoint in ['smart_team', 'team_matching'] %}active{% endif %}" href="{{ url_for('smart_team') }}"><i class="fas fa-users-cog text-info me-2"></i> Smart Team Matching</a></li>
+                            <li><a class="dropdown-item py-2 {% if request.endpoint == 'idea_impact' %}active{% endif %}" href="{{ url_for('idea_impact') }}"><i class="fas fa-route text-success me-2"></i> Idea &rarr; Impact Tracker</a></li>
+                            <li><a class="dropdown-item py-2 {% if request.endpoint == 'analytics' %}active{% endif %}" href="{{ url_for('analytics') }}"><i class="fas fa-chart-line text-danger me-2"></i> Visual Analytics & IP</a></li>
+                            <li><hr class="dropdown-divider my-1"></li>
+                            <li><a class="dropdown-item py-2 {% if request.endpoint == 'organizations' %}active{% endif %}" href="{{ url_for('organizations') }}"><i class="fas fa-building text-secondary me-2"></i> Partner Organizations</a></li>
+                            <li><a class="dropdown-item py-2 {% if request.endpoint == 'impact' %}active{% endif %}" href="{{ url_for('impact') }}"><i class="fas fa-receipt text-success me-2"></i> Societal Impact Stories</a></li>
                         </ul>
                     </li>
                     <!-- Samadhan AI Conversational Intake -->
@@ -99,23 +104,11 @@
                             <i class="fas fa-brain text-info me-1"></i> Samadhan AI
                         </a>
                     </li>
-                    {% if request.endpoint != 'dashboard' %}
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.endpoint == 'organizations' %}active{% endif %}" href="{{ url_for('organizations') }}">
-                            <i class="fas fa-university me-1"></i> Organizations
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.endpoint == 'impact' %}active{% endif %}" href="{{ url_for('impact') }}">
-                            <i class="fas fa-chart-line me-1"></i> Impact
-                        </a>
-                    </li>
-                    {% endif %}
                 </ul>
 
-                <div class="d-flex align-items-center gap-2 mt-3 mt-xl-0 flex-wrap">
+                <div class="d-flex align-items-center gap-2 mt-2 mt-xl-0 flex-shrink-0 ms-auto text-nowrap">
                     {% if not is_admin %}
-                    <a href="{{ url_for('submit_challenge') }}" class="btn btn-accent btn-sm d-flex align-items-center text-nowrap">
+                    <a href="{{ url_for('submit_challenge') }}" class="btn btn-accent btn-sm d-flex align-items-center text-nowrap shadow-sm">
                         <i class="fas fa-plus-circle me-1"></i> Submit Challenge
                     </a>
                     {% endif %}
@@ -190,10 +183,10 @@
                             </ul>
                         </div>
                     {% else %}
-                        <a href="{{ url_for('login') }}" class="btn btn-light btn-sm px-3 fw-bold text-primary">
+                        <a href="{{ url_for('login') }}" class="btn btn-light btn-sm px-3 fw-bold text-primary shadow-sm text-nowrap {% if request.endpoint == 'login' %}active border-primary{% endif %}">
                             <i class="fas fa-sign-in-alt me-1"></i> Login
                         </a>
-                        <a href="{{ url_for('register') }}" class="btn btn-outline-light btn-sm px-3 fw-bold">
+                        <a href="{{ url_for('register') }}" class="btn btn-warning btn-sm px-3 fw-bold text-dark shadow-sm text-nowrap {% if request.endpoint == 'register' %}active border-dark{% endif %}">
                             <i class="fas fa-user-plus me-1"></i> Register
                         </a>
                     {% endif %}

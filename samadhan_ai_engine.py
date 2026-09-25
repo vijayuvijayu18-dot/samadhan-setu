@@ -1007,6 +1007,20 @@ class SamadhanAiEngine:
             sub = draft.get("subdomain") or draft.get("domain") or "Community Challenge"
             draft["title"] = f"{sub} in {loc}"
 
+        # Automatic Priority Assessment if not specified
+        if not draft.get("priority"):
+            text_eval = f"{draft.get('title', '')} {draft.get('problem_summary', '')}".lower()
+            if any(w in text_eval for w in ["fatal", "death", "poison", "toxic", "epidemic", "hazard", "severe", "arsenic", "fluoride", "emergency", "collapse", "outbreak"]):
+                draft["priority"] = "Critical"
+            elif any(w in text_eval for w in ["urgent", "danger", "contamination", "disease", "hospital", "flood", "drinking water", "destruction"]):
+                draft["priority"] = "High"
+            else:
+                draft["priority"] = "Medium"
+        if "source_attribution" not in draft:
+            draft["source_attribution"] = {}
+        if "priority" not in draft["source_attribution"]:
+            draft["source_attribution"]["priority"] = "AI prioritized"
+
         # Standard Ethical Verification Items
         needs_verif = []
         if not draft.get("location") or "Requires field verification" in draft.get("location", ""):

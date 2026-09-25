@@ -180,6 +180,7 @@
                                         <th>ID</th>
                                         <th>Title & Submitter</th>
                                         <th>Category</th>
+                                        <th>Evidence</th>
                                         <th>Location</th>
                                         <th>Date</th>
                                         <th>Priority</th>
@@ -200,6 +201,24 @@
                                             <div class="text-muted small">Submitted by: {{ ch.creator.full_name if ch.creator else 'Grassroots Citizen' }} ({{ ch.creator.user_type if ch.creator else ch.submitter_type }})</div>
                                         </td>
                                         <td><span class="badge-category">{{ ch.category }}</span></td>
+                                        <td>
+                                            {% if ch.media_url or ch.document_url %}
+                                                <div class="d-flex flex-column gap-1">
+                                                    {% if ch.media_url %}
+                                                    <a href="{{ ch.media_url }}" target="_blank" class="badge bg-primary text-white text-decoration-none">
+                                                        <i class="fas fa-camera me-1"></i> Media
+                                                    </a>
+                                                    {% endif %}
+                                                    {% if ch.document_url %}
+                                                    <a href="{{ ch.document_url }}" target="_blank" class="badge bg-info text-dark text-decoration-none">
+                                                        <i class="fas fa-file-alt me-1"></i> Doc
+                                                    </a>
+                                                    {% endif %}
+                                                </div>
+                                            {% else %}
+                                                <span class="text-muted small">None</span>
+                                            {% endif %}
+                                        </td>
                                         <td class="small text-secondary">{{ ch.location }}</td>
                                         <td class="small text-muted">{{ ch.created_date.strftime('%d %b %Y') }}</td>
                                         <td>
@@ -209,12 +228,15 @@
                                             <span class="badge bg-warning text-dark">{{ ch.status }}</span>
                                         </td>
                                         <td>
-                                            <div class="d-flex gap-1">
+                                            <div class="d-flex gap-1 flex-wrap">
                                                 <form method="POST" action="{{ url_for('approve_challenge', challenge_id=ch.id) }}">
                                                     <button type="submit" class="btn btn-sm btn-success fw-bold" title="Approve Challenge">
                                                         <i class="fas fa-check me-1"></i> Approve
                                                     </button>
                                                 </form>
+                                                <a href="{{ url_for('edit_challenge', challenge_id=ch.id) }}" class="btn btn-sm btn-outline-primary" title="Manage, Edit Category, Priority, Assign, or Status">
+                                                    <i class="fas fa-sliders-h me-1"></i> Manage
+                                                </a>
                                                 <form method="POST" action="{{ url_for('request_info_challenge', challenge_id=ch.id) }}">
                                                     <button type="submit" class="btn btn-sm btn-outline-info" title="Request More Info">
                                                         <i class="fas fa-question-circle"></i>
@@ -349,9 +371,14 @@
                                     <td><span class="badge badge-severity-{{ ch.severity.lower() }}">{{ ch.severity }}</span></td>
                                     <td><span class="badge bg-primary rounded-pill">{{ ch.solutions|length }}</span></td>
                                     <td>
-                                        <a href="{{ url_for('challenge_detail', challenge_id=ch.id) }}" class="btn btn-sm btn-outline-primary">
-                                            View
-                                        </a>
+                                        <div class="d-flex gap-1">
+                                            <a href="{{ url_for('challenge_detail', challenge_id=ch.id) }}" class="btn btn-sm btn-outline-primary" title="View Challenge & Problem DNA">
+                                                View
+                                            </a>
+                                            <a href="{{ url_for('edit_challenge', challenge_id=ch.id) }}" class="btn btn-sm btn-outline-secondary" title="Edit Category, Priority, Assign, or Status">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                        </div>
                                     </td>
                                 </tr>
                                 {% endfor %}

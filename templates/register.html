@@ -3,7 +3,7 @@
 {% block title %}Register - SamadhanSetu National Portal{% endblock %}
 
 {% block content %}
-<div class="auth-split-wrapper py-5">
+<div class="auth-split-wrapper py-3">
     <div class="container">
         <div class="auth-card mx-auto" style="max-width: 980px;">
             <div class="row g-0">
@@ -44,10 +44,20 @@
                 </div>
 
                 <!-- Registration Form -->
-                <div class="col-lg-8 auth-right-form p-4 p-md-5">
-                    <div class="mb-4">
-                        <h3 class="fw-extrabold text-dark mb-1">Create Your Account</h3>
-                        <p class="text-muted small">Register to participate in societal problem solving, propose solutions, or mentor student squads.</p>
+                <div class="col-lg-8 auth-right-form p-4">
+                    <!-- Clean Toggle Pill Switcher -->
+                    <div class="d-flex p-1 bg-light rounded-pill mb-3 border" style="max-width: 280px;">
+                        <a href="{{ url_for('login') }}" class="btn btn-sm btn-light rounded-pill flex-fill fw-semibold py-1 text-muted text-center">
+                            <i class="fas fa-sign-in-alt me-1"></i> Sign In
+                        </a>
+                        <a href="{{ url_for('register') }}" class="btn btn-sm btn-primary rounded-pill flex-fill fw-bold py-1 shadow-sm text-center">
+                            <i class="fas fa-user-plus me-1"></i> Register
+                        </a>
+                    </div>
+
+                    <div class="mb-3">
+                        <h4 class="fw-extrabold text-dark mb-1">Create Your Account</h4>
+                        <p class="text-muted small mb-0">Register to participate in societal problem solving, propose solutions, or mentor student squads.</p>
                     </div>
 
                     <form method="POST" action="{{ url_for('register') }}">
