@@ -92,7 +92,11 @@
     <!-- Challenges Grid -->
     <div class="row g-4" id="challengesContainer">
         {% if challenges %}
+            {% set seen_c_keys = [] %}
             {% for c in challenges %}
+            {% set c_key = (c.id|string) ~ '_' ~ (c.title|trim|lower) %}
+            {% if c_key not in seen_c_keys %}
+            {% set _ = seen_c_keys.append(c_key) %}
             <div class="col-md-6 col-lg-4 challenge-item-card">
                 <div class="challenge-card h-100">
                     <div class="d-flex justify-content-between align-items-center mb-2">
@@ -186,6 +190,7 @@
                     </div>
                 </div>
             </div>
+            {% endif %}
             {% endfor %}
         {% else %}
             <div class="col-12 text-center py-5">

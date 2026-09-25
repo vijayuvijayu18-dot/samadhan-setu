@@ -232,7 +232,11 @@
                 <div class="card-body p-4">
                     {% if impact_metrics %}
                     <div class="row g-3">
+                        {% set seen_metric_keys = [] %}
                         {% for m in impact_metrics %}
+                        {% set m_key = (m.project_id|string) ~ '_' ~ (m.metric_name|trim|lower) %}
+                        {% if m_key not in seen_metric_keys %}
+                        {% set _ = seen_metric_keys.append(m_key) %}
                         <div class="col-12">
                             <div class="p-3 border rounded bg-light hover-shadow transition">
                                 <div class="d-flex justify-content-between align-items-start mb-2">
@@ -271,6 +275,7 @@
                                 </div>
                             </div>
                         </div>
+                        {% endif %}
                         {% endfor %}
                     </div>
                     {% else %}

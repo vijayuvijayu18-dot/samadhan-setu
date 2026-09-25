@@ -576,6 +576,9 @@ class Milestone(db.Model):
     due_date = db.Column(db.DateTime, nullable=True)
     is_completed = db.Column(db.Boolean, default=False)
     order_idx = db.Column(db.Integer, default=1)
+    status = db.Column(db.String(50), default='In Progress') # 'Not Started', 'In Progress', 'Completed', 'Delayed'
+    completion_pct = db.Column(db.Integer, default=0) # 0 to 100
+    responsible_team = db.Column(db.String(150), default='Project Core Team')
 
 
 class Task(db.Model):
@@ -640,6 +643,19 @@ class TeamInvitation(db.Model):
     status = db.Column(db.String(30), default='Pending') # Pending, Accepted, Declined
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class ChallengeComment(db.Model):
+    __tablename__ = 'challenge_comments'
+    id = db.Column(db.Integer, primary_key=True)
+    challenge_id = db.Column(db.Integer, db.ForeignKey('challenges.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    comment_text = db.Column(db.Text, nullable=False)
+    user_role = db.Column(db.String(100), default='Innovator')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    user = db.relationship('User', foreign_keys=[user_id], lazy=True)
+    challenge = db.relationship('Challenge', backref=db.backref('comments', lazy=True, cascade='all, delete-orphan', order_by='ChallengeComment.created_at.desc()'))
 
 
 class ProjectStageUpdate(db.Model):
@@ -799,6 +815,41 @@ class IndustrySupportResponse(db.Model):
         return self.industry_user
 
 
+def ensure_database_schema_compat():
+    """Auto-migrates SQLite tables non-destructively for SIH features and cleans up redundant duplicates."""
+    try:
+        engine = db.engine
+        with engine.connect() as conn:
+            # Check milestones columns
+            result = conn.exec_driver_sql("PRAGMA table_info(milestones)").fetchall()
+            cols = [r[1] for r in result] if result else []
+            if 'status' not in cols:
+                conn.exec_driver_sql("ALTER TABLE milestones ADD COLUMN status VARCHAR(50) DEFAULT 'In Progress'")
+            if 'completion_pct' not in cols:
+                conn.exec_driver_sql("ALTER TABLE milestones ADD COLUMN completion_pct INTEGER DEFAULT 0")
+            if 'responsible_team' not in cols:
+                conn.exec_driver_sql("ALTER TABLE milestones ADD COLUMN responsible_team VARCHAR(150) DEFAULT 'Project Core Team'")
+
+            # Clean up any legacy duplicate project impact metric rows, preserving the latest record
+            pim_info = conn.exec_driver_sql("PRAGMA table_info(project_impact_metrics)").fetchall()
+            if pim_info:
+                conn.exec_driver_sql("""
+                    DELETE FROM project_impact_metrics
+                    WHERE id NOT IN (
+                        SELECT MAX(id)
+                        FROM project_impact_metrics
+                        GROUP BY project_id, LOWER(TRIM(metric_name))
+                    )
+                """)
+            conn.commit()
+        db.create_all()
+    except Exception as e:
+        app.logger.warning(f"Schema compatibility check: {e}")
+
+with app.app_context():
+    ensure_database_schema_compat()
+
+
 # ---------------------------------------------------------
 # AUTHENTICATION & ACCESS DECORATORS
 # ---------------------------------------------------------
@@ -831,6 +882,81 @@ def get_current_user():
     if 'user_id' in session:
         return User.query.get(session['user_id'])
     return None
+
+
+def deduplicate_impact_metrics(metrics_list):
+    """
+    Deduplicates a collection of ProjectImpactMetric objects.
+    Preserves the newest/latest record (by recorded_at or id) for each (project_id, normalized_metric_name).
+    Ensures that identical indicators are displayed only once in a clean, professional grid.
+    """
+    if not metrics_list:
+        return []
+    try:
+        sorted_list = sorted(
+            metrics_list,
+            key=lambda m: (getattr(m, 'recorded_at', None) or datetime.min, getattr(m, 'id', 0) or 0),
+            reverse=True
+        )
+    except Exception:
+        sorted_list = list(metrics_list)
+
+    seen = set()
+    unique_metrics = []
+    for m in sorted_list:
+        proj_id = getattr(m, 'project_id', None)
+        raw_name = getattr(m, 'metric_name', '') or ''
+        norm_name = raw_name.strip().lower()
+        key = (proj_id, norm_name)
+        if key not in seen:
+            seen.add(key)
+            unique_metrics.append(m)
+    return unique_metrics
+
+
+def deduplicate_challenges(challenges_list):
+    """
+    Deduplicates a collection of Challenge objects by ID and normalized title.
+    Preserves original list ordering while ensuring each challenge appears only once.
+    """
+    if not challenges_list:
+        return []
+    seen_ids = set()
+    seen_titles = set()
+    unique_challenges = []
+    for c in challenges_list:
+        cid = getattr(c, 'id', None)
+        raw_title = getattr(c, 'title', '') or ''
+        norm_title = raw_title.strip().lower()
+        if cid is not None and cid in seen_ids:
+            continue
+        if norm_title and norm_title in seen_titles:
+            continue
+        if cid is not None:
+            seen_ids.add(cid)
+        if norm_title:
+            seen_titles.add(norm_title)
+        unique_challenges.append(c)
+    return unique_challenges
+
+
+def deduplicate_projects(projects_list):
+    """
+    Deduplicates a collection of Project objects by ID, preserving ordering.
+    """
+    if not projects_list:
+        return []
+    seen_ids = set()
+    unique_projects = []
+    for p in projects_list:
+        pid = getattr(p, 'id', None)
+        if pid is not None and pid in seen_ids:
+            continue
+        if pid is not None:
+            seen_ids.add(pid)
+        unique_projects.append(p)
+    return unique_projects
+
 
 
 @app.context_processor
@@ -1124,24 +1250,166 @@ def classify_thematic_domain(title, description=""):
     sorted_domains = sorted(scores.items(), key=lambda x: x[1], reverse=True)
     best_domain, best_score = sorted_domains[0]
 
-    if best_score == 0:
-        return {
-            "domain": "Rural Livelihoods",
-            "confidence": 72,
-            "secondary_domain": "Public Administration",
-            "matched_keywords": ["community", "regional"]
-        }
+    domain_skills = {
+        "Water Resources": "Water Quality Testing, Environmental Engineering, IoT Telemetry, Membrane Filtration, Hydrogeology",
+        "Agriculture": "AgriTech Systems, Phase Change Materials (PCM), Cold Chain Logistics, Embedded IoT, Solar Thermodynamics",
+        "Healthcare": "Medical Device IoT, Telemedicine Protocols, Mobile Health (mHealth), Embedded Diagnostics, Clinical Validation",
+        "Rural Livelihoods": "Value Chain Automation, Forest Bio-Products Processing, Micro-Enterprise Design, Digital Haat Logistics",
+        "Environment": "Spectrophotometry, Real-Time Effluent Telemetry, Chemical Remediation, Industrial Ecology, GIS Mapping",
+        "Energy": "Solar Photovoltaics, DC Microgrids, Battery Management Systems (BMS), Smart Metering, Firmware Engineering",
+        "Education": "EdTech Systems, Multilingual Pedagogical UX, Offline Tablet Syncing, Interactive STEM Prototyping",
+        "Urban Development": "Computer Vision, Ultrasonic IoT Sensing, Municipal Solid Waste Routing, Hydraulic Flow Modeling",
+        "Accessibility": "Assistive Embedded Hardware, Ultrasonic Haptic Guidance, Screen Readers, Universal Design Ergonomics",
+        "Public Administration": "GovTech Architecture, Blockchain Audit Trails, Vernacular USSD/IVR, Public Service Telemetry"
+    }
 
-    confidence = min(98, 70 + (best_score * 4))
-    secondary_domain = sorted_domains[1][0] if len(sorted_domains) > 1 else "Education"
-    matched_kws = [kw for kw in domain_keywords[best_domain] if kw in text][:5]
+    if best_score == 0:
+        best_domain = "Rural Livelihoods"
+        confidence = 72
+        secondary_domain = "Public Administration"
+        matched_kws = ["community", "regional"]
+    else:
+        confidence = min(98, 70 + (best_score * 4))
+        secondary_domain = sorted_domains[1][0] if len(sorted_domains) > 1 else "Education"
+        matched_kws = [kw for kw in domain_keywords[best_domain] if kw in text][:5]
+
+    clean_title = title.strip()
+    if clean_title:
+        if description and len(description.strip()) > 20:
+            summary = f"{clean_title}. Ground issue highlights: {description.strip()[:140]}..."
+        else:
+            summary = f"{clean_title} identified within {best_domain}, requiring technical evaluation and collaborative prototyping."
+    else:
+        summary = f"Citizen-reported issue classified under {best_domain} requiring field verification."
+
+    critical_triggers = ["death", "poison", "fatal", "toxic", "arsenic", "collapse", "outbreak", "epidemic", "urgent", "crisis", "disaster"]
+    high_triggers = ["fluoride", "drinking water", "hospital", "patient", "maternal", "infant", "child", "malnutrition", "contamination", "flood", "effluent", "hazard", "severe"]
+    medium_triggers = ["cold storage", "harvest", "rot", "road", "pothole", "waste", "drainage", "blackout", "power", "school", "learning", "teacher", "farmer", "crop"]
+
+    if any(trig in text for trig in critical_triggers):
+        priority = "Critical"
+        priority_reason = "Urgent high-hazard condition threatening public safety or community health."
+    elif any(trig in text for trig in high_triggers) or best_domain in ["Healthcare", "Water Resources", "Environment"]:
+        priority = "High"
+        priority_reason = f"Significant direct impact on {best_domain.lower()} quality and community well-being."
+    elif any(trig in text for trig in medium_triggers) or best_domain in ["Agriculture", "Energy", "Urban Development"]:
+        priority = "Medium"
+        priority_reason = f"Moderate disruption impacting daily productivity in {best_domain}."
+    else:
+        priority = "Low"
+        priority_reason = "Long-term developmental improvement and infrastructure enhancement."
+
+    required_skills = domain_skills.get(best_domain, "Prototyping, Systems Design, Community Outreach")
+
+    domain_university_map = {
+        "Water Resources": [
+            {"name": "IIT (ISM) Dhanbad", "department": "Department of Environmental Science & Engineering (TEXMiN Clean Water Hub)", "match_pct": 95},
+            {"name": "BIT Mesra, Ranchi", "department": "Department of Chemical & Bio-Engineering", "match_pct": 88}
+        ],
+        "Agriculture": [
+            {"name": "Birsa Agricultural University (BAU), Kanke", "department": "Department of Agricultural Engineering & Post-Harvest Technology", "match_pct": 96},
+            {"name": "BIT Mesra, Ranchi", "department": "Centre for Rural Technology & Food Processing", "match_pct": 87}
+        ],
+        "Healthcare": [
+            {"name": "AIIMS Deoghar", "department": "Department of Telemedicine & Community Medicine Outreach", "match_pct": 96},
+            {"name": "BIT Mesra, Ranchi", "department": "Department of Pharmaceutical Sciences & Medical Bio-Sensors", "match_pct": 89}
+        ],
+        "Rural Livelihoods": [
+            {"name": "Birsa Agricultural University (BAU), Kanke", "department": "Department of Forest Products & Tribal Value Addition", "match_pct": 94},
+            {"name": "IIT (ISM) Dhanbad", "department": "Department of Management Studies & Social Innovation Hub", "match_pct": 85}
+        ],
+        "Environment": [
+            {"name": "IIT (ISM) Dhanbad", "department": "Centre of Mining Environment & Ecological Restoration", "match_pct": 96},
+            {"name": "NIT Jamshedpur", "department": "Department of Civil & Environmental Engineering", "match_pct": 90}
+        ],
+        "Energy": [
+            {"name": "NIT Jamshedpur", "department": "Department of Electrical Engineering & Smart Microgrid Lab", "match_pct": 95},
+            {"name": "BIT Mesra, Ranchi", "department": "Department of Electrical & Electronics Engineering", "match_pct": 89}
+        ],
+        "Education": [
+            {"name": "IIIT Ranchi", "department": "Department of Computer Science & Educational Technologies", "match_pct": 93},
+            {"name": "Central University of Jharkhand", "department": "Department of Tribal Studies & Bilingual Pedagogy", "match_pct": 87}
+        ],
+        "Urban Development": [
+            {"name": "BIT Mesra, Ranchi", "department": "Department of Remote Sensing & Smart Cities Lab", "match_pct": 94},
+            {"name": "NIT Jamshedpur", "department": "Department of Civil Engineering & Transportation Systems", "match_pct": 89}
+        ],
+        "Accessibility": [
+            {"name": "BIT Mesra, Ranchi", "department": "Centre for Robotics & Assistive Mechatronics", "match_pct": 94},
+            {"name": "IIIT Ranchi", "department": "Department of Embedded AI & Sensory Interfaces", "match_pct": 90}
+        ],
+        "Public Administration": [
+            {"name": "IIIT Ranchi", "department": "Centre for GovTech & Public Data Analytics", "match_pct": 92},
+            {"name": "IIT (ISM) Dhanbad", "department": "Department of Humanities & Public Policy", "match_pct": 86}
+        ]
+    }
+
+    recs = domain_university_map.get(best_domain, [
+        {"name": "BIT Mesra, Ranchi", "department": "Department of Multi-Disciplinary Engineering", "match_pct": 90},
+        {"name": "IIT (ISM) Dhanbad", "department": "Research & Technology Development Hub", "match_pct": 88}
+    ])
 
     return {
         "domain": best_domain,
         "confidence": confidence,
         "secondary_domain": secondary_domain,
-        "matched_keywords": matched_kws
+        "matched_keywords": matched_kws,
+        "summary": summary,
+        "required_skills": required_skills,
+        "priority": priority,
+        "priority_reason": priority_reason,
+        "recommended_collaborations": recs
     }
+
+
+def find_potential_duplicate_challenges(title, description="", category=None, exclude_id=None):
+    """
+    Checks for potential duplicate or highly similar challenges in the database
+    based on title token overlap, keyword intersection, and domain context.
+    """
+    query_text = f"{title} {description}".lower()
+    stopwords = {"in", "the", "and", "of", "for", "to", "a", "an", "is", "at", "by", "with", "from", "on", "as", "or", "our", "near", "severe", "poor", "lack", "need"}
+    query_tokens = set([w.strip(".,;:?!'\"()[]{}") for w in query_text.split() if len(w) > 3 and w not in stopwords])
+
+    if not query_tokens:
+        return []
+
+    existing = Challenge.query
+    if exclude_id:
+        existing = existing.filter(Challenge.id != exclude_id)
+    challenges = existing.all()
+
+    duplicates = []
+    for ch in challenges:
+        ch_text = f"{ch.title} {ch.description or ''} {ch.location or ''}".lower()
+        ch_tokens = set([w.strip(".,;:?!'\"()[]{}") for w in ch_text.split() if len(w) > 3 and w not in stopwords])
+        if not ch_tokens:
+            continue
+
+        overlap = query_tokens.intersection(ch_tokens)
+        if not overlap:
+            continue
+
+        similarity = (2.0 * len(overlap)) / (len(query_tokens) + len(ch_tokens))
+        if category and ch.category and category.lower() in ch.category.lower():
+            similarity += 0.15
+
+        sim_pct = int(min(98, round(similarity * 100)))
+        if sim_pct >= 28 or len(overlap) >= 2:
+            duplicates.append({
+                "id": ch.id,
+                "code": ch.code,
+                "title": ch.title,
+                "district": ch.district,
+                "category": ch.category,
+                "status": ch.status,
+                "similarity_pct": sim_pct,
+                "matched_terms": list(overlap)[:5],
+                "detail_url": f"/challenge/{ch.id}"
+            })
+
+    duplicates.sort(key=lambda x: x['similarity_pct'], reverse=True)
+    return duplicates[:4]
 
 
 def rule_based_smart_match(challenge):
@@ -1610,12 +1878,31 @@ def landing():
 
 @app.route('/api/classify-domain', methods=['POST'])
 def api_classify_domain():
-    """Live AI domain classification for problem submission form."""
+    """Live AI domain classification, priority, recommended universities & duplicate check for problem submission form."""
     data = request.get_json(silent=True) or {}
     title = data.get('title', '')
     description = data.get('description', '')
     result = classify_thematic_domain(title, description)
+    duplicates = find_potential_duplicate_challenges(title, description, category=result.get('domain'))
+    result['similar_challenges'] = duplicates
+    result['has_duplicates'] = len(duplicates) > 0
     return jsonify(result)
+
+
+@app.route('/api/check-duplicate-challenges', methods=['POST'])
+def api_check_duplicate_challenges():
+    """Dedicated endpoint checking for similar/duplicate challenges prior to creation."""
+    data = request.get_json(silent=True) or {}
+    title = data.get('title', '')
+    description = data.get('description', '')
+    category = data.get('category', '')
+    duplicates = find_potential_duplicate_challenges(title, description, category=category)
+    return jsonify({
+        'success': True,
+        'has_duplicates': len(duplicates) > 0,
+        'count': len(duplicates),
+        'duplicates': duplicates
+    })
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -1850,7 +2137,7 @@ def user_dashboard():
     if user.user_type == 'ADMINISTRATOR':
         return redirect(url_for('dashboard'))
 
-    my_challenges = Challenge.query.filter_by(created_by_id=user.id).order_by(Challenge.created_date.desc()).all()
+    my_challenges = deduplicate_challenges(Challenge.query.filter_by(created_by_id=user.id).order_by(Challenge.created_date.desc()).all())
     my_solutions = Solution.query.filter_by(submitted_by_id=user.id).order_by(Solution.created_at.desc()).all()
 
     my_challenge_ids = [c.id for c in my_challenges]
@@ -1861,12 +2148,16 @@ def user_dashboard():
         ).order_by(Solution.created_at.desc()).all()
 
     # Recommended Challenges with Match Score
-    approved_challenges = Challenge.query.filter(
+    approved_challenges = deduplicate_challenges(Challenge.query.filter(
         Challenge.status.in_(['APPROVED', 'Verified', 'Open', 'In Progress', 'Pilot'])
-    ).all()
+    ).all())
 
+    seen_rec_ids = set()
     recommended_challenges = []
     for ach in approved_challenges:
+        if ach.id in seen_rec_ids:
+            continue
+        seen_rec_ids.add(ach.id)
         match_pct = calculate_expertise_match(user, ach)
         recommended_challenges.append({
             'challenge': ach,
@@ -1916,8 +2207,20 @@ def dashboard():
     industry_partners = Organization.query.filter_by(type='Industry').count()
     people_impacted = sum(m.people_impacted for m in ImpactMetric.query.all()) or 2450000
 
-    recent_challenges = Challenge.query.order_by(Challenge.created_date.desc()).limit(4).all()
-    recent_projects = Project.query.order_by(Project.created_at.desc()).limit(4).all()
+    testing_projects_count = Project.query.filter(
+        (Project.status == 'In Pilot') | (Project.current_stage.in_(['Prototype Development', 'Pilot Testing', 'Community Feedback']))
+    ).count()
+    deployed_projects_count = Project.query.filter(
+        (Project.status.in_(['Implemented', 'Completed'])) | (Project.current_stage.in_(['Implementation', 'Impact Measured']))
+    ).count()
+    active_collaborations = ProjectPartner.query.count() or (university_partners + industry_partners)
+    
+    metrics_list = ImpactMetric.query.all()
+    total_villages_reached = sum(m.villages_reached for m in metrics_list) or 184
+    total_cost_saved_lakhs = round(sum(m.cost_saved_lakhs for m in metrics_list), 1) or 549.0
+
+    recent_challenges = deduplicate_challenges(Challenge.query.order_by(Challenge.created_date.desc()).all())[:4]
+    recent_projects = deduplicate_projects(Project.query.order_by(Project.created_at.desc()).all())[:4]
 
     category_counts = {}
     for cat in CATEGORIES[:10]:
@@ -1942,6 +2245,11 @@ def dashboard():
         university_partners=university_partners,
         industry_partners=industry_partners,
         people_impacted=people_impacted,
+        testing_projects_count=testing_projects_count,
+        deployed_projects_count=deployed_projects_count,
+        active_collaborations=active_collaborations,
+        total_villages_reached=total_villages_reached,
+        total_cost_saved_lakhs=total_cost_saved_lakhs,
         recent_challenges=recent_challenges,
         recent_projects=recent_projects,
         category_counts=category_counts,
@@ -2003,7 +2311,7 @@ def challenges():
     if location_filter:
         query = query.filter(Challenge.location.ilike(f"%{location_filter}%"))
 
-    challenges_list = query.order_by(Challenge.created_date.desc()).all()
+    challenges_list = deduplicate_challenges(query.order_by(Challenge.created_date.desc()).all())
 
     return render_template('challenges.html',
         challenges=challenges_list,
@@ -2126,6 +2434,14 @@ def submit_challenge():
                     "New Challenge Submitted",
                     f"New challenge {new_challenge.code} ('{title}') submitted for verification by {user.full_name if user else 'Citizen'}.",
                     url_for('admin_panel')
+                )
+
+            if user:
+                send_notification(
+                    user.id,
+                    "Challenge Registered & Routed",
+                    f"Your challenge {new_challenge.code} ('{title}') has been registered and routed to university engineering departments.",
+                    url_for('challenge_detail', challenge_id=new_challenge.id)
                 )
 
             if user and user.user_type == 'ADMINISTRATOR':
@@ -2549,7 +2865,10 @@ def select_solution_for_project(solution_id):
             description=m_desc,
             order_idx=idx,
             is_completed=completed,
-            due_date=datetime.utcnow() + timedelta(days=idx * 20)
+            due_date=datetime.utcnow() + timedelta(days=idx * 20),
+            status='Completed' if completed else ('In Progress' if idx == 3 else 'Not Started'),
+            completion_pct=100 if completed else (30 if idx == 3 else 0),
+            responsible_team=univ_partner if idx <= 2 else ('Quadruple Helix Squad' if idx == 3 else 'Field Implementation Unit')
         )
         db.session.add(m)
 
@@ -2581,7 +2900,7 @@ def select_solution_for_project(solution_id):
     db.session.add(TeamMember(
         project_id=project.id,
         name=f"Academic Mentor ({univ_partner})",
-        role_title="University Research Lead",
+        role_title="Faculty Mentor (University Lead)",
         organization=univ_partner
     ))
     db.session.add(TeamMember(
@@ -2590,6 +2909,22 @@ def select_solution_for_project(solution_id):
         role_title="Corporate Technical Advisor",
         organization=ind_partner
     ))
+
+    # Event Notifications
+    if solution.submitted_by_id:
+        send_notification(
+            solution.submitted_by_id,
+            "Solution Selected for Project Workspace!",
+            f"Congratulations! Your solution proposal '{solution.title}' has been selected for Project Workspace #{project.id}.",
+            url_for('project_detail', project_id=project.id)
+        )
+    if challenge.created_by_id and challenge.created_by_id != solution.submitted_by_id:
+        send_notification(
+            challenge.created_by_id,
+            "Collaborative Project Formed for Your Challenge",
+            f"A multi-institution project '{project.title}' was initiated to solve your challenge {challenge.code}.",
+            url_for('project_detail', project_id=project.id)
+        )
 
     db.session.commit()
 
@@ -2603,7 +2938,7 @@ def select_solution_for_project(solution_id):
 @login_required
 def projects():
     """Collaborative Projects Directory."""
-    projects_list = Project.query.order_by(Project.created_at.desc()).all()
+    projects_list = deduplicate_projects(Project.query.order_by(Project.created_at.desc()).all())
     return render_template('projects.html', projects=projects_list)
 
 
@@ -2623,7 +2958,7 @@ def project_detail(project_id):
         completed_tasks=completed_tasks,
         lifecycle_stages=project.lifecycle_stages_info,
         stage_updates=project.stage_updates,
-        impact_metrics=project.impact_indicators,
+        impact_metrics=deduplicate_impact_metrics(project.impact_indicators),
         support_requests=project.support_requests,
         support_types=INDUSTRY_SUPPORT_TYPES,
         lifecycle_stage_options=PROJECT_LIFECYCLE_STAGES
@@ -2690,6 +3025,115 @@ def toggle_milestone(project_id, milestone_id):
     return redirect(url_for('project_detail', project_id=project_id))
 
 
+@app.route('/project/<int:project_id>/add-member', methods=['POST'])
+@login_required
+def add_project_member(project_id):
+    """Add a multidisciplinary team member (student, faculty mentor, industry advisor) to project."""
+    project = Project.query.get_or_404(project_id)
+    name = request.form.get('name', '').strip()
+    role_title = request.form.get('role_title', 'Student Innovator').strip()
+    organization = request.form.get('organization', '').strip()
+    email = request.form.get('email', '').strip()
+
+    if name:
+        member = TeamMember(
+            project_id=project.id,
+            name=name,
+            role_title=role_title,
+            organization=organization or project.university_partner or 'Multidisciplinary Innovation Lab',
+            email=email
+        )
+        db.session.add(member)
+        db.session.commit()
+        target_user = User.query.filter_by(email=email).first() if email else None
+        if target_user:
+            send_notification(
+                target_user.id,
+                "Added to Innovation Project Team",
+                f"You have been added to the project '{project.title}' as {role_title}.",
+                url_for('project_detail', project_id=project.id)
+            )
+        flash(f"Team member '{name}' ({role_title}) added to the project squad.", 'success')
+    else:
+        flash('Member name is required.', 'warning')
+    return redirect(url_for('project_detail', project_id=project.id))
+
+
+@app.route('/project/<int:project_id>/milestone/<int:milestone_id>/update', methods=['POST'])
+@login_required
+def update_project_milestone(project_id, milestone_id):
+    """Update milestone status, completion percentage, responsible team, and target date."""
+    milestone = Milestone.query.filter_by(id=milestone_id, project_id=project_id).first_or_404()
+    status = request.form.get('status', '').strip()
+    completion_pct = request.form.get('completion_pct', type=int)
+    responsible_team = request.form.get('responsible_team', '').strip()
+    due_date_str = request.form.get('due_date', '').strip()
+
+    if status:
+        milestone.status = status
+        if status == 'Completed':
+            milestone.is_completed = True
+            milestone.completion_pct = 100
+        else:
+            milestone.is_completed = False
+    if completion_pct is not None:
+        milestone.completion_pct = max(0, min(100, completion_pct))
+        if milestone.completion_pct == 100:
+            milestone.is_completed = True
+            milestone.status = 'Completed'
+        elif milestone.completion_pct > 0 and milestone.status not in ['Completed', 'Delayed']:
+            milestone.status = 'In Progress'
+    if responsible_team:
+        milestone.responsible_team = responsible_team
+    if due_date_str:
+        try:
+            milestone.due_date = datetime.strptime(due_date_str, '%Y-%m-%d')
+        except Exception:
+            pass
+
+    project = milestone.project
+    if project.milestones:
+        avg_pct = int(sum(m.completion_pct or (100 if m.is_completed else 0) for m in project.milestones) / len(project.milestones))
+        project.progress_pct = avg_pct
+        if project.progress_pct == 100:
+            project.status = 'Implemented'
+            project.challenge.status = 'Implemented'
+        elif project.progress_pct >= 65:
+            project.status = 'In Pilot'
+            project.challenge.status = 'Pilot'
+
+    db.session.commit()
+    flash(f"Milestone '{milestone.name}' updated successfully (Status: {milestone.status}, {milestone.completion_pct}%).", 'success')
+    return redirect(url_for('project_detail', project_id=project.id))
+
+
+@app.route('/challenge/<int:challenge_id>/comment', methods=['POST'])
+@login_required
+def add_challenge_comment(challenge_id):
+    """Post an expert technical perspective, question, or advice to challenge discussion."""
+    challenge = Challenge.query.get_or_404(challenge_id)
+    user = get_current_user()
+    comment_text = request.form.get('comment_text', '').strip()
+    if comment_text:
+        comment = ChallengeComment(
+            challenge_id=challenge.id,
+            user_id=user.id,
+            comment_text=comment_text,
+            user_role=user.user_type or 'Innovator'
+        )
+        db.session.add(comment)
+        if challenge.created_by_id and challenge.created_by_id != user.id:
+            send_notification(
+                challenge.created_by_id,
+                "New Technical Discussion on Challenge",
+                f"{user.full_name} posted on {challenge.code}: '{comment_text[:70]}...'",
+                url_for('challenge_detail', challenge_id=challenge.id)
+            )
+        db.session.commit()
+        flash('Your comment has been posted to the multidisciplinary challenge discussion.', 'success')
+    return redirect(url_for('challenge_detail', challenge_id=challenge.id))
+
+
 # ---------------------------------------------------------
 # ROUTES: SIH PROTOTYPE DISTINCTIVE FEATURES
 # ---------------------------------------------------------
@@ -2726,7 +3170,7 @@ def challenge_team_recommendations(challenge_id):
 def smart_team():
     """Dedicated Smart Challenge -> Team Matching Page."""
     challenge_id = request.args.get('challenge_id', type=int)
-    all_challenges = Challenge.query.order_by(Challenge.created_date.desc()).all()
+    all_challenges = deduplicate_challenges(Challenge.query.order_by(Challenge.created_date.desc()).all())
 
     selected_challenge = None
     if challenge_id:
@@ -2865,7 +3309,7 @@ def respond_team_invitation(invitation_id):
 def idea_impact():
     """Dedicated Idea -> Impact 10-Stage Sequential Tracker & Ground Impact Page."""
     project_id = request.args.get('project_id', type=int)
-    all_projects = Project.query.order_by(Project.created_at.desc()).all()
+    all_projects = deduplicate_projects(Project.query.order_by(Project.created_at.desc()).all())
 
     selected_project = None
     if project_id:
@@ -2879,7 +3323,8 @@ def idea_impact():
 
     if selected_project:
         stage_updates = ProjectStageUpdate.query.filter_by(project_id=selected_project.id).order_by(ProjectStageUpdate.created_at.desc()).all()
-        impact_metrics = ProjectImpactMetric.query.filter_by(project_id=selected_project.id).order_by(ProjectImpactMetric.recorded_at.desc()).all()
+        raw_metrics = ProjectImpactMetric.query.filter_by(project_id=selected_project.id).order_by(ProjectImpactMetric.recorded_at.desc()).all()
+        impact_metrics = deduplicate_impact_metrics(raw_metrics)
         stages_info = selected_project.lifecycle_stages_info
 
     # Calculate aggregate impact stats across all projects
@@ -2893,7 +3338,7 @@ def idea_impact():
         else:
             total_beneficiaries += 3500
 
-    total_impact_metrics_count = ProjectImpactMetric.query.count()
+    total_impact_metrics_count = len(deduplicate_impact_metrics(ProjectImpactMetric.query.all()))
 
     user = get_current_user()
     return render_template('idea_impact.html',
@@ -2985,20 +3430,39 @@ def add_project_impact_metric(project_id):
         flash('Before and After values must be valid numbers.', 'danger')
         return redirect(next_url)
 
-    metric = ProjectImpactMetric(
-        project_id=project.id,
-        metric_name=metric_name,
-        unit=unit,
-        before_value=before_val,
-        after_value=after_val,
-        is_reduction=is_reduction,
-        verification_notes=verification_notes
-    )
-    metric.calculate_change()
-    db.session.add(metric)
-    db.session.commit()
+    # Idempotent deduplication check: update existing indicator if already present for this project
+    existing_metric = ProjectImpactMetric.query.filter(
+        ProjectImpactMetric.project_id == project.id,
+        db.func.lower(db.func.trim(ProjectImpactMetric.metric_name)) == metric_name.lower()
+    ).first()
 
-    flash(f"Measurable impact indicator '{metric_name}' recorded: {abs(metric.change_pct)}% {'Reduction' if metric.is_reduction else 'Increase'}!", 'success')
+    if existing_metric:
+        existing_metric.metric_name = metric_name
+        existing_metric.unit = unit
+        existing_metric.before_value = before_val
+        existing_metric.after_value = after_val
+        existing_metric.is_reduction = is_reduction
+        existing_metric.verification_notes = verification_notes
+        existing_metric.recorded_at = datetime.utcnow()
+        existing_metric.calculate_change()
+        db.session.commit()
+        metric = existing_metric
+        flash(f"Measurable impact indicator '{metric_name}' updated: {abs(metric.change_pct)}% {'Reduction' if metric.is_reduction else 'Improvement'}!", 'success')
+    else:
+        metric = ProjectImpactMetric(
+            project_id=project.id,
+            metric_name=metric_name,
+            unit=unit,
+            before_value=before_val,
+            after_value=after_val,
+            is_reduction=is_reduction,
+            verification_notes=verification_notes
+        )
+        metric.calculate_change()
+        db.session.add(metric)
+        db.session.commit()
+        flash(f"Measurable impact indicator '{metric_name}' recorded: {abs(metric.change_pct)}% {'Reduction' if metric.is_reduction else 'Improvement'}!", 'success')
+
     return redirect(next_url)
 
 
@@ -3214,9 +3678,9 @@ def organizations():
 @app.route('/impact')
 def impact():
     """National Impact Analytics & Grounded SIH Prototype Outcome Ledger."""
-    all_challenges = Challenge.query.all()
-    all_projects = Project.query.all()
-    impact_metrics = ProjectImpactMetric.query.all()
+    all_challenges = deduplicate_challenges(Challenge.query.all())
+    all_projects = deduplicate_projects(Project.query.all())
+    impact_metrics = deduplicate_impact_metrics(ProjectImpactMetric.query.all())
 
     # Credible Platform & Process Metrics
     challenges_reported = len(all_challenges) or 10

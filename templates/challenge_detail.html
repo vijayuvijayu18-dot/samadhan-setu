@@ -627,6 +627,76 @@
                     {% endif %}
                 </div>
             </div>
+
+            <!-- 3. Multidisciplinary Discussion & Expert Perspectives Section -->
+            <div class="card border shadow-sm mb-4 mt-4">
+                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="fw-bold text-dark mb-0">
+                            <i class="fas fa-comments text-primary me-2"></i> Multidisciplinary Technical Discussion ({{ challenge.comments|length }})
+                        </h5>
+                        <small class="text-muted">Direct technical exchange between student squads, faculty mentors, and citizen submitters</small>
+                    </div>
+                    <span class="badge bg-light text-dark border">{{ challenge.comments|length }} Comments</span>
+                </div>
+                <div class="card-body p-4">
+                    <!-- New Comment Input Form -->
+                    {% if current_user %}
+                    <form method="POST" action="{{ url_for('add_challenge_comment', challenge_id=challenge.id) }}" class="mb-4">
+                        <div class="d-flex gap-2 mb-2">
+                            <div class="kpi-icon-box bg-primary text-white rounded-circle flex-shrink-0" style="width: 38px; height: 38px; font-size: 0.9rem;">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <textarea name="comment_text" class="form-control" rows="3" placeholder="Share technical feedback, ask for ground data clarification, or suggest university research approaches..." required></textarea>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="text-muted small">Posting as: <strong>{{ current_user.full_name }}</strong> ({{ current_user.user_type }})</span>
+                            <button type="submit" class="btn btn-sm btn-primary-gov px-3 fw-bold">
+                                <i class="fas fa-paper-plane me-1"></i> Post Comment
+                            </button>
+                        </div>
+                    </form>
+                    {% else %}
+                    <div class="p-3 bg-light rounded border text-center mb-4">
+                        <span class="text-muted small me-2">Log in to contribute technical perspectives or ask questions about this challenge.</span>
+                        <a href="{{ url_for('login') }}" class="btn btn-sm btn-outline-primary py-0 px-2">Log In</a>
+                    </div>
+                    {% endif %}
+
+                    <!-- Comments List -->
+                    {% if challenge.comments %}
+                        <div class="d-flex flex-column gap-3">
+                            {% for c in challenge.comments %}
+                            <div class="p-3 rounded bg-light border">
+                                <div class="d-flex justify-content-between align-items-start mb-1">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="kpi-icon-box bg-white text-primary rounded-circle border shadow-sm" style="width: 32px; height: 32px; font-size: 0.8rem;">
+                                            <i class="fas fa-user-graduate"></i>
+                                        </div>
+                                        <div>
+                                            <strong class="text-dark small">{{ c.user.full_name if c.user else 'Academic Specialist' }}</strong>
+                                            <span class="badge bg-primary-subtle text-primary border ms-1" style="font-size: 0.7rem;">{{ c.user_role }}</span>
+                                            {% if c.user and c.user.organization %}
+                                                <span class="text-muted small">&bull; {{ c.user.organization }}</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <span class="text-muted small" style="font-size: 0.75rem;">{{ c.created_at.strftime('%d %b %Y %H:%M') }}</span>
+                                </div>
+                                <p class="text-dark small mb-0 ps-4 ms-2">{{ c.comment_text }}</p>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4 text-muted">
+                            <i class="fas fa-comment-dots fa-2x mb-2 text-secondary opacity-50"></i>
+                            <p class="small mb-0">No technical discussion posted yet. Share the first perspective or question to assist university teams.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
         </div>
 
         <!-- Right: AI-Style Features & Rule-Based Matchmaking -->

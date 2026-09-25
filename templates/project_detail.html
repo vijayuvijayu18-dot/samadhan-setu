@@ -145,12 +145,12 @@
         <div class="card-header bg-white py-3 border-bottom d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
             <div>
                 <div class="d-flex align-items-center gap-2">
-                    <span class="badge bg-success text-white text-uppercase fw-bold" style="font-size: 0.7rem;">SIH Feature</span>
+                    <span class="badge bg-success text-white text-uppercase fw-bold" style="font-size: 0.7rem;">SIH Feature 9</span>
                     <h5 class="fw-bold text-dark mb-0">
-                        <i class="fas fa-chart-line text-success me-1"></i> Before-vs-After Impact Metrics & Ground Validation
+                        <i class="fas fa-chart-line text-success me-1"></i> Project-Reported Ground Metrics (Baseline vs Current Impact)
                     </h5>
                 </div>
-                <small class="text-muted">Rigorous quantitative baseline versus current field results with automatic percentage shift calculations</small>
+                <small class="text-muted">Rigorous quantitative baseline versus current field results with automatic percentage shift calculations (e.g. water wastage before/after, beneficiaries count, cost savings)</small>
             </div>
             <button type="button" class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#addImpactModal">
                 <i class="fas fa-plus-circle me-1"></i> Record Impact Metric
@@ -159,7 +159,11 @@
         <div class="card-body p-4">
             {% if impact_metrics %}
             <div class="row g-3">
+                {% set seen_im_keys = [] %}
                 {% for im in impact_metrics %}
+                {% set im_key = (im.project_id|string) ~ '_' ~ (im.metric_name|trim|lower) %}
+                {% if im_key not in seen_im_keys %}
+                {% set _ = seen_im_keys.append(im_key) %}
                 <div class="col-md-6 col-lg-4">
                     <div class="impact-delta-card h-100 d-flex flex-column">
                         <div class="d-flex justify-content-between align-items-start mb-2">
@@ -215,6 +219,7 @@
                         {% endif %}
                     </div>
                 </div>
+                {% endif %}
                 {% endfor %}
             </div>
             {% else %}
@@ -464,21 +469,82 @@
             <div class="row g-3">
                 {% for m in project.milestones %}
                 <div class="col-md-6 col-lg-4">
-                    <div class="p-3 rounded border {% if m.is_completed %}bg-success bg-opacity-10 border-success border-opacity-25{% else %}bg-white{% endif %} h-100 d-flex flex-column">
+                    <div class="p-3 rounded border {% if m.is_completed %}bg-success bg-opacity-10 border-success border-opacity-25{% else %}bg-white{% endif %} h-100 d-flex flex-column shadow-sm">
                         <div class="d-flex justify-content-between align-items-start mb-2">
-                            <span class="badge {% if m.is_completed %}bg-success text-white{% else %}bg-secondary text-white{% endif %}">
-                                Phase {{ m.order_idx }}: {% if m.is_completed %}Completed{% else %}In Progress{% endif %}
+                            <span class="badge {% if m.is_completed or m.status == 'Completed' %}bg-success text-white{% elif m.status == 'Delayed' %}bg-danger text-white{% elif m.status == 'Not Started' %}bg-secondary text-white{% else %}bg-primary text-white{% endif %}">
+                                Phase {{ m.order_idx }}: {{ m.status or ('Completed' if m.is_completed else 'In Progress') }}
                             </span>
-                            <form method="POST" action="{{ url_for('toggle_milestone', project_id=project.id, milestone_id=m.id) }}">
-                                <button type="submit" class="btn btn-sm {% if m.is_completed %}btn-success{% else %}btn-outline-secondary{% endif %}" title="Toggle Milestone State">
-                                    <i class="fas {% if m.is_completed %}fa-check-circle{% else %}fa-circle{% endif %}"></i>
+                            <div class="d-flex gap-1">
+                                <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" data-bs-toggle="modal" data-bs-target="#editMilestoneModal{{ m.id }}" title="Edit Milestone Details">
+                                    <i class="fas fa-edit small"></i>
                                 </button>
-                            </form>
+                                <form method="POST" action="{{ url_for('toggle_milestone', project_id=project.id, milestone_id=m.id) }}">
+                                    <button type="submit" class="btn btn-sm {% if m.is_completed %}btn-success{% else %}btn-outline-secondary{% endif %} py-0 px-2" title="Toggle Milestone Completion">
+                                        <i class="fas {% if m.is_completed %}fa-check-circle{% else %}fa-circle{% endif %}"></i>
+                                    </button>
+                                </form>
+                            </div>
                         </div>
                         <h6 class="fw-bold text-dark mb-1">{{ m.name }}</h6>
                         <p class="text-muted small flex-grow-1 mb-2">{{ m.description }}</p>
-                        <div class="text-muted small pt-2 border-top">
-                            <i class="fas fa-calendar-alt me-1"></i> Due: {{ m.due_date.strftime('%d %b %Y') if m.due_date else 'Flexible' }}
+
+                        <!-- Progress Bar & Responsible Team -->
+                        <div class="mb-2">
+                            <div class="d-flex justify-content-between align-items-center small mb-1">
+                                <span class="text-muted" style="font-size: 0.75rem;">Completion</span>
+                                <strong class="text-primary font-monospace" style="font-size: 0.75rem;">{{ m.completion_pct or (100 if m.is_completed else 0) }}%</strong>
+                            </div>
+                            <div class="progress" style="height: 6px;">
+                                <div class="progress-bar {% if m.is_completed or m.status == 'Completed' %}bg-success{% elif m.status == 'Delayed' %}bg-danger{% else %}bg-primary{% endif %}" role="progressbar" style="width: {{ m.completion_pct or (100 if m.is_completed else 0) }}%"></div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center text-muted small pt-2 border-top" style="font-size: 0.75rem;">
+                            <span><i class="fas fa-users-cog text-primary me-1"></i> {{ m.responsible_team or 'Project Squad' }}</span>
+                            <span><i class="fas fa-calendar-alt text-secondary me-1"></i> {{ m.due_date.strftime('%d %b %Y') if m.due_date else 'Flexible' }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modal: Update Milestone -->
+                <div class="modal fade" id="editMilestoneModal{{ m.id }}" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-sm">
+                        <div class="modal-content">
+                            <form method="POST" action="{{ url_for('update_project_milestone', project_id=project.id, milestone_id=m.id) }}">
+                                <div class="modal-header py-2">
+                                    <h6 class="modal-title fw-bold text-dark">
+                                        <i class="fas fa-flag text-warning me-1"></i> Update Milestone
+                                    </h6>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body p-3">
+                                    <div class="mb-2">
+                                        <label class="form-label small fw-bold text-dark mb-1">Milestone Status</label>
+                                        <select name="status" class="form-select form-select-sm">
+                                            <option value="Not Started" {% if m.status == 'Not Started' %}selected{% endif %}>Not Started</option>
+                                            <option value="In Progress" {% if m.status == 'In Progress' or not m.status %}selected{% endif %}>In Progress</option>
+                                            <option value="Completed" {% if m.status == 'Completed' or m.is_completed %}selected{% endif %}>Completed</option>
+                                            <option value="Delayed" {% if m.status == 'Delayed' %}selected{% endif %}>Delayed</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label small fw-bold text-dark mb-1">Completion Percentage (%)</label>
+                                        <input type="number" name="completion_pct" class="form-control form-control-sm" min="0" max="100" value="{{ m.completion_pct or (100 if m.is_completed else 0) }}">
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label small fw-bold text-dark mb-1">Responsible Person / Team</label>
+                                        <input type="text" name="responsible_team" class="form-control form-control-sm" value="{{ m.responsible_team or 'Project Core Team' }}">
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label small fw-bold text-dark mb-1">Due Date</label>
+                                        <input type="date" name="due_date" class="form-control form-control-sm" value="{{ m.due_date.strftime('%Y-%m-%d') if m.due_date else '' }}">
+                                    </div>
+                                </div>
+                                <div class="modal-footer py-2">
+                                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                                    <button type="submit" class="btn btn-primary-gov btn-sm">Save Changes</button>
+                                </div>
+                            </form>
                         </div>
                     </div>
                 </div>
@@ -623,8 +689,14 @@
 
     <!-- Team Members Roster -->
     <div class="card border shadow-sm">
-        <div class="card-header bg-white py-3 border-bottom">
-            <h5 class="fw-bold text-dark mb-0"><i class="fas fa-users text-primary me-2"></i> Multidisciplinary Team Roster</h5>
+        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="fw-bold text-dark mb-0"><i class="fas fa-users text-primary me-2"></i> Multidisciplinary Team Roster</h5>
+                <small class="text-muted">Students across disciplines, faculty mentors, and industry advisors</small>
+            </div>
+            <button type="button" class="btn btn-sm btn-primary-gov" data-bs-toggle="modal" data-bs-target="#addTeamMemberModal">
+                <i class="fas fa-user-plus me-1"></i> Add Team Member
+            </button>
         </div>
         <div class="card-body p-4">
             <div class="table-responsive">
@@ -866,6 +938,58 @@
                     <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-primary-gov btn-sm">
                         <i class="fas fa-paper-plane me-1"></i> Post to Industry Hub
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Add Multidisciplinary Team Member -->
+<div class="modal fade" id="addTeamMemberModal" tabindex="-1" aria-labelledby="addTeamMemberModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('add_project_member', project_id=project.id) }}">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold" id="addTeamMemberModalLabel">
+                        <i class="fas fa-user-plus text-primary me-2"></i> Add Multidisciplinary Team Member
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-dark">Member Full Name *</label>
+                        <input type="text" name="name" class="form-control" placeholder="e.g. Pooja Kumari / Dr. Rajesh Verma" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-dark">Multidisciplinary Role / Specialty *</label>
+                        <select name="role_title" class="form-select" required>
+                            <option value="Student Innovator (Computer Science & IoT)">Student Innovator (Computer Science & IoT)</option>
+                            <option value="Student Researcher (Civil & Environmental Engineering)">Student Researcher (Civil & Environmental Engineering)</option>
+                            <option value="Student Engineer (Mechanical / Prototyping)">Student Engineer (Mechanical / Prototyping)</option>
+                            <option value="Student Specialist (Data Science & Telemetry)">Student Specialist (Data Science & Telemetry)</option>
+                            <option value="Faculty Mentor (Academic & Technical Guide)">Faculty Mentor (Academic & Technical Guide)</option>
+                            <option value="Industry Advisor (Industrial Scaling & CSR)">Industry Advisor (Industrial Scaling & CSR)</option>
+                            <option value="Community Liaison / Field Coordinator">Community Liaison / Field Coordinator</option>
+                        </select>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-bold text-dark">Affiliated Institution</label>
+                            <input type="text" name="organization" class="form-control" value="{{ project.university_partner or 'BIT Mesra / IIT ISM' }}" placeholder="University / Lab">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-bold text-dark">Email Address</label>
+                            <input type="email" name="email" class="form-control" placeholder="member@institute.ac.in">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary-gov btn-sm">
+                        <i class="fas fa-check-circle me-1"></i> Add Member to Roster
                     </button>
                 </div>
             </form>
