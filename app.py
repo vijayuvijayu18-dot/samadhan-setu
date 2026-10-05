@@ -2,6 +2,7 @@ import os
 import math
 import uuid
 import logging
+import re
 from datetime import datetime, timedelta
 from functools import wraps
 
@@ -272,6 +273,10 @@ class Challenge(db.Model):
     views_count = db.Column(db.Integer, default=240)
     followers_count = db.Column(db.Integer, default=28)
     created_by_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+
+    # Submitter Identity & Verification Details
+    submitter_aadhaar_masked = db.Column(db.String(30), nullable=True)
+    submitter_phone = db.Column(db.String(30), nullable=True)
 
     # Relationships
     solutions = db.relationship('Solution', backref='challenge', lazy=True, cascade='all, delete-orphan')
@@ -962,6 +967,14 @@ def ensure_database_schema_compat():
                 conn.exec_driver_sql("ALTER TABLE organizations ADD COLUMN areas_of_interest TEXT")
             if 'participation_modes' not in ocols:
                 conn.exec_driver_sql("ALTER TABLE organizations ADD COLUMN participation_modes VARCHAR(250)")
+
+            # Check challenges table columns
+            ch_info = conn.exec_driver_sql("PRAGMA table_info(challenges)").fetchall()
+            ch_cols = [r[1] for r in ch_info] if ch_info else []
+            if 'submitter_aadhaar_masked' not in ch_cols:
+                conn.exec_driver_sql("ALTER TABLE challenges ADD COLUMN submitter_aadhaar_masked VARCHAR(30)")
+            if 'submitter_phone' not in ch_cols:
+                conn.exec_driver_sql("ALTER TABLE challenges ADD COLUMN submitter_phone VARCHAR(30)")
 
             # Clean up any legacy duplicate project impact metric rows, preserving the latest record
             pim_info = conn.exec_driver_sql("PRAGMA table_info(project_impact_metrics)").fetchall()
@@ -2499,6 +2512,53 @@ def submit_challenge():
         affected_population = request.form.get('affected_population', request.form.get('affected_community', 'General Community')).strip()
         people_affected_str = request.form.get('people_affected_count', '1000').strip()
         supporting_info = request.form.get('supporting_info', '').strip()
+
+        # Submitter Identity: Aadhaar & Mobile fields
+        from_submit_form = request.form.get('from_submit_form', '').strip()
+        aadhaar_masked = request.form.get('aadhaar_masked', '').strip()
+        aadhaar_raw = request.form.get('aadhaar_number', '').strip()
+        aadhaar_verified = request.form.get('aadhaar_verified', '').strip()
+        mobile_number = request.form.get('mobile_number', '').strip()
+
+        validated_aadhaar_masked = None
+        validated_mobile = None
+
+        if from_submit_form == '1' or 'aadhaar_masked' in request.form or 'aadhaar_number' in request.form or 'mobile_number' in request.form:
+            # 1. Validate Aadhaar (must be 12 digits, verified, stored only in masked form)
+            if aadhaar_masked and re.match(r'^XXXX\s*XXXX\s*\d{4}$', aadhaar_masked):
+                validated_aadhaar_masked = aadhaar_masked
+            elif aadhaar_raw:
+                clean_raw = re.sub(r'\D', '', aadhaar_raw)
+                if len(clean_raw) == 12:
+                    validated_aadhaar_masked = f"XXXX XXXX {clean_raw[-4:]}"
+                clean_raw = None
+                aadhaar_raw = None
+
+            if not validated_aadhaar_masked or (from_submit_form == '1' and aadhaar_verified != '1'):
+                flash('Please provide a valid 12-digit Aadhaar number and complete demo verification before submitting.', 'danger')
+                return render_template('submit_challenge.html',
+                    form=request.form,
+                    categories=CATEGORIES,
+                    districts=JHARKHAND_DISTRICTS,
+                    submitter_types=SUBMITTER_TYPES,
+                    departments=JHARKHAND_DEPARTMENTS,
+                    user=user
+                )
+
+            # 2. Validate Mobile Number (numbers only, exactly 10 digits, starts with 6-9)
+            clean_mobile = re.sub(r'\D', '', mobile_number)
+            if not re.match(r'^[6-9]\d{9}$', clean_mobile):
+                flash('Please enter a valid 10-digit Indian mobile number (numbers only, starting with 6, 7, 8, or 9).', 'danger')
+                return render_template('submit_challenge.html',
+                    form=request.form,
+                    categories=CATEGORIES,
+                    districts=JHARKHAND_DISTRICTS,
+                    submitter_types=SUBMITTER_TYPES,
+                    departments=JHARKHAND_DEPARTMENTS,
+                    user=user
+                )
+            validated_mobile = f"+91 {clean_mobile}"
+
         try:
             people_affected_count = int(people_affected_str) if people_affected_str else 1000
         except Exception:
@@ -2549,7 +2609,8 @@ def submit_challenge():
                 categories=CATEGORIES,
                 districts=JHARKHAND_DISTRICTS,
                 submitter_types=SUBMITTER_TYPES,
-                departments=JHARKHAND_DEPARTMENTS
+                departments=JHARKHAND_DEPARTMENTS,
+                user=user
             )
 
         deadline = None
@@ -2585,10 +2646,16 @@ def submit_challenge():
                 people_affected_count=people_affected_count,
                 shortcomings=supporting_info,
                 ai_impact_score=impact_score,
+                submitter_aadhaar_masked=validated_aadhaar_masked,
+                submitter_phone=validated_mobile,
                 created_date=datetime.utcnow(),
                 created_by_id=user.id if user else None
             )
             db.session.add(new_challenge)
+            if user and validated_mobile:
+                if not user.phone or user.phone.strip() == '':
+                    user.phone = validated_mobile
+                    db.session.add(user)
             db.session.commit()
 
             # Automatically synthesize AI Problem DNA
@@ -2635,14 +2702,16 @@ def submit_challenge():
                 categories=CATEGORIES,
                 districts=JHARKHAND_DISTRICTS,
                 submitter_types=SUBMITTER_TYPES,
-                departments=JHARKHAND_DEPARTMENTS
+                departments=JHARKHAND_DEPARTMENTS,
+                user=user
             )
 
     return render_template('submit_challenge.html',
         categories=CATEGORIES,
         districts=JHARKHAND_DISTRICTS,
         submitter_types=SUBMITTER_TYPES,
-        departments=JHARKHAND_DEPARTMENTS
+        departments=JHARKHAND_DEPARTMENTS,
+        user=user
     )
 
 

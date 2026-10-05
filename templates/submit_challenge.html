@@ -28,7 +28,8 @@
                 </div>
 
                 <div class="card-body p-4">
-                    <form method="POST" action="{{ url_for('submit_challenge') }}" enctype="multipart/form-data">
+                    <form method="POST" action="{{ url_for('submit_challenge') }}" enctype="multipart/form-data" id="submitChallengeForm" onsubmit="return validateSubmissionForm(event)">
+                        <input type="hidden" name="from_submit_form" value="1">
                         <!-- Section 1: Submitter & Geographic Details -->
                         <div class="bg-light p-3 rounded-3 border mb-4">
                             <h6 class="fw-bold text-primary mb-3">
@@ -64,6 +65,102 @@
                                 <div class="col-md-6">
                                     <label class="form-label small fw-bold text-dark">Responsible Local Body / Nodal Agency *</label>
                                     <input type="text" name="organization" class="form-control" placeholder="e.g. DWSD Dhanbad / Ranchi Municipal Corp" value="Jharkhand State Nodal Body" required>
+                                </div>
+
+                                <!-- Submitter Identity Verification: Aadhaar & Mobile -->
+                                <div class="col-12 mt-3">
+                                    <div class="card border rounded-3 p-3 bg-white shadow-none">
+                                        <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
+                                            <span class="small fw-bold text-dark text-uppercase" style="letter-spacing: 0.5px;">
+                                                <i class="fas fa-shield-alt text-primary me-1"></i> Submitter Identity Verification
+                                            </span>
+                                            <span class="badge bg-light text-muted border">Required for Submission</span>
+                                        </div>
+
+                                        <!-- 1. Aadhaar Number Field -->
+                                        <div class="mb-3" id="aadhaarFieldContainer">
+                                            <label class="form-label small fw-bold text-dark" for="aadhaarInput">
+                                                <i class="fas fa-id-card text-primary me-1"></i> Aadhaar Number <span class="text-danger">*</span>
+                                            </label>
+                                            
+                                            <!-- Aadhaar Input & Verify Button -->
+                                            <div id="aadhaarInputWrapper">
+                                                <div class="input-group">
+                                                    <span class="input-group-text bg-light text-muted">
+                                                        <i class="fas fa-fingerprint"></i>
+                                                    </span>
+                                                    <input type="text" 
+                                                           id="aadhaarInput" 
+                                                           class="form-control font-monospace" 
+                                                           placeholder="Enter 12-digit Aadhaar number" 
+                                                           maxlength="12" 
+                                                           inputmode="numeric" 
+                                                           autocomplete="off"
+                                                           oninput="handleAadhaarInput(this)">
+                                                    <button type="button" 
+                                                            class="btn btn-outline-primary fw-bold" 
+                                                            id="btnVerifyAadhaar" 
+                                                            onclick="verifyAadhaar()">
+                                                        <i class="fas fa-user-check me-1"></i> Verify (Demo)
+                                                    </button>
+                                                </div>
+                                                <div id="aadhaarError" class="text-danger small mt-1 d-none"></div>
+                                                <div class="form-text small text-muted">
+                                                    Accepts exactly 12 digits (numbers only). Complete Aadhaar number is never stored or exposed; only masked format (XXXX XXXX 1234) is retained. Real UIDAI integration is not configured (demo mode).
+                                                </div>
+                                            </div>
+
+                                            <!-- Aadhaar Verified Demo State (Masked) -->
+                                            <div id="aadhaarVerifiedContainer" class="d-none">
+                                                <div class="alert alert-success d-flex justify-content-between align-items-center py-2 px-3 mb-1 rounded-2">
+                                                    <div class="d-flex align-items-center gap-2">
+                                                        <i class="fas fa-check-circle text-success fs-5"></i>
+                                                        <div>
+                                                            <div class="d-flex align-items-center gap-2">
+                                                                <strong class="text-dark">Aadhaar:</strong>
+                                                                <span class="font-monospace fw-bold text-success fs-6" id="aadhaarMaskedDisplay">XXXX XXXX ----</span>
+                                                                <span class="badge bg-success text-white">Verified (Demo)</span>
+                                                            </div>
+                                                            <div class="text-muted small" style="font-size: 0.72rem;">
+                                                                Demo verification completed for demonstration. Real UIDAI service is not configured.
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <button type="button" class="btn btn-sm btn-outline-secondary py-1 px-2" onclick="resetAadhaar()">
+                                                        <i class="fas fa-pen me-1"></i> Change
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            <!-- Hidden inputs to submit masked Aadhaar -->
+                                            <input type="hidden" name="aadhaar_masked" id="aadhaarMaskedInput" value="">
+                                            <input type="hidden" name="aadhaar_verified" id="aadhaarVerifiedInput" value="0">
+                                        </div>
+
+                                        <!-- 2. Mobile Number Field (Immediately below Aadhaar Number) -->
+                                        <div class="mb-1" id="mobileFieldContainer">
+                                            <label class="form-label small fw-bold text-dark" for="mobileInput">
+                                                <i class="fas fa-phone-alt text-primary me-1"></i> Mobile Number <span class="text-danger">*</span>
+                                            </label>
+                                            <div class="input-group">
+                                                <span class="input-group-text bg-light fw-bold text-dark">+91</span>
+                                                <input type="tel" 
+                                                       name="mobile_number" 
+                                                       id="mobileInput" 
+                                                       class="form-control font-monospace" 
+                                                       placeholder="Enter 10-digit Indian mobile number" 
+                                                       maxlength="10" 
+                                                       inputmode="numeric" 
+                                                       autocomplete="tel"
+                                                       value="{{ ((current_user.phone or '')|replace('+91', '')|replace(' ', '')|replace('-', '')|trim) if current_user else '' }}"
+                                                       oninput="handleMobileInput(this)">
+                                            </div>
+                                            <div id="mobileError" class="text-danger small mt-1 d-none"></div>
+                                            <div class="form-text small text-muted">
+                                                Valid 10-digit Indian mobile number starting with 6, 7, 8, or 9 (numbers only). Protected from public exposure.
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -186,7 +283,7 @@
                                 </select>
                             </div>
 
-                            <div class="col-md-4">
+                            <div class="col-12">
                                 <label class="form-label small fw-bold text-dark">Priority / Severity *</label>
                                 <select name="priority" class="form-select" required>
                                     <option value="Critical">Critical (Immediate Hazard)</option>
@@ -194,21 +291,6 @@
                                     <option value="Medium">Medium (Moderate Severity)</option>
                                     <option value="Low">Low (Long-Term Improvement)</option>
                                 </select>
-                            </div>
-
-                            <div class="col-md-4">
-                                <label class="form-label small fw-bold text-dark">Workflow Status *</label>
-                                <select name="status" class="form-select" required>
-                                    <option value="Open" selected>Open (Awaiting HEI Allocation)</option>
-                                    <option value="Under Review">Under Review</option>
-                                    <option value="In Progress">In Progress (Active Project)</option>
-                                    <option value="Pilot">Pilot Deployment</option>
-                                </select>
-                            </div>
-
-                            <div class="col-md-4">
-                                <label class="form-label small fw-bold text-dark">Target Resolution Deadline</label>
-                                <input type="date" name="deadline" class="form-control">
                             </div>
 
                             <div class="col-md-7">
@@ -270,9 +352,14 @@
                             <a href="{{ url_for('challenges') }}" class="btn btn-outline-secondary">
                                 <i class="fas fa-arrow-left me-1"></i> Cancel
                             </a>
-                            <button type="submit" class="btn btn-primary-gov px-4 fw-bold">
-                                <i class="fas fa-check-circle me-1"></i> Submit & Route to University Grid
-                            </button>
+                            <div class="text-end">
+                                <button type="submit" id="submitChallengeBtn" class="btn btn-primary-gov px-4 fw-bold" disabled>
+                                    <i class="fas fa-check-circle me-1"></i> Submit & Route to University Grid
+                                </button>
+                                <div id="submitRequirementsNote" class="small text-muted mt-1">
+                                    <i class="fas fa-lock me-1"></i> Requires verified Aadhaar (demo) and valid mobile number.
+                                </div>
+                            </div>
                         </div>
                     </form>
                 </div>
@@ -443,5 +530,169 @@ function triggerAIClassification() {
         .catch(err => console.log('AI classify error:', err));
     }, 400);
 }
+
+// -------------------------------------------------------------
+// Aadhaar & Mobile Field Validation and Verification Handlers
+// -------------------------------------------------------------
+function handleAadhaarInput(el) {
+    el.value = el.value.replace(/\D/g, '').slice(0, 12);
+    const err = document.getElementById('aadhaarError');
+    if (el.value.length === 12) {
+        err.classList.add('d-none');
+        el.classList.remove('is-invalid');
+        el.classList.add('is-valid');
+    } else {
+        el.classList.remove('is-valid');
+        if (el.value.length > 0) {
+            err.textContent = `Aadhaar must be exactly 12 digits (${el.value.length}/12 entered).`;
+            err.classList.remove('d-none');
+            el.classList.add('is-invalid');
+        } else {
+            err.classList.add('d-none');
+            el.classList.remove('is-invalid');
+        }
+    }
+    updateSubmitButtonState();
+}
+
+function verifyAadhaar() {
+    const input = document.getElementById('aadhaarInput');
+    const err = document.getElementById('aadhaarError');
+    const rawValue = (input.value || '').trim();
+
+    if (rawValue.length !== 12 || !/^\d{12}$/.test(rawValue)) {
+        err.textContent = 'Please enter a valid 12-digit Aadhaar number before verifying.';
+        err.classList.remove('d-none');
+        input.classList.add('is-invalid');
+        input.focus();
+        return;
+    }
+
+    // Prototype / Demo verification: compute masked format
+    const masked = 'XXXX XXXX ' + rawValue.slice(-4);
+
+    // Clear raw complete Aadhaar from input and memory for security
+    input.value = '';
+
+    document.getElementById('aadhaarMaskedDisplay').textContent = masked;
+    document.getElementById('aadhaarMaskedInput').value = masked;
+    document.getElementById('aadhaarVerifiedInput').value = '1';
+
+    document.getElementById('aadhaarInputWrapper').classList.add('d-none');
+    document.getElementById('aadhaarVerifiedContainer').classList.remove('d-none');
+    err.classList.add('d-none');
+
+    updateSubmitButtonState();
+}
+
+function resetAadhaar() {
+    document.getElementById('aadhaarMaskedInput').value = '';
+    document.getElementById('aadhaarVerifiedInput').value = '0';
+    document.getElementById('aadhaarVerifiedContainer').classList.add('d-none');
+    document.getElementById('aadhaarInputWrapper').classList.remove('d-none');
+
+    const input = document.getElementById('aadhaarInput');
+    input.value = '';
+    input.classList.remove('is-valid', 'is-invalid');
+    document.getElementById('aadhaarError').classList.add('d-none');
+    input.focus();
+
+    updateSubmitButtonState();
+}
+
+function handleMobileInput(el) {
+    el.value = el.value.replace(/\D/g, '').slice(0, 10);
+    validateMobileField();
+    updateSubmitButtonState();
+}
+
+function validateMobileField() {
+    const el = document.getElementById('mobileInput');
+    const err = document.getElementById('mobileError');
+    const val = (el.value || '').trim();
+
+    if (val.length === 0) {
+        err.textContent = 'Mobile number is required.';
+        err.classList.remove('d-none');
+        el.classList.add('is-invalid');
+        el.classList.remove('is-valid');
+        return false;
+    } else if (val.length !== 10) {
+        err.textContent = `Mobile number must be exactly 10 digits (${val.length}/10 entered).`;
+        err.classList.remove('d-none');
+        el.classList.add('is-invalid');
+        el.classList.remove('is-valid');
+        return false;
+    } else if (!/^[6-9]\d{9}$/.test(val)) {
+        err.textContent = 'Mobile number must start with 6, 7, 8, or 9.';
+        err.classList.remove('d-none');
+        el.classList.add('is-invalid');
+        el.classList.remove('is-valid');
+        return false;
+    } else {
+        err.classList.add('d-none');
+        el.classList.remove('is-invalid');
+        el.classList.add('is-valid');
+        return true;
+    }
+}
+
+function updateSubmitButtonState() {
+    const isAadhaarVerified = document.getElementById('aadhaarVerifiedInput') && document.getElementById('aadhaarVerifiedInput').value === '1';
+    const mobileEl = document.getElementById('mobileInput');
+    const mobileVal = mobileEl ? (mobileEl.value || '').trim() : '';
+    const isMobileValid = /^[6-9]\d{9}$/.test(mobileVal);
+
+    const submitBtn = document.getElementById('submitChallengeBtn');
+    const note = document.getElementById('submitRequirementsNote');
+
+    if (isAadhaarVerified && isMobileValid) {
+        if (submitBtn) submitBtn.disabled = false;
+        if (note) {
+            note.innerHTML = '<span class="text-success"><i class="fas fa-check-circle me-1"></i> Submitter Aadhaar verified (demo) & mobile number validated. Ready to submit.</span>';
+        }
+    } else {
+        if (submitBtn) submitBtn.disabled = true;
+        if (note) {
+            let missing = [];
+            if (!isAadhaarVerified) missing.push('Aadhaar verification (demo)');
+            if (!isMobileValid) missing.push('valid 10-digit mobile number');
+            note.innerHTML = `<span class="text-muted"><i class="fas fa-lock me-1"></i> Requires: ${missing.join(', ')}.</span>`;
+        }
+    }
+}
+
+function validateSubmissionForm(e) {
+    const isAadhaarVerified = document.getElementById('aadhaarVerifiedInput') && document.getElementById('aadhaarVerifiedInput').value === '1';
+    const mobileEl = document.getElementById('mobileInput');
+    const mobileVal = mobileEl ? (mobileEl.value || '').trim() : '';
+    const isMobileValid = /^[6-9]\d{9}$/.test(mobileVal);
+
+    if (!isAadhaarVerified || !isMobileValid) {
+        if (e) e.preventDefault();
+        if (!isAadhaarVerified) {
+            const err = document.getElementById('aadhaarError');
+            if (err) {
+                err.textContent = 'Please enter your 12-digit Aadhaar number and complete demo verification.';
+                err.classList.remove('d-none');
+            }
+        }
+        if (!isMobileValid) {
+            validateMobileField();
+        }
+        alert('Please complete Aadhaar demo verification and enter a valid 10-digit mobile number before submitting.');
+        return false;
+    }
+    return true;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const mobileEl = document.getElementById('mobileInput');
+    if (mobileEl && mobileEl.value.trim().length > 0) {
+        handleMobileInput(mobileEl);
+    } else {
+        updateSubmitButtonState();
+    }
+});
 </script>
 {% endblock %}

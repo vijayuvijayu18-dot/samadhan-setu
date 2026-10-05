@@ -64,18 +64,18 @@ body {
   background-color: var(--primary-navy);
   border-bottom: 2px solid var(--accent-gold);
   box-shadow: var(--shadow-md);
-  padding: 0.6rem 0;
+  padding: 0.5rem 0;
   width: 100%;
 }
 
 .navbar-brand {
   font-weight: 700;
-  font-size: 1.35rem;
+  font-size: 1.25rem;
   letter-spacing: -0.5px;
   color: #ffffff !important;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .brand-badge {
@@ -91,10 +91,10 @@ body {
 
 .nav-link {
   font-weight: 500;
-  font-size: 0.92rem;
+  font-size: 0.88rem;
   color: #cbd5e1 !important;
   transition: all 0.2s ease;
-  padding: 0.45rem 0.65rem !important;
+  padding: 0.38rem 0.55rem !important;
   border-radius: var(--radius-sm);
   white-space: nowrap;
 }
@@ -107,7 +107,13 @@ body {
 .navbar-custom .dropdown-menu {
   background-color: #ffffff;
   border-radius: var(--radius-md);
-  min-width: 230px;
+  min-width: 220px;
+}
+
+.navbar-custom .dropdown-menu-end {
+  right: 0 !important;
+  left: auto !important;
+  max-width: min(320px, calc(100vw - 24px)) !important;
 }
 
 .navbar-custom .dropdown-item {
@@ -150,11 +156,51 @@ body {
   transition: all 0.2s ease;
 }
 
+.btn-accent.btn-sm, .btn-sm.btn-accent {
+  padding: 0.35rem 0.75rem !important;
+  font-size: 0.84rem !important;
+}
+
 .btn-accent:hover {
   background: linear-gradient(135deg, #ea580c, #b45309);
   color: #ffffff;
   box-shadow: 0 4px 12px rgba(217, 119, 6, 0.3);
   transform: translateY(-1px);
+}
+
+/* Responsive Navbar Optimization to fit laptops & desktops cleanly */
+@media (min-width: 1200px) and (max-width: 1399.98px) {
+  .navbar-brand {
+    font-size: 1.15rem;
+    gap: 6px;
+  }
+  .navbar-brand span {
+    font-size: 1.15rem;
+  }
+  .nav-link {
+    font-size: 0.82rem;
+    padding: 0.32rem 0.42rem !important;
+  }
+  .navbar-custom .btn-accent.btn-sm,
+  .navbar-custom .btn-sm.btn-accent {
+    padding: 0.32rem 0.6rem !important;
+    font-size: 0.8rem !important;
+  }
+  .navbar-custom .dropdown-toggle {
+    font-size: 0.82rem !important;
+    padding: 0.32rem 0.55rem !important;
+  }
+}
+
+@media (max-width: 1199.98px) {
+  .navbar-custom .navbar-collapse {
+    padding: 0.75rem 0.25rem;
+  }
+  .navbar-custom .navbar-collapse .d-flex {
+    flex-wrap: wrap !important;
+    white-space: normal !important;
+    margin-top: 0.5rem !important;
+  }
 }
 
 /* Split-Screen Enterprise Login */
