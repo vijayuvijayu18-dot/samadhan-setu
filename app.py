@@ -63,6 +63,10 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 32 * 1024 * 1024  # 32 MB max
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp', 'gif', 'mp4', 'mov', 'webm', 'avi', 'pdf', 'docx', 'txt', 'csv'}
 
+def allowed_file(filename):
+    """Validate if file extension is permitted for upload."""
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
 database_url = os.environ.get('DATABASE_URL')
 if database_url:
     # Standardize postgres:// to postgresql:// for SQLAlchemy 2.0+
@@ -110,6 +114,8 @@ CATEGORIES = [
     "Accessibility", "Public Administration", "Smart Cities",
     "Waste Management", "Water", "Women's Safety", "Transportation", "Other"
 ]
+
+CHALLENGE_CATEGORIES = {cat: [] for cat in CATEGORIES}
 
 JHARKHAND_DISTRICTS = [
     "Ranchi", "East Singhbhum (Jamshedpur)", "Dhanbad", "Bokaro", "Deoghar",
