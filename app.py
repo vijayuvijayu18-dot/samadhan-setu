@@ -3,12 +3,14 @@ import math
 import uuid
 import logging
 import re
+import tempfile
+import shutil
 from datetime import datetime, timedelta
 from functools import wraps
 
 from flask import (
     Flask, render_template, request, redirect, url_for,
-    flash, session, jsonify, abort
+    flash, session, jsonify, abort, send_from_directory
 )
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -29,9 +31,34 @@ BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'samadhan-setu-sih-secret-key-2026-gov-enterprise-secured')
 
+def is_dir_writable(path):
+    try:
+        testfile = os.path.join(path, f".write_test_{uuid.uuid4().hex[:6]}")
+        with open(testfile, 'w') as f:
+            f.write('1')
+        os.remove(testfile)
+        return True
+    except Exception:
+        return False
+
+is_serverless = bool(
+    os.environ.get('VERCEL') or
+    os.environ.get('AWS_LAMBDA_FUNCTION_NAME') or
+    os.environ.get('LAMBDA_TASK_ROOT') or
+    not is_dir_writable(BASE_DIR)
+)
+
 # Uploads configuration for multimedia evidence
-UPLOAD_FOLDER = os.path.join(BASE_DIR, 'static', 'uploads')
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+if is_serverless:
+    UPLOAD_FOLDER = os.path.join(tempfile.gettempdir(), 'samadhan_uploads')
+else:
+    UPLOAD_FOLDER = os.path.join(BASE_DIR, 'static', 'uploads')
+
+try:
+    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+except Exception:
+    pass
+
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 32 * 1024 * 1024  # 32 MB max
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp', 'gif', 'mp4', 'mov', 'webm', 'avi', 'pdf', 'docx', 'txt', 'csv'}
@@ -46,6 +73,24 @@ if database_url:
         'pool_pre_ping': True,
         'pool_recycle': 300,
     }
+elif is_serverless:
+    # On serverless platforms (Vercel, AWS Lambda), the deployment directory is strictly read-only.
+    # Copy the bundled SQLite database to the writable temp directory so write operations (registration, etc.) succeed.
+    tmp_dir = tempfile.gettempdir()
+    tmp_db_path = os.path.join(tmp_dir, 'samadhan_setu.db')
+    orig_db_path = os.path.join(BASE_DIR, 'samadhan_setu.db')
+
+    if not os.path.exists(tmp_db_path) and os.path.exists(orig_db_path):
+        try:
+            shutil.copy2(orig_db_path, tmp_db_path)
+            try:
+                os.chmod(tmp_db_path, 0o666)
+            except Exception:
+                pass
+        except Exception as e:
+            logging.error(f"Failed to copy database to temp directory: {e}")
+
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + tmp_db_path.replace('\\', '/')
 else:
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(BASE_DIR, 'samadhan_setu.db')
 
@@ -994,6 +1039,18 @@ def ensure_database_schema_compat():
 
 with app.app_context():
     ensure_database_schema_compat()
+
+
+@app.route('/static/uploads/<path:filename>')
+def custom_static_uploads(filename):
+    """Serves uploaded multimedia assets from writable temp or local static storage."""
+    target_dir = app.config.get('UPLOAD_FOLDER', os.path.join(BASE_DIR, 'static', 'uploads'))
+    if os.path.exists(os.path.join(target_dir, filename)):
+        return send_from_directory(target_dir, filename)
+    fallback_dir = os.path.join(BASE_DIR, 'static', 'uploads')
+    if os.path.exists(os.path.join(fallback_dir, filename)):
+        return send_from_directory(fallback_dir, filename)
+    abort(404)
 
 
 # ---------------------------------------------------------
@@ -2225,8 +2282,15 @@ def register():
             bio=f"Registered {user_type} participating in collaborative societal innovation."
         )
         new_user.set_password(password)
-        db.session.add(new_user)
-        db.session.commit()
+
+        try:
+            db.session.add(new_user)
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            app.logger.error(f"Registration database error: {e}")
+            flash('Unable to complete registration at this time. Please try again.', 'danger')
+            return render_template('register.html', **request.form)
 
         # Create or link Organization profile if applicable
         if organization and user_type in ['University Representative', 'Industry Representative', 'NGO Representative', 'Organization Representative']:
@@ -2237,26 +2301,33 @@ def register():
                 'Organization Representative': 'Startup'
             }
             mapped_type = org_type_map.get(user_type, 'Organization')
-            existing_org = Organization.query.filter_by(name=organization).first()
-            if not existing_org:
-                new_org = Organization(
-                    name=organization,
-                    type=mapped_type,
-                    location=location,
-                    description=f"{organization} partnering on societal problem solving across Jharkhand.",
-                    expertise_tags=skills or "Applied Research, Prototype Engineering, Field Implementation",
-                    is_verified=True
-                )
-                db.session.add(new_org)
-                db.session.commit()
+            try:
+                existing_org = Organization.query.filter_by(name=organization).first()
+                if not existing_org:
+                    new_org = Organization(
+                        name=organization,
+                        type=mapped_type,
+                        location=location,
+                        description=f"{organization} partnering on societal problem solving across Jharkhand.",
+                        expertise_tags=skills or "Applied Research, Prototype Engineering, Field Implementation",
+                        is_verified=True
+                    )
+                    db.session.add(new_org)
+                    db.session.commit()
+            except Exception as org_err:
+                db.session.rollback()
+                app.logger.warning(f"Organization linking note: {org_err}")
 
         # Send welcome notification
-        send_notification(
-            new_user.id,
-            "Welcome to SamadhanSetu",
-            f"Hello {full_name}, your {user_type} account has been created. Start submitting challenges or proposing solutions.",
-            url_for('user_dashboard')
-        )
+        try:
+            send_notification(
+                new_user.id,
+                "Welcome to SamadhanSetu",
+                f"Hello {full_name}, your {user_type} account has been created. Start submitting challenges or proposing solutions.",
+                url_for('user_dashboard')
+            )
+        except Exception as notif_err:
+            app.logger.warning(f"Welcome notification dispatch note: {notif_err}")
 
         flash('Registration completed successfully! Please sign in with your email and password.', 'success')
         return redirect(url_for('login', login_id=email))
